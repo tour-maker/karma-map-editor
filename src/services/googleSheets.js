@@ -154,7 +154,7 @@ export const getSheetIdByName = async (spreadsheetId, sheetName) => {
   }
 };
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2v9IL92_GbssxDC9-SRQmJ-vkj21A8FkzNMGHdZSpHassASSkdXdsBu5i1F0oQPQ/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6PYhg46pRnBkkcAfp-RkmreiGHIkwYLcNXI03eujyc1bSSTH0kZZ93auAm7XtcjI/exec';
 
 export const syncLandmarkToSheet = async (landmarkFeature, spreadsheetId = null, action = 'create') => {
   if (!landmarkFeature) return;
@@ -611,19 +611,49 @@ export const overwriteAreasSheet = async (spreadsheetId, areaRows = []) => {
   }
 };
 
-export const fetchAndMergeSheetUpdates = async () => {
+export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
   try {
-    const res = await fetch(APPS_SCRIPT_URL);
-    if (!res.ok) return 0;
-    const result = await res.json();
-    
-    // Process Areas tab data if returned by Apps Script
-    if (result.areas && Array.isArray(result.areas) && result.areas.length > 1) {
+    let polygonsData = [];
+    let areasData = [];
+    let landmarksData = [];
+
+    if (spreadsheetId && accessToken) {
+      // 1. Direct API Fetch
       try {
-        const areaRows = result.areas;
+        const pUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Polygons`;
+        const pRes = await sheetsFetch(pUrl);
+        if (pRes && pRes.values) polygonsData = pRes.values;
+        
+        const aUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Areas`;
+        const aRes = await sheetsFetch(aUrl);
+        if (aRes && aRes.values) areasData = aRes.values;
+        
+        const lUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/landmarks`;
+        const lRes = await sheetsFetch(lUrl);
+        if (lRes && lRes.values) landmarksData = lRes.values;
+      } catch (err) {
+        console.warn('Failed to fetch via Direct API, falling back to Apps Script webhook:', err);
+      }
+    }
+
+    if (polygonsData.length === 0) {
+      // 2. Fallback to Webhook
+      const res = await fetch(APPS_SCRIPT_URL);
+      if (!res.ok) return 0;
+      const result = await res.json();
+      polygonsData = result.data || result.values || result.rows || [];
+      areasData = result.areas || [];
+      landmarksData = result.landmarks || [];
+    }
+
+    if (!polygonsData || polygonsData.length < 2) return 0;
+    
+    // Process Areas
+    if (areasData && Array.isArray(areasData) && areasData.length > 1) {
+      try {
         const loadedAreasMap = {};
-        for (let i = 1; i < areaRows.length; i++) {
-          const r = areaRows[i];
+        for (let i = 1; i < areasData.length; i++) {
+          const r = areasData[i];
           if (!r || !Array.isArray(r) || r.length === 0) continue;
           const parent = String(r[0] || '').trim();
           const secondary = String(r[1] || '').trim();
@@ -645,19 +675,16 @@ export const fetchAndMergeSheetUpdates = async () => {
           }
         });
       } catch (err) {
-        console.warn('Failed to parse areas from Apps Script:', err);
+        console.warn('Failed to parse areas:', err);
       }
     }
-
-    const rows = result.data || result.values || result.rows || [];
-    if (!rows || !Array.isArray(rows) || rows.length < 2) return 0;
 
     const currentFeatures = useMapStore.getState().features;
     let updateCount = 0;
 
-    const rawHeaders = rows[0].map(h => String(h || '').trim().toLowerCase());
+    // Process Polygons
+    const rawHeaders = polygonsData[0].map(h => String(h || '').trim().toLowerCase());
     const isCorruptedHeaders = rawHeaders.length === 0 || rawHeaders.filter(h => h === 'id').length > 2;
-
     const idIdx = !isCorruptedHeaders && rawHeaders.indexOf('id') >= 0 ? rawHeaders.indexOf('id') : 0;
     const tpIdx = !isCorruptedHeaders && rawHeaders.indexOf('tp') >= 0 ? rawHeaders.indexOf('tp') : 1;
     const opIdx = !isCorruptedHeaders && rawHeaders.indexOf('op') >= 0 ? rawHeaders.indexOf('op') : 2;
@@ -670,18 +697,15 @@ export const fetchAndMergeSheetUpdates = async () => {
     const remarksIdx = !isCorruptedHeaders && rawHeaders.indexOf('remarks') >= 0 ? rawHeaders.indexOf('remarks') : 9;
 
     const sheetMap = new Map();
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
+    for (let i = 1; i < polygonsData.length; i++) {
+      const row = polygonsData[i];
       if (!Array.isArray(row)) continue;
       const id = idIdx >= 0 ? String(row[idIdx] || '').trim() : '';
       const tp = tpIdx >= 0 ? String(row[tpIdx] || '').trim() : '';
       const fp = fpIdx >= 0 ? String(row[fpIdx] || '').trim() : '';
 
       const rowData = {
-        id,
-        tp,
-        op: opIdx >= 0 ? String(row[opIdx] || '').trim() : '',
-        fp,
+        id, tp, op: opIdx >= 0 ? String(row[opIdx] || '').trim() : '', fp,
         area: areaIdx >= 0 ? String(row[areaIdx] || '').trim() : '',
         location: locIdx >= 0 ? String(row[locIdx] || '').trim() : '',
         parentLocation: parentLocIdx >= 0 ? String(row[parentLocIdx] || '').trim() : '',
@@ -694,44 +718,97 @@ export const fetchAndMergeSheetUpdates = async () => {
       if (tp && fp) sheetMap.set(`tpfp:${tp}_${fp}`, rowData);
     }
 
+    // Process Landmarks (7 columns)
+    if (landmarksData && landmarksData.length > 1) {
+      const lHeaders = landmarksData[0].map(h => String(h || '').trim().toLowerCase());
+      const lIdIdx = lHeaders.indexOf('id') >= 0 ? lHeaders.indexOf('id') : 0;
+      const lNameIdx = lHeaders.indexOf('landmark name') >= 0 ? lHeaders.indexOf('landmark name') : 1;
+      const lLocIdx = lHeaders.indexOf('location') >= 0 ? lHeaders.indexOf('location') : 2;
+      const lParentLocIdx = lHeaders.indexOf('parent location') >= 0 ? lHeaders.indexOf('parent location') : 3;
+      const lLatIdx = lHeaders.indexOf('latitude') >= 0 ? lHeaders.indexOf('latitude') : 4;
+      const lLngIdx = lHeaders.indexOf('longitude') >= 0 ? lHeaders.indexOf('longitude') : 5;
+      const lRemarksIdx = lHeaders.indexOf('remarks') >= 0 ? lHeaders.indexOf('remarks') : 6;
+
+      for (let i = 1; i < landmarksData.length; i++) {
+        const row = landmarksData[i];
+        if (!Array.isArray(row)) continue;
+        const id = lIdIdx >= 0 ? String(row[lIdIdx] || '').trim() : '';
+        if (id) {
+          sheetMap.set(`id:${id}`, {
+            id,
+            name: lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '',
+            landmark: lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '',
+            location: lLocIdx >= 0 ? String(row[lLocIdx] || '').trim() : '',
+            parentLocation: lParentLocIdx >= 0 ? String(row[lParentLocIdx] || '').trim() : '',
+            lat: lLatIdx >= 0 ? String(row[lLatIdx] || '').trim() : '',
+            lng: lLngIdx >= 0 ? String(row[lLngIdx] || '').trim() : '',
+            remarks: lRemarksIdx >= 0 ? String(row[lRemarksIdx] || '').trim() : '',
+            type: 'Landmark'
+          });
+        }
+      }
+    }
+
     const updatedFeatures = currentFeatures.map(f => {
       const d = f.data || {};
       const sheetMatch = sheetMap.get(`id:${f.id}`) || sheetMap.get(`tpfp:${d.tp}_${d.fp}`);
       if (!sheetMatch) return f;
+      
+      const isLandmarkType = f.id?.startsWith('landmark-') || d.type === 'Landmark';
 
-      const tpChanged = sheetMatch.tp && sheetMatch.tp !== (d.tp || '');
-      const opChanged = sheetMatch.op && sheetMatch.op !== (d.op || '');
-      const fpChanged = sheetMatch.fp && sheetMatch.fp !== (d.fp || '');
-      const areaChanged = sheetMatch.area && String(sheetMatch.area) !== String(d.area || '');
-      const locChanged = sheetMatch.location && sheetMatch.location !== (d.location || '');
-      const landmarkChanged = sheetMatch.landmark && sheetMatch.landmark !== (d.landmark || '');
-      const typeChanged = sheetMatch.type && sheetMatch.type !== (d.type || '');
-      const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== (d.remarks || '');
+      if (isLandmarkType) {
+        const nameChanged = sheetMatch.name && sheetMatch.name !== (d.name || d.landmark || '');
+        const locChanged = sheetMatch.location && sheetMatch.location !== (d.location || '');
+        const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== (d.remarks || '');
+        if (nameChanged || locChanged || remarksChanged) {
+          updateCount++;
+          return {
+            ...f,
+            data: {
+              ...d,
+              name: sheetMatch.name || d.name || d.landmark || '',
+              landmark: sheetMatch.name || d.landmark || d.name || '',
+              location: sheetMatch.location || d.location || '',
+              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || d.location),
+              remarks: sheetMatch.remarks || d.remarks || ''
+            }
+          };
+        }
+      } else {
+        const tpChanged = sheetMatch.tp && sheetMatch.tp !== (d.tp || '');
+        const opChanged = sheetMatch.op && sheetMatch.op !== (d.op || '');
+        const fpChanged = sheetMatch.fp && sheetMatch.fp !== (d.fp || '');
+        const areaChanged = sheetMatch.area && String(sheetMatch.area) !== String(d.area || '');
+        const locChanged = sheetMatch.location && sheetMatch.location !== (d.location || '');
+        const landmarkChanged = sheetMatch.landmark && sheetMatch.landmark !== (d.landmark || '');
+        const typeChanged = sheetMatch.type && sheetMatch.type !== (d.type || '');
+        const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== (d.remarks || '');
 
-      if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged) {
-        updateCount++;
-        const newType = sheetMatch.type || d.type;
-        const newColor = getPropertyTypeColor(newType);
-        return {
-          ...f,
-          data: {
-            ...d,
-            tp: sheetMatch.tp || d.tp || '',
-            op: sheetMatch.op || d.op || '',
-            fp: sheetMatch.fp || d.fp || '',
-            area: sheetMatch.area || d.area || '',
-            location: sheetMatch.location || d.location || '',
-            parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || d.location),
-            landmark: sheetMatch.landmark || d.landmark || '',
-            type: newType || '',
-            remarks: sheetMatch.remarks || d.remarks || ''
-          },
-          style: {
-            ...f.style,
-            fillColor: newColor,
-            strokeColor: newColor
-          }
-        };
+        if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged) {
+          updateCount++;
+          const newType = sheetMatch.type || d.type;
+          const newColor = getPropertyTypeColor(newType);
+          return {
+            ...f,
+            data: {
+              ...d,
+              tp: sheetMatch.tp || d.tp || '',
+              op: sheetMatch.op || d.op || '',
+              fp: sheetMatch.fp || d.fp || '',
+              area: sheetMatch.area || d.area || '',
+              location: sheetMatch.location || d.location || '',
+              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || d.location),
+              landmark: sheetMatch.landmark || d.landmark || '',
+              type: newType || '',
+              remarks: sheetMatch.remarks || d.remarks || ''
+            },
+            style: {
+              ...f.style,
+              fillColor: newColor,
+              strokeColor: newColor
+            }
+          };
+        }
       }
       return f;
     });

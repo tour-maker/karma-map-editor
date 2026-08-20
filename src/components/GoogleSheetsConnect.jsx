@@ -5,7 +5,7 @@ import { CATEGORY_MAP, determineParentLocation } from '../config/categories';
 import { fetchAndMergeSheetUpdates, repairSheet1Headers, overwriteSheetWithFeatures, overwriteAreasSheet } from '../services/googleSheets';
 import toast from 'react-hot-toast';
 
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2v9IL92_GbssxDC9-SRQmJ-vkj21A8FkzNMGHdZSpHassASSkdXdsBu5i1F0oQPQ/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6PYhg46pRnBkkcAfp-RkmreiGHIkwYLcNXI03eujyc1bSSTH0kZZ93auAm7XtcjI/exec';
 
 export default function GoogleSheetsConnect() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +16,7 @@ export default function GoogleSheetsConnect() {
   useEffect(() => {
     // Polling every 15 seconds to fetch any edits made directly in Google Sheets into the Map Editor
     const interval = setInterval(async () => {
-      const updatedCount = await fetchAndMergeSheetUpdates();
+      const updatedCount = await fetchAndMergeSheetUpdates(spreadsheetId);
       if (updatedCount > 0) {
         toast.success(`Updated ${updatedCount} property field(s) from Google Sheets!`);
       }
@@ -32,7 +32,7 @@ export default function GoogleSheetsConnect() {
         await repairSheet1Headers(spreadsheetId);
       }
 
-      const updatedCount = await fetchAndMergeSheetUpdates();
+      const updatedCount = await fetchAndMergeSheetUpdates(spreadsheetId);
       if (updatedCount > 0) {
         toast.success(`Merged ${updatedCount} update(s) from Google Sheets!`);
       }
