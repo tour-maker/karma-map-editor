@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -sf http://localhost:5173)",
+      "Bash(exit 0)",
+      "Bash(curl -sf http://localhost:5174)",
+      "Bash(node smoke.js)"
+    ]
+  }
+}

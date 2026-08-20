@@ -1,0 +1,411 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #0f172a;
+  background: #0f172a;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100vh;
+  background: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hide ALL UI elements & overlays visually during screenshot capture without unmounting Google Map */
+body.hide-ui-for-screenshot .responsive-right-dock,
+body.hide-ui-for-screenshot .responsive-filter-bar,
+body.hide-ui-for-screenshot .projects-panel-container,
+body.hide-ui-for-screenshot .top-stats-bar,
+body.hide-ui-for-screenshot .search-box-container,
+body.hide-ui-for-screenshot .mode-toggle-container,
+body.hide-ui-for-screenshot .whatsapp-cta-button,
+body.hide-ui-for-screenshot .property-info-panel,
+body.hide-ui-for-screenshot #react-hot-toast,
+body.hide-ui-for-screenshot [data-toaster-wrapper],
+body.hide-ui-for-screenshot div[role="status"],
+body.hide-ui-for-screenshot div[style*="z-index: 1000"],
+body.hide-ui-for-screenshot div[style*="z-index: 1100"],
+body.hide-ui-for-screenshot div[style*="z-index: 1200"],
+body.hide-ui-for-screenshot div[style*="z-index: 9999"],
+body.hide-ui-for-screenshot header,
+body.hide-ui-for-screenshot nav {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  display: none !important;
+  pointer-events: none !important;
+}
+
+#root {
+  box-sizing: border-box;
+}
+
+/* Hide horizontal scrollbars site-wide */
+* {
+  box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.mobile-only-text {
+  display: none !important;
+}
+.desktop-only-text {
+  display: inline !important;
+}
+
+.search-box-container input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Desktop Default Styles for Mobile-Specific Elements */
+.mobile-filter-dock-bar,
+.mobile-only-whatsapp-btn {
+  display: none !important;
+}
+
+.whatsapp-cta-button {
+  display: flex !important;
+}
+
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mobile & Tablet Responsive Media Queries (Matches User Mockup Screenshot 100%) */
+@media (max-width: 768px) {
+  /* Hide Desktop Horizontal Filter Bar on Mobile (Replaced by Sleek Mobile Filter Dock & Sheet) */
+  .responsive-filter-bar {
+    display: none !important;
+  }
+
+  .mobile-filter-dock-bar {
+    display: flex !important;
+  }
+
+  /* 1. Hide Edit Sidebar Panel & Mode Toggle Button on Mobile (Always Viewer Mode) */
+  .projects-panel-container,
+  .responsive-sidebar,
+  .mode-toggle-container {
+    display: none !important;
+  }
+
+  /* 2. Top Centered Search Bar */
+  .search-box-container {
+    top: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 440px !important;
+    z-index: 1100 !important;
+  }
+
+  /* 3. Single Unified Action Dock on Bottom Right (Share + Sliders/Options + WhatsApp) */
+  .responsive-right-dock {
+    position: fixed !important;
+    bottom: 74px !important;
+    right: 16px !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    z-index: 1050 !important;
+  }
+
+  .responsive-right-dock > div {
+    flex-direction: column !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    background: rgba(10, 14, 23, 0.70) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    height: auto !important;
+    padding: 12px 10px !important;
+    gap: 14px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65) !important;
+  }
+
+  .responsive-right-dock-popout {
+    position: fixed !important;
+    right: 74px !important;
+    bottom: 74px !important;
+    left: auto !important;
+    top: auto !important;
+    flex-direction: column !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    padding: 12px !important;
+    gap: 14px !important;
+  }
+
+  /* Filters Dock Card: Matches Desktop Notch Shape (28px 28px 0 0, bottom: 0, borderBottom: none) */
+  .mobile-filter-dock-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 460px !important;
+    height: 60px !important;
+    border-radius: 28px 28px 0 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-bottom: none !important;
+    background: rgba(10, 14, 23, 0.70) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.75) !important;
+    z-index: 1000 !important;
+  }
+
+  /* Show WhatsApp inside combined right dock on Mobile only */
+  .mobile-only-whatsapp-btn {
+    display: flex !important;
+  }
+
+  /* Standalone WhatsApp button is hidden on Mobile because it is merged into the right dock pill */
+  .whatsapp-cta-button {
+    display: none !important;
+  }
+
+  /* 4. Google Maps Attribution: Sits cleanly at bottom (bottom: 4px) below the Filters card with zero overlap */
+  .gm-style-logo {
+    bottom: 4px !important;
+    left: 10px !important;
+    transform: scale(0.85) !important;
+    transform-origin: bottom left !important;
+    z-index: 900 !important;
+  }
+
+  .gm-style-cc {
+    bottom: 4px !important;
+    right: 8px !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border-radius: 6px !important;
+    padding: 2px 6px !important;
+    max-width: 135px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    z-index: 900 !important;
+    transition: max-width 0.2s ease !important;
+  }
+
+  .gm-style-cc:active,
+  .gm-style-cc:focus-within {
+    max-width: 280px !important;
+    white-space: normal !important;
+  }
+
+  .gm-style-cc * {
+    font-size: 9.5px !important;
+    color: #94a3b8 !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Property Info Panel Bottom Sheet on Mobile */
+  .responsive-info-panel {
+    position: fixed !important;
+    width: calc(100vw - 24px) !important;
+    right: 12px !important;
+    left: 12px !important;
+    bottom: 12px !important;
+    top: auto !important;
+    max-height: 75vh !important;
+    border-radius: 24px !important;
+    z-index: 2000 !important;
+  }
+}
+
+/* TV & Ultra-wide displays */
+@media (min-width: 1920px) {
+  .responsive-sidebar {
+    width: 400px !important;
+  }
+
+  .responsive-info-panel {
+    width: 420px !important;
+  }
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-40px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glassPop {
+  0% {
+    transform: scale(0.92) translateY(10px);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.02) translateY(-2px);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ambientPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.45);
+  }
+}
+
+@keyframes floatSoft {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Interactive Card & Button Smooth Transition Utility Classes */
+.project-card-interactive {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.project-card-interactive:hover {
+  transform: translateY(-2px) scale(1.008) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(99, 102, 241, 0.2) !important;
+}
+
+.glass-button-interactive {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.glass-button-interactive:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35) !important;
+}
+
+.glass-button-interactive:active {
+  transform: translateY(0px) scale(0.96) !important;
+}
+
+/* Micro-Animation Suite for Premium UI */
+@keyframes dropdownScaleIn {
+  0% {
+    transform: translateY(-8px) scale(0.94);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseBorderGlow {
+
+  0%,
+  100% {
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+  }
+
+  50% {
+    border-color: rgba(99, 102, 241, 0.65);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+  }
+}
+
+@keyframes modalBackdropFade {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* Utility Animations */
+.animate-dropdown-pop {
+  animation: dropdownScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseBorderGlow 2.5s infinite ease-in-out;
+}
+
+.btn-hover-effect {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-hover-effect:hover {
+  transform: translateY(-1.5px) scale(1.025) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.btn-hover-effect:active {
+  transform: translateY(0) scale(0.96) !important;
+}
+
+.icon-rotate-hover {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.icon-rotate-hover:hover {
+  transform: rotate(90deg) scale(1.15) !important;
+}
+
+.input-focus-animate {
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.input-focus-animate:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.35), inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
