@@ -22,7 +22,7 @@ export default function GoogleSheetsConnect() {
       }
     }, 15000);
 
-    return () => clearInterval(interval);
+return () => clearInterval(interval);
   }, []);
 
   const syncData = async () => {
@@ -178,6 +178,16 @@ export default function GoogleSheetsConnect() {
     }
     setIsLoading(false);
   };
+
+    useEffect(() => {
+    const handleGlobalSync = () => {
+      if (useMapStore.getState().googleSheetsConnected || spreadsheetId) {
+        syncData();
+      }
+    };
+    window.addEventListener('trigger-global-sync', handleGlobalSync);
+    return () => window.removeEventListener('trigger-global-sync', handleGlobalSync);
+  });
 
   return (
     <button

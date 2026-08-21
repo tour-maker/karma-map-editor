@@ -256,9 +256,9 @@ export default function PropertyInfoPanel() {
         data: updatedData,
         style: updatedStyle
       };
-      await syncFeatureToSheet(spreadsheetId || 'default', updatedFeature, 'update');
-      updateFeature(displayFeature.id, { syncStatus: 'synced' });
-      toast.success('Saved property changes!');
+      // User requested to fire the global 'connect sheet' (syncData) function on save
+      window.dispatchEvent(new CustomEvent('trigger-global-sync'));
+      toast.success('Saved property changes. Syncing to Google Sheets...');
     } catch (err) {
       console.error(err);
       toast.success('Saved property locally!');
