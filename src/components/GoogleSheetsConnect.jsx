@@ -15,14 +15,18 @@ export default function GoogleSheetsConnect() {
 
   useEffect(() => {
     // Polling every 15 seconds to fetch any edits made directly in Google Sheets into the Map Editor
+    // SKIP if the info panel is open — user is actively typing, don't overwrite their input!
     const interval = setInterval(async () => {
+      const { isInfoPanelOpen } = useMapStore.getState();
+      if (isInfoPanelOpen) return;
+
       const updatedCount = await fetchAndMergeSheetUpdates(spreadsheetId);
       if (updatedCount > 0) {
         toast.success(`Updated ${updatedCount} property field(s) from Google Sheets!`);
       }
     }, 15000);
 
-return () => clearInterval(interval);
+    return () => clearInterval(interval);
   }, []);
 
   const syncData = async () => {
