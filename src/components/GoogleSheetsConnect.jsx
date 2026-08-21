@@ -111,7 +111,7 @@ export default function GoogleSheetsConnect() {
       });
 
       const landmarkRows = currentFeatures
-        .filter(f => f.id?.startsWith('landmark-') || f.data?.type === 'Landmark' || f.data?.landmark)
+        .filter(f => f.id?.startsWith('landmark-') || f.data?.type === 'Landmark')
         .map(f => {
           const d = f.data || {};
           const title = d.landmark || d.name || 'Landmark';

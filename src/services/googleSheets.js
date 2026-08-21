@@ -734,10 +734,15 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         if (!Array.isArray(row)) continue;
         const id = lIdIdx >= 0 ? String(row[lIdIdx] || '').trim() : '';
         if (id) {
+          const lName = lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '';
+          if (sheetMap.has(`id:${id}`)) {
+             sheetMap.get(`id:${id}`).landmark = lName;
+             continue;
+          }
           sheetMap.set(`id:${id}`, {
             id,
-            name: lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '',
-            landmark: lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '',
+            name: lName,
+            landmark: lName,
             location: lLocIdx >= 0 ? String(row[lLocIdx] || '').trim() : '',
             parentLocation: lParentLocIdx >= 0 ? String(row[lParentLocIdx] || '').trim() : '',
             lat: lLatIdx >= 0 ? String(row[lLatIdx] || '').trim() : '',
