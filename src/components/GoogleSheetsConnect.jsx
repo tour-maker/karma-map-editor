@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMapStore } from '../store/useMapStore';
-import { FiDatabase, FiRefreshCw } from 'react-icons/fi';
+import { FiRefreshCw, FiDownload, FiUpload } from 'react-icons/fi';
 import { CATEGORY_MAP, determineParentLocation } from '../config/categories';
 import { fetchAndMergeSheetUpdates, repairSheet1Headers, overwriteSheetWithFeatures, overwriteAreasSheet } from '../services/googleSheets';
 import toast from 'react-hot-toast';
@@ -8,39 +8,36 @@ import toast from 'react-hot-toast';
 const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6PYhg46pRnBkkcAfp-RkmreiGHIkwYLcNXI03eujyc1bSSTH0kZZ93auAm7XtcjI/exec';
 
 export default function GoogleSheetsConnect() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isUpdatingMap, setIsUpdatingMap] = useState(false);
+  const [isUpdatingSheet, setIsUpdatingSheet] = useState(false);
   const theme = useMapStore(state => state.theme);
   const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const isDark = theme === 'dark';
 
-  useEffect(() => {
-    // Polling every 15 seconds to fetch any edits made directly in Google Sheets into the Map Editor
-    // SKIP if the info panel is open — user is actively typing, don't overwrite their input!
-    const interval = setInterval(async () => {
-      const { isInfoPanelOpen } = useMapStore.getState();
-      if (isInfoPanelOpen) return;
-
-      const updatedCount = await fetchAndMergeSheetUpdates(spreadsheetId);
-      if (updatedCount > 0) {
-        toast.success(`Updated ${updatedCount} property field(s) from Google Sheets!`);
-      }
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const syncData = async () => {
-    setIsLoading(true);
+  // ─── Update Map (Sheet → Map) ────────────────────────────────────────────────
+  const updateMap = async () => {
+    setIsUpdatingMap(true);
     try {
       if (spreadsheetId) {
         await repairSheet1Headers(spreadsheetId);
       }
-
       const updatedCount = await fetchAndMergeSheetUpdates(spreadsheetId);
       if (updatedCount > 0) {
-        toast.success(`Merged ${updatedCount} update(s) from Google Sheets!`);
+        toast.success(`Map updated! ${updatedCount} change(s) pulled from Google Sheets.`);
+      } else {
+        toast.success('Map is already up to date with Google Sheets!');
       }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch updates from Google Sheets: ' + err.message);
+    }
+    setIsUpdatingMap(false);
+  };
 
+  // ─── Update Sheet (Map → Sheet) ──────────────────────────────────────────────
+  const updateSheet = async () => {
+    setIsUpdatingSheet(true);
+    try {
       const currentFeatures = useMapStore.getState().features;
       const cleanFeatures = currentFeatures.map(f => {
         const d = f.data || {};
@@ -53,7 +50,6 @@ export default function GoogleSheetsConnect() {
         const landmarkVal = d.landmark || f.landmark || '';
         const typeVal = d.type || '';
         const remarksVal = d.remarks || f.remarks || '';
-
         return {
           id: f.id,
           type: f.type,
@@ -66,77 +62,53 @@ export default function GoogleSheetsConnect() {
           landmark: landmarkVal,
           category: typeVal,
           remarks: remarksVal,
-          data: {
-            tp: tpVal,
-            op: opVal,
-            fp: fpVal,
-            area: areaVal,
-            location: loc,
-            parentLocation: parentLoc,
-            landmark: landmarkVal,
-            type: typeVal,
-            remarks: remarksVal
-          }
+          data: { tp: tpVal, op: opVal, fp: fpVal, area: areaVal, location: loc, parentLocation: parentLoc, landmark: landmarkVal, type: typeVal, remarks: remarksVal }
         };
       });
-      
+
       const polygonFeatures = cleanFeatures.filter(cf => !(cf.id?.startsWith('landmark-') || cf.category === 'Landmark'));
-      
+
       const headerRow = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks'];
       const dataRows = polygonFeatures.map(cf => [
-        cf.id || '',
-        cf.tp || '',
-        cf.op || '',
-        cf.fp || '',
+        cf.id || '', cf.tp || '', cf.op || '', cf.fp || '',
         cf.area != null ? String(cf.area) : '',
-        cf.location || '',
-        cf.parentLocation || '',
-        cf.landmark || '',
-        cf.category || '',
-        cf.remarks || ''
+        cf.location || '', cf.parentLocation || '', cf.landmark || '',
+        cf.category || '', cf.remarks || ''
       ]);
       const cleanRowsWithHeaders = [headerRow, ...dataRows];
 
-      // Build full areaRows for existing Parent Locations & Secondary Locations
+      // Build areaRows
       const areaHeaders = ['Parent Location', 'Secondary Location'];
       const areaRows = [areaHeaders];
       const customAreas = useMapStore.getState().customAreas || [];
       const allParents = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
-
       allParents.forEach(parent => {
         const subs = CATEGORY_MAP[parent] || [];
         if (subs.length > 0) {
-          subs.forEach(sub => {
-            areaRows.push([parent, sub]);
-          });
+          subs.forEach(sub => areaRows.push([parent, sub]));
         } else {
           areaRows.push([parent, '']);
         }
       });
 
+      // Build landmark rows
       const landmarkRows = currentFeatures
         .filter(f => f.id?.startsWith('landmark-') || f.data?.type === 'Landmark')
         .map(f => {
           const d = f.data || {};
-          const title = d.landmark || d.name || 'Landmark';
           const loc = d.location || 'Surat';
-          const parentLoc = d.parentLocation || d.parent_location || determineParentLocation(loc);
-          const lat = f.position?.lat || f.center?.lat || '';
-          const lng = f.position?.lng || f.center?.lng || '';
           return [
-            f.id || '',
-            title,
-            loc,
-            parentLoc,
-            lat ? String(lat) : '',
-            lng ? String(lng) : '',
+            f.id || '', d.landmark || d.name || 'Landmark',
+            loc, d.parentLocation || d.parent_location || determineParentLocation(loc),
+            f.position?.lat || f.center?.lat || '',
+            f.position?.lng || f.center?.lng || '',
             d.remarks || ''
           ];
         });
 
-      toast('Syncing with Google Sheets…');
+      toast('Updating Google Sheets…');
 
-      // Direct Google Sheets API overwrite if connected via OAuth
+      // Direct Google Sheets API overwrite
       if (spreadsheetId) {
         try {
           const currentPolygons = currentFeatures.filter(f => !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark'));
@@ -147,76 +119,82 @@ export default function GoogleSheetsConnect() {
         }
       }
 
-      // Apps Script webhook backup sync
+      // Apps Script webhook backup
       await fetch(DEFAULT_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: 'sync',
-          headers: headerRow,
-          rows: cleanRowsWithHeaders,
-          areaRows: areaRows,
-          landmarkRows,
-          features: cleanFeatures
-        })
+        body: JSON.stringify({ action: 'sync', headers: headerRow, rows: cleanRowsWithHeaders, areaRows, landmarkRows, features: cleanFeatures })
       });
-      
-      toast.success(`Synced ${cleanFeatures.length} properties & ${allParents.length} areas to Google Sheets!`);
+
+      toast.success(`Sheet updated! ${polygonFeatures.length} polygons & ${allParents.length} areas pushed to Google Sheets.`);
       useMapStore.setState({ googleSheetsConnected: true });
-      
-      const newSyncedAreas = [];
-      areaRows.slice(1).forEach(row => {
-        newSyncedAreas.push({ parent: row[0], secondary: row[1] || '' });
-      });
+
+      const newSyncedAreas = areaRows.slice(1).map(row => ({ parent: row[0], secondary: row[1] || '' }));
       useMapStore.setState({ syncedAreas: newSyncedAreas });
-      
-      // Mark all features as synced since they were just pushed to Google Sheets
-      const currentFeaturesLatest = useMapStore.getState().features;
-      useMapStore.getState().setFeatures(
-        currentFeaturesLatest.map(f => ({ ...f, syncStatus: 'synced' }))
-      );
+
+      // Mark all features as synced
+      const latestFeatures = useMapStore.getState().features;
+      useMapStore.getState().setFeatures(latestFeatures.map(f => ({ ...f, syncStatus: 'synced' })));
     } catch (err) {
       console.error(err);
-      toast.error('Failed to sync with Google Sheets: ' + err.message);
+      toast.error('Failed to update Google Sheets: ' + err.message);
     }
-    setIsLoading(false);
+    setIsUpdatingSheet(false);
   };
 
-    useEffect(() => {
-    const handleGlobalSync = () => {
-      if (useMapStore.getState().googleSheetsConnected || spreadsheetId) {
-        syncData();
-      }
-    };
+  // Wire "Save" button in PropertyInfoPanel to trigger updateSheet
+  useEffect(() => {
+    const handleGlobalSync = () => updateSheet();
     window.addEventListener('trigger-global-sync', handleGlobalSync);
     return () => window.removeEventListener('trigger-global-sync', handleGlobalSync);
   });
 
+  const btnBase = {
+    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+    padding: '9px 6px', borderRadius: 10, fontSize: 12, fontWeight: 600,
+    transition: 'all 0.2s', whiteSpace: 'nowrap', cursor: 'pointer', border: '1px solid'
+  };
+
   return (
-    <button
-      onClick={syncData}
-      disabled={isLoading}
-      className="btn-hover-effect"
-      style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        padding: '9px 6px', 
-        background: isDark ? 'rgba(34, 197, 94, 0.08)' : '#f0fdf4',
-        color: '#4ade80', 
-        border: '1px solid rgba(34, 197, 94, 0.35)',
-        borderRadius: 10, fontSize: 12, fontWeight: 600, 
-        cursor: isLoading ? 'not-allowed' : 'pointer', 
-        transition: 'all 0.2s',
-        opacity: isLoading ? 0.7 : 1,
-        whiteSpace: 'nowrap'
-      }}
-    >
-      {isLoading ? (
-        <FiRefreshCw size={13} className="spin" />
-      ) : (
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px rgba(34, 197, 94, 0.6)', flexShrink: 0 }} />
-      )}
-      {isLoading ? 'Syncing...' : 'Sheets Connected'}
-    </button>
+    <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+      {/* Update Map — Sheet → Map */}
+      <button
+        onClick={updateMap}
+        disabled={isUpdatingMap || isUpdatingSheet}
+        className="btn-hover-effect"
+        title="Pull latest changes from Google Sheets into the Map"
+        style={{
+          ...btnBase,
+          background: isDark ? 'rgba(99, 102, 241, 0.1)' : '#eef2ff',
+          color: '#818cf8',
+          borderColor: 'rgba(99, 102, 241, 0.35)',
+          opacity: (isUpdatingMap || isUpdatingSheet) ? 0.7 : 1,
+          cursor: (isUpdatingMap || isUpdatingSheet) ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {isUpdatingMap ? <FiRefreshCw size={12} className="spin" /> : <FiDownload size={12} />}
+        {isUpdatingMap ? 'Updating...' : 'Update Map'}
+      </button>
+
+      {/* Update Sheet — Map → Sheet */}
+      <button
+        onClick={updateSheet}
+        disabled={isUpdatingMap || isUpdatingSheet}
+        className="btn-hover-effect"
+        title="Push all Map changes to Google Sheets"
+        style={{
+          ...btnBase,
+          background: isDark ? 'rgba(34, 197, 94, 0.08)' : '#f0fdf4',
+          color: '#4ade80',
+          borderColor: 'rgba(34, 197, 94, 0.35)',
+          opacity: (isUpdatingMap || isUpdatingSheet) ? 0.7 : 1,
+          cursor: (isUpdatingMap || isUpdatingSheet) ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {isUpdatingSheet ? <FiRefreshCw size={12} className="spin" /> : <FiUpload size={12} />}
+        {isUpdatingSheet ? 'Updating...' : 'Update Sheet'}
+      </button>
+    </div>
   );
 }

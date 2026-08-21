@@ -185,6 +185,10 @@ export default function PropertyInfoPanel() {
 
   if (!displayFeature) return null;
 
+  // Landmarks have their own UI — don't show the polygon Property Info panel for them
+  const isLandmarkFeature = displayFeature.id?.startsWith('landmark-') || displayFeature.data?.type === 'Landmark';
+  if (isLandmarkFeature) return null;
+
   const isEdit = appMode === 'edit';
   const matchBadge = getMatchBadge(displayFeature);
 
