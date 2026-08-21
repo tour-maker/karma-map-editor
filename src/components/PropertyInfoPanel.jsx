@@ -132,6 +132,7 @@ export default function PropertyInfoPanel() {
   const customAreas = useMapStore(state => state.customAreas) || [];
   const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
   const allSecondaryLocations = Array.from(new Set(Object.values(CATEGORY_MAP).flat())).filter(Boolean).sort();
+  const allLandmarks = Array.from(new Set(features.map(f => f.data?.landmark || f.landmark).filter(Boolean))).sort();
 
   const feature = features.find(f => f.id === selectedFeatureId);
   const [cachedFeature, setCachedFeature] = useState(null);
@@ -702,16 +703,11 @@ export default function PropertyInfoPanel() {
 
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Landmark</label>
-            <input
-              type="text"
+            <SearchableSelect
               value={formData.landmark}
-              onChange={(e) => handleChange('landmark', e.target.value)}
+              options={allLandmarks}
+              onChange={(val) => handleChange('landmark', val)}
               disabled={!isEdit}
-              style={{
-                width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                outline: 'none', boxSizing: 'border-box'
-              }}
             />
           </div>
 
