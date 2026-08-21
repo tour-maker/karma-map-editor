@@ -754,17 +754,32 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       }
     }
 
-    const updatedFeatures = currentFeatures.map(f => {
+    let deleteCount = 0;
+    const updatedFeatures = currentFeatures.filter(f => {
       const d = f.data || {};
-      
       const lookupTp = d.tp != null ? String(d.tp).trim() : '';
       const lookupFp = d.fp != null ? String(d.fp).trim() : '';
-      
       let sheetMatch = sheetMap.get(`id:${f.id}`);
       if (!sheetMatch && (lookupTp || lookupFp)) {
         sheetMatch = sheetMap.get(`tpfp:${lookupTp}_${lookupFp}`);
       }
-      
+      if (!sheetMatch) {
+        if (f.syncStatus === 'synced') {
+          console.log(`Removing deleted feature: ${f.id}`);
+          deleteCount++;
+          return false;
+        }
+        return true;
+      }
+      return true;
+    }).map(f => {
+      const d = f.data || {};
+      const lookupTp = d.tp != null ? String(d.tp).trim() : '';
+      const lookupFp = d.fp != null ? String(d.fp).trim() : '';
+      let sheetMatch = sheetMap.get(`id:${f.id}`);
+      if (!sheetMatch && (lookupTp || lookupFp)) {
+        sheetMatch = sheetMap.get(`tpfp:${lookupTp}_${lookupFp}`);
+      }
       if (!sheetMatch) return f;
       
       const isLandmarkType = f.id?.startsWith('landmark-') || d.type === 'Landmark';
@@ -782,6 +797,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
           updateCount++;
           return {
             ...f,
+            syncStatus: 'synced',
             data: {
               ...d,
               name: sheetMatch.name || localName,
@@ -817,6 +833,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
           const newColor = getPropertyTypeColor(newType);
           return {
             ...f,
+            syncStatus: 'synced',
             data: {
               ...d,
               tp: sheetMatch.tp || localTp,
@@ -837,14 +854,18 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
           };
         }
       }
+      if (f.syncStatus !== 'synced') {
+        updateCount++;
+        return { ...f, syncStatus: 'synced' };
+      }
       return f;
     });
 
-    if (updateCount > 0) {
+    if (updateCount > 0 || deleteCount > 0) {
       useMapStore.getState().setFeatures(updatedFeatures);
     }
 
-    return updateCount;
+    return updateCount + deleteCount;
   } catch (err) {
     console.error('Failed to sync Google Sheets updates to Map Editor:', err);
     return 0;

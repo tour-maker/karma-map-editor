@@ -160,6 +160,12 @@ export default function GoogleSheetsConnect() {
       
       toast.success(`Synced ${cleanFeatures.length} properties & ${allParents.length} areas to Google Sheets!`);
       useMapStore.setState({ googleSheetsConnected: true });
+      
+      // Mark all features as synced since they were just pushed to Google Sheets
+      const currentFeaturesLatest = useMapStore.getState().features;
+      useMapStore.getState().setFeatures(
+        currentFeaturesLatest.map(f => ({ ...f, syncStatus: 'synced' }))
+      );
     } catch (err) {
       console.error(err);
       toast.error('Failed to sync with Google Sheets: ' + err.message);
