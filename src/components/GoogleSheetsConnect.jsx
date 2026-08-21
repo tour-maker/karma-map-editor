@@ -161,6 +161,12 @@ export default function GoogleSheetsConnect() {
       toast.success(`Synced ${cleanFeatures.length} properties & ${allParents.length} areas to Google Sheets!`);
       useMapStore.setState({ googleSheetsConnected: true });
       
+      const newSyncedAreas = [];
+      areaRows.slice(1).forEach(row => {
+        newSyncedAreas.push({ parent: row[0], secondary: row[1] || '' });
+      });
+      useMapStore.setState({ syncedAreas: newSyncedAreas });
+      
       // Mark all features as synced since they were just pushed to Google Sheets
       const currentFeaturesLatest = useMapStore.getState().features;
       useMapStore.getState().setFeatures(

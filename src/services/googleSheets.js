@@ -666,6 +666,21 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         }
         const store = useMapStore.getState();
         const { CATEGORY_MAP } = await import('../config/categories.js');
+        const syncedAreas = store.syncedAreas || [];
+        
+        // 1. Delete areas that were synced but missing from sheet
+        syncedAreas.forEach(({ parent, secondary }) => {
+          if (!loadedAreasMap[parent]) {
+            delete CATEGORY_MAP[parent];
+            useMapStore.setState(state => ({ customAreas: (state.customAreas || []).filter(a => a !== parent) }));
+          } else if (secondary && !loadedAreasMap[parent].includes(secondary)) {
+            if (CATEGORY_MAP[parent]) {
+               CATEGORY_MAP[parent] = CATEGORY_MAP[parent].filter(s => s !== secondary);
+            }
+          }
+        });
+
+        // 2. Add areas from sheet
         Object.entries(loadedAreasMap).forEach(([pName, sList]) => {
           store.addCustomArea(pName);
           if (!CATEGORY_MAP[pName]) {
@@ -674,6 +689,14 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
             CATEGORY_MAP[pName] = Array.from(new Set([...(CATEGORY_MAP[pName] || []), ...sList]));
           }
         });
+        
+        // 3. Update syncedAreas to match exactly what we fetched
+        const newSyncedAreas = [];
+        Object.entries(loadedAreasMap).forEach(([pName, sList]) => {
+           if (sList.length === 0) newSyncedAreas.push({ parent: pName, secondary: '' });
+           else sList.forEach(s => newSyncedAreas.push({ parent: pName, secondary: s }));
+        });
+        useMapStore.setState({ syncedAreas: newSyncedAreas });
       } catch (err) {
         console.warn('Failed to parse areas:', err);
       }

@@ -22,6 +22,7 @@ export const useMapStore = create(
         filterType: null,
         globalAreaUnit: 'yards',
         customAreas: [],
+        syncedAreas: [],
 
         addCustomArea: (areaName) => set((state) => {
           const name = areaName?.trim();
