@@ -769,9 +769,9 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const localLoc = String(d.location || '').trim();
         const localRemarks = String(d.remarks || '').trim();
         
-        const nameChanged = sheetMatch.name !== localName;
-        const locChanged = sheetMatch.location !== localLoc;
-        const remarksChanged = sheetMatch.remarks !== localRemarks;
+        const nameChanged = sheetMatch.name && sheetMatch.name !== localName;
+        const locChanged = sheetMatch.location && sheetMatch.location !== localLoc;
+        const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== localRemarks;
         
         if (nameChanged || locChanged || remarksChanged) {
           updateCount++;
@@ -779,11 +779,11 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
             ...f,
             data: {
               ...d,
-              name: sheetMatch.name,
-              landmark: sheetMatch.name,
-              location: sheetMatch.location,
-              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location),
-              remarks: sheetMatch.remarks
+              name: sheetMatch.name || localName,
+              landmark: sheetMatch.name || localName,
+              location: sheetMatch.location || localLoc,
+              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || localLoc),
+              remarks: sheetMatch.remarks || localRemarks
             }
           };
         }
@@ -797,14 +797,14 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const localType = String(d.type || '').trim();
         const localRemarks = String(d.remarks || '').trim();
 
-        const tpChanged = sheetMatch.tp !== localTp;
-        const opChanged = sheetMatch.op !== localOp;
-        const fpChanged = sheetMatch.fp !== localFp;
-        const areaChanged = sheetMatch.area !== localArea;
-        const locChanged = sheetMatch.location !== localLoc;
-        const landmarkChanged = sheetMatch.landmark !== localLandmark;
-        const typeChanged = sheetMatch.type !== localType;
-        const remarksChanged = sheetMatch.remarks !== localRemarks;
+        const tpChanged = sheetMatch.tp && sheetMatch.tp !== localTp;
+        const opChanged = sheetMatch.op && sheetMatch.op !== localOp;
+        const fpChanged = sheetMatch.fp && sheetMatch.fp !== localFp;
+        const areaChanged = sheetMatch.area && sheetMatch.area !== localArea;
+        const locChanged = sheetMatch.location && sheetMatch.location !== localLoc;
+        const landmarkChanged = sheetMatch.landmark && sheetMatch.landmark !== localLandmark;
+        const typeChanged = sheetMatch.type && sheetMatch.type !== localType;
+        const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== localRemarks;
 
         if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged) {
           updateCount++;
@@ -814,15 +814,15 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
             ...f,
             data: {
               ...d,
-              tp: sheetMatch.tp,
-              op: sheetMatch.op,
-              fp: sheetMatch.fp,
-              area: sheetMatch.area,
-              location: sheetMatch.location,
-              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location),
-              landmark: sheetMatch.landmark,
+              tp: sheetMatch.tp || localTp,
+              op: sheetMatch.op || localOp,
+              fp: sheetMatch.fp || localFp,
+              area: sheetMatch.area || localArea,
+              location: sheetMatch.location || localLoc,
+              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || localLoc),
+              landmark: sheetMatch.landmark || localLandmark,
               type: newType,
-              remarks: sheetMatch.remarks
+              remarks: sheetMatch.remarks || localRemarks
             },
             style: {
               ...f.style,

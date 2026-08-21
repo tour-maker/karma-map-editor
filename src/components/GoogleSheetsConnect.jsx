@@ -47,7 +47,7 @@ export default function GoogleSheetsConnect() {
         const fpVal = d.fp || f.fp || '';
         const areaVal = d.area != null ? d.area : (f.area != null ? f.area : '');
         const landmarkVal = d.landmark || f.landmark || '';
-        const typeVal = d.type || f.type || '';
+        const typeVal = d.type || '';
         const remarksVal = d.remarks || f.remarks || '';
 
         return {
