@@ -56,7 +56,7 @@ export const setAccessToken = (token) => {
   accessToken = token;
 };
 
-const sheetsFetch = async (url, options = {}) => {
+export const sheetsFetch = async (url, options = {}) => {
   if (!accessToken) throw new Error('Not authenticated');
   const headers = {
     'Authorization': `Bearer ${accessToken}`,
@@ -227,14 +227,14 @@ export const syncLandmarkToSheet = async (landmarkFeature, spreadsheetId = null,
             }
           } else if (action === 'update' || action === 'edit') {
             if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `landmarks!A${targetRowIndex}:J${targetRowIndex}`, landmarkSheetRow);
+              await updateSheetRow(spreadsheetId, `landmarks!A${targetRowIndex}:J${targetRowIndex}`, [landmarkSheetRow]);
             } else {
               await appendSheetRow(spreadsheetId, 'landmarks!A:J', landmarkSheetRow);
             }
           } else {
             // Action is 'create' / 'add'
             if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `landmarks!A${targetRowIndex}:J${targetRowIndex}`, landmarkSheetRow);
+              await updateSheetRow(spreadsheetId, `landmarks!A${targetRowIndex}:J${targetRowIndex}`, [landmarkSheetRow]);
             } else {
               await appendSheetRow(spreadsheetId, 'landmarks!A:J', landmarkSheetRow);
             }
@@ -312,7 +312,7 @@ export const ensureSheetTabExists = async (spreadsheetId, title = 'Areas', heade
 
       if (headers && headers.length > 0) {
         const lastColChar = String.fromCharCode(64 + headers.length);
-        await updateSheetRow(spreadsheetId, `${title}!A1:${lastColChar}1`, headers);
+        await updateSheetRow(spreadsheetId, `${title}!A1:${lastColChar}1`, [headers]);
       }
     }
   } catch (err) {
@@ -428,7 +428,7 @@ export const repairSheet1Headers = async (spreadsheetId, sheetName = 'Polygons')
       (currentHeaderRow[0] && String(currentHeaderRow[0]).trim().toLowerCase() === 'id' && currentHeaderRow[1] && String(currentHeaderRow[1]).trim().toLowerCase() === 'id');
 
     if (isCorrupted) {
-      await updateSheetRow(spreadsheetId, `${sheetName}!A1:J1`, correctHeaders);
+      await updateSheetRow(spreadsheetId, `${sheetName}!A1:J1`, [correctHeaders]);
     }
   } catch (err) {
     console.warn(`Failed to check/repair ${sheetName} headers:`, err);
@@ -524,13 +524,13 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
           } else if (action === 'update' || action === 'edit' || action === 'save') {
             if (targetRowIndex > 1) {
               // Update ONLY the specific matched row
-              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:J${targetRowIndex}`, cleanRow);
+              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:J${targetRowIndex}`, [cleanRow]);
             } else {
               console.warn(`[syncFeatureToSheet] No matching row found in Google Sheet for polygon id="${feature.id}" (TP: ${tpVal}, FP: ${fpVal}). Skipping update to avoid creating new rows or overwriting unrelated polygons.`);
             }
           } else if (action === 'create' || action === 'add') {
             if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:J${targetRowIndex}`, cleanRow);
+              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:J${targetRowIndex}`, [cleanRow]);
             } else {
               await appendSheetRow(spreadsheetId, 'Polygons!A:J', cleanRow);
             }
@@ -851,6 +851,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== localRemarks;
 
         if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged) {
+          if (f.syncStatus === 'edited') return f;
           updateCount++;
           const newType = sheetMatch.type || localType;
           const newColor = getPropertyTypeColor(newType);

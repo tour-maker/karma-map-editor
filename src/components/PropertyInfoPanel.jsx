@@ -246,7 +246,8 @@ export default function PropertyInfoPanel() {
 
     updateFeature(displayFeature.id, {
       data: updatedData,
-      style: updatedStyle
+      style: updatedStyle,
+      syncStatus: 'edited'
     });
 
     try {
@@ -256,6 +257,7 @@ export default function PropertyInfoPanel() {
         style: updatedStyle
       };
       await syncFeatureToSheet(spreadsheetId || 'default', updatedFeature, 'update');
+      updateFeature(displayFeature.id, { syncStatus: 'synced' });
       toast.success('Saved property changes!');
     } catch (err) {
       console.error(err);
