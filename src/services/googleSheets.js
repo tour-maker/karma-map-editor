@@ -715,7 +715,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       };
 
       if (id) sheetMap.set(`id:${id}`, rowData);
-      if (tp && fp) sheetMap.set(`tpfp:${tp}_${fp}`, rowData);
+      if (tp || fp) sheetMap.set(`tpfp:${tp}_${fp}`, rowData);
     }
 
     // Process Landmarks (7 columns)
@@ -751,56 +751,78 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
 
     const updatedFeatures = currentFeatures.map(f => {
       const d = f.data || {};
-      const sheetMatch = sheetMap.get(`id:${f.id}`) || sheetMap.get(`tpfp:${d.tp}_${d.fp}`);
+      
+      const lookupTp = d.tp != null ? String(d.tp).trim() : '';
+      const lookupFp = d.fp != null ? String(d.fp).trim() : '';
+      
+      let sheetMatch = sheetMap.get(`id:${f.id}`);
+      if (!sheetMatch && (lookupTp || lookupFp)) {
+        sheetMatch = sheetMap.get(`tpfp:${lookupTp}_${lookupFp}`);
+      }
+      
       if (!sheetMatch) return f;
       
       const isLandmarkType = f.id?.startsWith('landmark-') || d.type === 'Landmark';
 
       if (isLandmarkType) {
-        const nameChanged = sheetMatch.name && sheetMatch.name !== (d.name || d.landmark || '');
-        const locChanged = sheetMatch.location && sheetMatch.location !== (d.location || '');
-        const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== (d.remarks || '');
+        const localName = String(d.name || d.landmark || '').trim();
+        const localLoc = String(d.location || '').trim();
+        const localRemarks = String(d.remarks || '').trim();
+        
+        const nameChanged = sheetMatch.name !== localName;
+        const locChanged = sheetMatch.location !== localLoc;
+        const remarksChanged = sheetMatch.remarks !== localRemarks;
+        
         if (nameChanged || locChanged || remarksChanged) {
           updateCount++;
           return {
             ...f,
             data: {
               ...d,
-              name: sheetMatch.name || d.name || d.landmark || '',
-              landmark: sheetMatch.name || d.landmark || d.name || '',
-              location: sheetMatch.location || d.location || '',
-              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || d.location),
-              remarks: sheetMatch.remarks || d.remarks || ''
+              name: sheetMatch.name,
+              landmark: sheetMatch.name,
+              location: sheetMatch.location,
+              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location),
+              remarks: sheetMatch.remarks
             }
           };
         }
       } else {
-        const tpChanged = sheetMatch.tp && sheetMatch.tp !== (d.tp || '');
-        const opChanged = sheetMatch.op && sheetMatch.op !== (d.op || '');
-        const fpChanged = sheetMatch.fp && sheetMatch.fp !== (d.fp || '');
-        const areaChanged = sheetMatch.area && String(sheetMatch.area) !== String(d.area || '');
-        const locChanged = sheetMatch.location && sheetMatch.location !== (d.location || '');
-        const landmarkChanged = sheetMatch.landmark && sheetMatch.landmark !== (d.landmark || '');
-        const typeChanged = sheetMatch.type && sheetMatch.type !== (d.type || '');
-        const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== (d.remarks || '');
+        const localTp = String(d.tp || '').trim();
+        const localOp = String(d.op || '').trim();
+        const localFp = String(d.fp || '').trim();
+        const localArea = String(d.area || '').trim();
+        const localLoc = String(d.location || '').trim();
+        const localLandmark = String(d.landmark || '').trim();
+        const localType = String(d.type || '').trim();
+        const localRemarks = String(d.remarks || '').trim();
+
+        const tpChanged = sheetMatch.tp !== localTp;
+        const opChanged = sheetMatch.op !== localOp;
+        const fpChanged = sheetMatch.fp !== localFp;
+        const areaChanged = sheetMatch.area !== localArea;
+        const locChanged = sheetMatch.location !== localLoc;
+        const landmarkChanged = sheetMatch.landmark !== localLandmark;
+        const typeChanged = sheetMatch.type !== localType;
+        const remarksChanged = sheetMatch.remarks !== localRemarks;
 
         if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged) {
           updateCount++;
-          const newType = sheetMatch.type || d.type;
+          const newType = sheetMatch.type || localType;
           const newColor = getPropertyTypeColor(newType);
           return {
             ...f,
             data: {
               ...d,
-              tp: sheetMatch.tp || d.tp || '',
-              op: sheetMatch.op || d.op || '',
-              fp: sheetMatch.fp || d.fp || '',
-              area: sheetMatch.area || d.area || '',
-              location: sheetMatch.location || d.location || '',
-              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || d.location),
-              landmark: sheetMatch.landmark || d.landmark || '',
-              type: newType || '',
-              remarks: sheetMatch.remarks || d.remarks || ''
+              tp: sheetMatch.tp,
+              op: sheetMatch.op,
+              fp: sheetMatch.fp,
+              area: sheetMatch.area,
+              location: sheetMatch.location,
+              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location),
+              landmark: sheetMatch.landmark,
+              type: newType,
+              remarks: sheetMatch.remarks
             },
             style: {
               ...f.style,
