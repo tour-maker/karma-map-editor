@@ -1,5 +1,4 @@
 import React from 'react';
-import { FiRefreshCw } from 'react-icons/fi';
 
 export default function HelpInstructionOverlay({ onClose }) {
   return (
@@ -20,7 +19,6 @@ export default function HelpInstructionOverlay({ onClose }) {
         animation: 'fadeInOverlay 0.25s ease-out'
       }}
     >
-      {/* Keyframe style for fade in and pulse */}
       <style>{`
         @keyframes fadeInOverlay {
           from { opacity: 0; }
@@ -35,12 +33,9 @@ export default function HelpInstructionOverlay({ onClose }) {
         }
       `}</style>
 
-      {/* CENTER DISMISS BUTTON ("Close Instruction ❌" - RESTORED TO ORIGINAL SIZE) */}
+      {/* CENTER DISMISS BUTTON */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
         style={{
           position: 'absolute',
           top: '50%',
@@ -60,203 +55,160 @@ export default function HelpInstructionOverlay({ onClose }) {
           boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.2)',
           backdropFilter: 'blur(16px)',
           zIndex: 100000,
-          transition: 'all 0.2s ease'
         }}
         onMouseEnter={(e) => e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.05)'}
         onMouseLeave={(e) => e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)'}
       >
-        <span>Close Instruction</span>
+        <span>Close Instructions</span>
         <span style={{
-          background: '#ef4444',
-          color: '#ffffff',
-          borderRadius: '50%',
-          width: 22,
-          height: 22,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 12,
-          fontWeight: 900
-        }}>
-          ✕
-        </span>
+          background: '#ef4444', color: '#ffffff', borderRadius: '50%',
+          width: 22, height: 22, display: 'inline-flex', alignItems: 'center',
+          justifyContent: 'center', fontSize: 12, fontWeight: 900
+        }}>✕</span>
       </button>
 
-      {/* LEFT SIDEBAR DIRECTORY CALLOUT */}
+      {/* TOP RIGHT: EDIT / VIEWER MODE TOGGLE */}
       <div style={{
-        position: 'absolute',
-        top: 140,
-        left: 412,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }}>
-        <div style={{ fontSize: 22, color: '#ffffff' }}>←</div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Project Directory</span>
-          <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>
-            Browse all 307+ properties, TP/OP/FP numbers & area details.
-          </span>
-        </div>
-      </div>
-
-      {/* TOP RIGHT: MODE TOGGLE (EDIT / VIEWER) */}
-      <div style={{
-        position: 'absolute',
-        top: 60,
-        right: 40,
-        textAlign: 'right',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end'
+        position: 'absolute', top: 60, right: 40,
+        textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end'
       }}>
         <div style={{ fontSize: 18, color: '#ffffff', marginBottom: 2 }}>↑</div>
         <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Switch Mode</span>
         <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 180, lineHeight: 1.35 }}>
-          Switch between Edit & Viewer modes
+          Toggle between Edit (draw/modify polygons) and Viewer (read-only) modes
         </span>
       </div>
 
-      {/* RIGHT ACTION DOCK: SHARE BUTTON */}
+      {/* LEFT SIDEBAR: TABS — Projects / Landmarks / Area */}
       <div style={{
-        position: 'absolute',
-        top: 'calc(38% - 5px)',
-        right: 50,
-        textAlign: 'right',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8
+        position: 'absolute', top: 120, left: 242,
+        display: 'flex', alignItems: 'flex-start', gap: 10
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Sidebar Tabs</span>
+          <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>
+            <b style={{ color: '#f59e0b' }}>Projects</b> — all drawn polygons<br />
+            <b style={{ color: '#f59e0b' }}>Landmarks</b> — named pins on the map<br />
+            <b style={{ color: '#f59e0b' }}>Area</b> — browse by location group
+          </span>
+        </div>
+        <div style={{ fontSize: 22, color: '#ffffff', marginTop: 4 }}>←</div>
+      </div>
+
+      {/* LEFT SIDEBAR: UPDATE MAP / UPDATE SHEET BUTTONS */}
+      <div style={{
+        position: 'absolute', top: 182, left: 242,
+        display: 'flex', alignItems: 'flex-start', gap: 10
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#4ade80' }}>↙ Update Map</span>
+          <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 210, lineHeight: 1.35 }}>
+            Pulls the latest data & polygon shapes from Google Sheets onto the map
+          </span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#60a5fa', marginTop: 6 }}>↙ Update Sheet</span>
+          <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 210, lineHeight: 1.35 }}>
+            Pushes all current map polygons, landmarks & areas to Google Sheets
+          </span>
+        </div>
+      </div>
+
+      {/* LEFT SIDEBAR: Add Area / Add Project button */}
+      <div style={{
+        position: 'absolute', top: 155, left: 242,
+        display: 'flex', alignItems: 'center', gap: 8
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: 13, color: '#cbd5e1', maxWidth: 200, lineHeight: 1.35 }}>
+            ↙ Add a new project or custom area location
+          </span>
+        </div>
+      </div>
+
+      {/* RIGHT DOCK: SHARE */}
+      <div style={{
+        position: 'absolute', top: 'calc(38% - 5px)', right: 50,
+        textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Share</span>
           <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 210, lineHeight: 1.35, textAlign: 'right' }}>
-            via WhatsApp, Facebook, Email, or copy the link.
+            Share via WhatsApp, copy link, etc.
           </span>
         </div>
-        <div style={{ fontSize: 20, color: '#ffffff', marginLeft: 4 }}>→</div>
+        <div style={{ fontSize: 20, color: '#ffffff' }}>→</div>
       </div>
 
-      {/* RIGHT ACTION DOCK: SETTINGS / OPTIONS PANEL */}
+      {/* RIGHT DOCK: SETTINGS */}
       <div style={{
-        position: 'absolute',
-        top: 'calc(38% + 60px)',
-        right: 50,
-        textAlign: 'right',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8
+        position: 'absolute', top: 'calc(38% + 60px)', right: 50,
+        textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Settings</span>
           <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 190, lineHeight: 1.35, textAlign: 'right' }}>
-            (i.e. full screen, help, music etc)
+            Fullscreen, help, undo/redo, dark/light mode
           </span>
         </div>
-        <div style={{ fontSize: 20, color: '#ffffff', marginLeft: 4 }}>→</div>
+        <div style={{ fontSize: 20, color: '#ffffff' }}>→</div>
       </div>
 
-      {/* 3. WHATSAPP CTA CALLOUT (MOVED UP) */}
+      {/* BOTTOM RIGHT: WHATSAPP CTA */}
       <div style={{
-        position: 'absolute',
-        bottom: 80,
-        right: 80,
-        textAlign: 'right',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8
+        position: 'absolute', bottom: 80, right: 80,
+        textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
           <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Contact Us</span>
           <span style={{ fontSize: 12, color: '#cbd5e1' }}>on WhatsApp</span>
         </div>
-        <div style={{ fontSize: 20, color: '#ffffff', marginLeft: 4 }}>↘</div>
+        <div style={{ fontSize: 20, color: '#ffffff' }}>↘</div>
       </div>
 
-      {/* 1. LANDMARKS CALLOUT (ENLARGED HIGHLIGHT PILL) */}
+      {/* BOTTOM FILTER BAR: LANDMARKS TOGGLE */}
       <div style={{
-        position: 'absolute',
-        bottom: 7,
-        left: 625,
-        transform: 'translateX(-49%)',
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
+        position: 'absolute', bottom: 7, left: 300,
+        textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
       }}>
-        <span style={{ fontSize: 18, fontWeight: 800, color: '#ffffff' }}>Toggle (on/off)</span>
-        <span style={{ fontSize: 13, color: '#cbd5e1', marginBottom: 4, whiteSpace: 'nowrap' }}>near by Landmarks</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff' }}>Toggle Landmarks</span>
+        <span style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 4, whiteSpace: 'nowrap' }}>Show/hide landmark pins on the map</span>
         <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
-        {/* Larger Highlight Dashed Box for Landmarks */}
         <div className="instruction-box-pulse" style={{
-          width: 145,
-          height: 54,
+          width: 130, height: 48,
           border: '2.5px dashed rgba(255, 255, 255, 0.95)',
           borderBottom: 'none',
-          borderRadius: '18px 18px 0 0',
-          marginTop: 4
+          borderRadius: '16px 16px 0 0',
         }} />
       </div>
 
-      {/* BOTTOM FILTER BAR: RESET ALL */}
+      {/* BOTTOM FILTER BAR: LOCATION / AREA FILTERS */}
       <div style={{
-        position: 'absolute',
-        bottom: 72,
-        left: 765,
+        position: 'absolute', bottom: 72, left: '52%',
         transform: 'translateX(-50%)',
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
+        textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
       }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Reset All</span>
-        <span style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 4, whiteSpace: 'nowrap' }}>Reset All Filters in single click</span>
-        <div style={{ fontSize: 18, color: '#ffffff', marginBottom: 6 }}>↓</div>
-        {/* Replica Reset All Pill Button */}
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.95)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(245, 158, 11, 0.6)',
-          borderRadius: '8px 8px 14px 14px',
-          padding: '6px 14px',
-          color: '#f8fafc',
-          fontSize: 12.5,
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6), 0 0 12px rgba(245, 158, 11, 0.25)',
-          whiteSpace: 'nowrap'
-        }}>
-          <FiRefreshCw size={12} color="#f59e0b" /> Reset All
-        </div>
-      </div>
-
-      {/* BOTTOM CENTER: FILTER BAR */}
-      <div style={{
-        position: 'absolute',
-        bottom: 80,
-        left: 'calc(50% + 140px)',
-        transform: 'translateX(-50%)',
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-      }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Filter</span>
-        <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 280, lineHeight: 1.35, margin: '2px 0 6px 0' }}>
-          Quickly find properties using filters like Sq. Yard/Wingha , Category, Area.
+        <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Filters</span>
+        <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 340, lineHeight: 1.35, margin: '2px 0 6px 0' }}>
+          Filter properties by Location, Area unit (Sq. Yard / Wingha), and Category
         </span>
-        {/* Downward Arrow */}
         <div style={{ fontSize: 18, color: '#ffffff', marginBottom: 4 }}>↓</div>
-        {/* Dashed Horizontal Range Line across FilterBar */}
         <div style={{
-          width: 490,
-          borderBottom: '2px dashed rgba(255, 255, 255, 0.75)',
-          position: 'relative'
+          width: 460, borderBottom: '2px dashed rgba(255, 255, 255, 0.75)', position: 'relative'
         }}>
           <span style={{ position: 'absolute', left: -4, top: -5, fontSize: 10, color: '#fff' }}>◄</span>
           <span style={{ position: 'absolute', right: -4, top: -5, fontSize: 10, color: '#fff' }}>►</span>
         </div>
+      </div>
+
+      {/* BOTTOM FILTER BAR: PROPERTY COUNT */}
+      <div style={{
+        position: 'absolute', bottom: 72, right: 160,
+        textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end'
+      }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: '#f59e0b' }}>Properties Found</span>
+        <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 160, lineHeight: 1.35 }}>
+          Live count of polygons matching your current filters
+        </span>
+        <div style={{ fontSize: 18, color: '#ffffff' }}>↓</div>
       </div>
 
     </div>

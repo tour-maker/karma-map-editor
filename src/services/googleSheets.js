@@ -464,7 +464,8 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       parentLoc,
       landmarkVal,
       typeVal,
-      remarksVal
+      remarksVal,
+      feature.coordinates && feature.coordinates.length > 0 ? JSON.stringify(feature.coordinates) : ''
     ];
 
     let targetRowIndex = -1;
@@ -562,7 +563,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 };
 
 export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], range = 'Polygons') => {
-  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks'];
+  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'Landmark Nearby', 'type', 'remarks', 'coordinates'];
   
   const polygonFeatures = features.filter(f => !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark'));
 
@@ -581,7 +582,8 @@ export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], r
         parentLoc || '',
         d.landmark || '',
         d.type || '',
-        d.remarks || ''
+        d.remarks || '',
+        f.coordinates && f.coordinates.length > 0 ? JSON.stringify(f.coordinates) : ''
       ];
     })
   ];
@@ -608,6 +610,31 @@ export const overwriteAreasSheet = async (spreadsheetId, areaRows = []) => {
     await updateSheetRow(spreadsheetId, `Areas!A1:B${areaRows.length}`, areaRows);
   } catch (err) {
     console.warn('Direct Google Sheets API overwrite for Areas failed:', err);
+  }
+};
+
+export const overwriteLandmarksSheet = async (spreadsheetId, landmarkRows = []) => {
+  if (!accessToken || !spreadsheetId || spreadsheetId === 'default' || landmarkRows.length === 0) return;
+
+  const headers = ['id', 'Landmark Name', 'Location', 'Parent Location', 'Latitude', 'Longitude', 'Remarks'];
+  const rows = [headers, ...landmarkRows];
+  const range = 'Landmarks';
+
+  try {
+    await ensureSheetTabExists(spreadsheetId, 'Landmarks', headers);
+    await clearSheetData(spreadsheetId, 'Landmarks!A:Z');
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+    await sheetsFetch(url, {
+      method: 'PUT',
+      body: JSON.stringify({
+        range,
+        majorDimension: 'ROWS',
+        values: rows,
+      }),
+    });
+  } catch (err) {
+    console.warn('Direct Google Sheets API overwrite for Landmarks failed:', err);
   }
 };
 
@@ -715,9 +742,10 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     const areaIdx = !isCorruptedHeaders && rawHeaders.indexOf('area') >= 0 ? rawHeaders.indexOf('area') : 4;
     const locIdx = !isCorruptedHeaders && rawHeaders.indexOf('location') >= 0 ? rawHeaders.indexOf('location') : 5;
     const parentLocIdx = !isCorruptedHeaders && (rawHeaders.indexOf('parent location') >= 0 ? rawHeaders.indexOf('parent location') : rawHeaders.indexOf('parent_location')) >= 0 ? (rawHeaders.indexOf('parent location') >= 0 ? rawHeaders.indexOf('parent location') : rawHeaders.indexOf('parent_location')) : 6;
-    const landmarkIdx = !isCorruptedHeaders && rawHeaders.indexOf('landmark') >= 0 ? rawHeaders.indexOf('landmark') : 7;
+    const landmarkIdx = !isCorruptedHeaders && (rawHeaders.indexOf('landmark nearby') >= 0 ? rawHeaders.indexOf('landmark nearby') : rawHeaders.indexOf('landmark')) >= 0 ? (rawHeaders.indexOf('landmark nearby') >= 0 ? rawHeaders.indexOf('landmark nearby') : rawHeaders.indexOf('landmark')) : 7;
     const catIdx = !isCorruptedHeaders && (rawHeaders.indexOf('category') >= 0 ? rawHeaders.indexOf('category') : rawHeaders.indexOf('type')) >= 0 ? (rawHeaders.indexOf('category') >= 0 ? rawHeaders.indexOf('category') : rawHeaders.indexOf('type')) : 8;
     const remarksIdx = !isCorruptedHeaders && rawHeaders.indexOf('remarks') >= 0 ? rawHeaders.indexOf('remarks') : 9;
+    const coordsIdx = !isCorruptedHeaders && rawHeaders.indexOf('coordinates') >= 0 ? rawHeaders.indexOf('coordinates') : 10;
 
     const sheetMap = new Map();
     for (let i = 1; i < polygonsData.length; i++) {
@@ -734,7 +762,8 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         parentLocation: parentLocIdx >= 0 ? String(row[parentLocIdx] || '').trim() : '',
         landmark: landmarkIdx >= 0 ? String(row[landmarkIdx] || '').trim() : '',
         type: catIdx >= 0 ? String(row[catIdx] || '').trim() : '',
-        remarks: remarksIdx >= 0 ? String(row[remarksIdx] || '').trim() : ''
+        remarks: remarksIdx >= 0 ? String(row[remarksIdx] || '').trim() : '',
+        coordinates: coordsIdx >= 0 ? String(row[coordsIdx] || '').trim() : ''
       };
 
       if (id) sheetMap.set(`id:${id}`, rowData);
@@ -804,6 +833,8 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         sheetMatch = sheetMap.get(`tpfp:${lookupTp}_${lookupFp}`);
       }
       if (!sheetMatch) return f;
+      
+      sheetMatch.processed = true; // Mark as processed
       
       const isLandmarkType = f.id?.startsWith('landmark-') || d.type === 'Landmark';
 
@@ -885,8 +916,56 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       return f;
     });
 
+    const newFeaturesToImport = [];
+    for (const [key, sheetMatch] of sheetMap.entries()) {
+      // Only process the id entries to avoid duplicates from tpfp entries, and only if not processed
+      if (key.startsWith('id:') && !sheetMatch.processed && sheetMatch.coordinates) {
+        try {
+          const parsedCoordinates = JSON.parse(sheetMatch.coordinates);
+          if (Array.isArray(parsedCoordinates) && parsedCoordinates.length >= 3) {
+            const newColor = getPropertyTypeColor(sheetMatch.type || 'Freehold');
+            
+            // Calculate center
+            let bounds = new window.google.maps.LatLngBounds();
+            parsedCoordinates.forEach(c => bounds.extend(new window.google.maps.LatLng(c.lat, c.lng)));
+            const center = { lat: bounds.getCenter().lat(), lng: bounds.getCenter().lng() };
+            
+            newFeaturesToImport.push({
+              id: sheetMatch.id,
+              source: 'drawn',
+              type: 'polygon',
+              coordinates: parsedCoordinates,
+              center,
+              syncStatus: 'synced',
+              data: {
+                tp: sheetMatch.tp,
+                op: sheetMatch.op,
+                fp: sheetMatch.fp,
+                area: sheetMatch.area,
+                location: sheetMatch.location,
+                parentLocation: sheetMatch.parentLocation,
+                landmark: sheetMatch.landmark,
+                type: sheetMatch.type || 'Freehold',
+                remarks: sheetMatch.remarks
+              },
+              style: {
+                fillColor: newColor,
+                fillOpacity: 0.4,
+                strokeColor: newColor,
+                strokeWeight: 2,
+                visible: true
+              }
+            });
+            updateCount++;
+          }
+        } catch (err) {
+          console.warn('Failed to parse coordinates for new feature from sheet:', sheetMatch.id, err);
+        }
+      }
+    }
+
     if (updateCount > 0 || deleteCount > 0) {
-      useMapStore.getState().setFeatures(updatedFeatures);
+      useMapStore.getState().setFeatures([...updatedFeatures, ...newFeaturesToImport]);
     }
 
     return updateCount + deleteCount;

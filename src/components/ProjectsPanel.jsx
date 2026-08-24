@@ -542,6 +542,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               </button>
             )
           )}
+        </div>
+
+        {/* Google Sheets Sync Row */}
+        <div style={{ marginTop: 2, marginBottom: 8 }}>
           <GoogleSheetsConnect />
         </div>
 

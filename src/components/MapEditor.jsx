@@ -4,7 +4,6 @@ import SearchBox from './SearchBox';
 import PolygonDrawingManager from './PolygonDrawingManager';
 import ProjectsPanel from './ProjectsPanel';
 import PropertyInfoPanel from './PropertyInfoPanel';
-import ModeToggle from './ui/ModeToggle';
 import AddLandmarkModal from './AddLandmarkModal';
 import CustomZoomControl from './ui/CustomZoomControl';
 import LocateControl from './ui/LocateControl';
@@ -571,135 +570,8 @@ export default function MapEditor() {
     }
   }, [handleImportKml, handleImportXlsx, setFeatures]);
 
-  const hasAttemptedAutoLoad = useRef(false);
-  useEffect(() => {
-    if (!isLoaded || !map || hasAttemptedAutoLoad.current) return;
-
-    const autoLoadDefaults = async () => {
-      hasAttemptedAutoLoad.current = true;
-      try {
-        toast.loading('Setting up map & linking properties...', { id: 'autoload' });
-
-        const kmlRes = await fetch('/default.kml').catch(() => null);
-        const xlsxRes = await fetch('/default.xlsx').catch(() => null);
-
-        let kmlFeatures = [];
-        let kmlLayersList = [];
-        if (kmlRes?.ok) {
-          const kmlFile = new File([await kmlRes.blob()], 'default.kml');
-          const { layers, polygons, markers } = await importKmlFromFile(kmlFile);
-          kmlFeatures = [...polygons, ...markers];
-          kmlLayersList = layers;
-        }
-
-        if (xlsxRes?.ok && kmlFeatures.length > 0) {
-          const xlsxFile = new File([await xlsxRes.blob()], 'default.xlsx');
-          const excelRes = await importPropertiesFromFile(xlsxFile);
-          const properties = excelRes?.properties || excelRes?.features || [];
-          const unresolved = excelRes?.unresolved || [];
-
-          const pins = properties
-            .filter(f => f.position && Number.isFinite(f.position.lat) && Number.isFinite(f.position.lng))
-            .map(f => ({ id: f.id, position: f.position, tp: f.data?.tp, fp: f.data?.fp, data: f.data }));
-          const identifierOnlyPins = unresolved.map(item => ({
-            id: item.id,
-            tp: item.tp,
-            fp: item.fp,
-            data: item.data
-          }));
-          const allPins = [...pins, ...identifierOnlyPins];
-
-          const kmlPolygons = kmlFeatures.filter(f => f.source === 'kml' && f.type === 'polygon');
-          const polygonCandidates = kmlPolygons
-            .filter(poly => Array.isArray(poly.coordinates) && poly.coordinates.length >= 3)
-            .map(poly => ({ id: poly.id, tp: poly.data?.tp, fp: poly.data?.fp, coordinates: poly.coordinates }));
-
-          const matchResults = matchPropertiesToPolygons(allPins, polygonCandidates, { maxDistanceMeters: 2000 });
-          const pinById = new Map(allPins.map(p => [p.id, p]));
-          const polygonDataMap = new Map();
-
-          matchResults.forEach(result => {
-            if (result.polygonId) {
-              polygonDataMap.set(result.polygonId, {
-                data: pinById.get(result.pinId)?.data,
-                distM: result.distanceMeters ?? 0,
-                tier: result.tier
-              });
-            }
-          });
-
-          const updatedFeatures = kmlFeatures.map(feature => {
-            if (feature.source !== 'kml' || feature.type !== 'polygon') return feature;
-            const match = polygonDataMap.get(feature.id);
-            if (!match) return feature;
-            const d = match.data;
-            return {
-              ...feature,
-              data: {
-                ...feature.data,
-                name: d?.name || feature.data?.name || '',
-                tp: d?.tp || feature.data?.tp || '',
-                op: d?.op || feature.data?.op || '',
-                fp: d?.fp || feature.data?.fp || '',
-                area: d?.area || feature.data?.area || '',
-                location: d?.location || feature.data?.location || '',
-                landmark: d?.landmark || feature.data?.landmark || '',
-                type: d?.type || feature.data?.type || '',
-                remarks: d?.remarks || feature.data?.remarks || '',
-                matchTier: match.tier,
-                matchDistanceMeters: Math.round(match.distM),
-              }
-            };
-          });
-
-          // Keep ONLY mapped features (324 mapped polygons)
-          const mappedOnly = updatedFeatures.filter(feature => {
-            if (feature.source === 'kml') {
-              return Boolean(feature.data?.matchTier);
-            }
-            return true;
-          });
-
-          setFeatures(mappedOnly);
-          setKmlLayers(kmlLayersList);
-
-          if (map && mappedOnly.length > 0) {
-            const bounds = new window.google.maps.LatLngBounds();
-            mappedOnly.forEach(p => {
-              if (p.coordinates) p.coordinates.forEach(c => bounds.extend(c));
-              if (p.center) bounds.extend(p.center);
-              if (p.position) bounds.extend(p.position);
-            });
-            if (!bounds.isEmpty()) {
-              map.fitBounds(bounds);
-            }
-          }
-        } else if (kmlFeatures.length > 0) {
-          setFeatures(kmlFeatures);
-          setKmlLayers(kmlLayersList);
-
-          if (map) {
-            const bounds = new window.google.maps.LatLngBounds();
-            kmlFeatures.forEach(p => {
-              if (p.coordinates) p.coordinates.forEach(c => bounds.extend(c));
-              if (p.center) bounds.extend(p.center);
-              if (p.position) bounds.extend(p.position);
-            });
-            if (!bounds.isEmpty()) {
-              map.fitBounds(bounds);
-            }
-          }
-        }
-
-        toast.success('Map ready — all properties connected!', { id: 'autoload' });
-      } catch (err) {
-        console.error('Failed to auto-load defaults', err);
-        toast.dismiss('autoload');
-      }
-    };
-
-    autoLoadDefaults();
-  }, [isLoaded, map, setFeatures, setKmlLayers]);
+  // Auto-load from Google Sheets is handled by GoogleSheetsConnect on mount.
+  // KML / Excel auto-import has been removed.
 
   const [isPlacingLandmark, setIsPlacingLandmark] = useState(false);
   const [landmarkModalPos, setLandmarkModalPos] = useState(null);
@@ -779,7 +651,6 @@ export default function MapEditor() {
         </div>
       )}
       {isLoaded && <SearchBox onPlaceSelected={handlePlaceSelected} />}
-      <ModeToggle />
 
       {appMode === 'edit' && (
         <ProjectsPanel

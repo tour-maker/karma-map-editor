@@ -270,24 +270,21 @@ export default function PropertyInfoPanel() {
 
     setIsOpen(false);
     setIsSaving(false);
+    
+    // Trigger Map -> Sheet sync
+    window.dispatchEvent(new Event('trigger-update-sheet'));
   };
 
   const handleDelete = async () => {
     if (!displayFeature) return;
 
-    if (googleSheetsConnected && spreadsheetId) {
-      try {
-        await syncFeatureToSheet(spreadsheetId, displayFeature, 'delete');
-        toast.success('Deleted row from Google Sheet');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
     removeFeature(displayFeature.id);
     setIsOpen(false);
     setSelectedFeatureId(null);
-    toast.success('Polygon deleted.');
+    toast.success('Polygon deleted. Syncing to Google Sheets...');
+
+    // Trigger Map -> Sheet sync
+    window.dispatchEvent(new Event('trigger-update-sheet'));
   };
 
   if (!isEdit) {
@@ -708,12 +705,18 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Landmark</label>
-            <SearchableSelect
-              value={formData.landmark}
-              options={allLandmarks}
-              onChange={(val) => handleChange('landmark', val)}
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Landmark nearby</label>
+            <input
+              type="text"
+              value={formData.landmark || ''}
+              onChange={(e) => handleChange('landmark', e.target.value)}
               disabled={!isEdit}
+              placeholder={isEdit ? "Enter nearby landmark" : "-"}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
+                fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
+                outline: 'none', boxSizing: 'border-box'
+              }}
             />
           </div>
 

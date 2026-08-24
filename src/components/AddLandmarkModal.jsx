@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMapStore } from '../store/useMapStore';
 import { determineParentLocation, CATEGORY_MAP } from '../config/categories';
-import { syncFeatureToSheet, syncLandmarkToSheet } from '../services/googleSheets';
+
 import { FiMapPin, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -51,18 +51,13 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
 
     addFeatures([newLandmarkFeature]);
 
-    const spreadsheetId = useMapStore.getState().spreadsheetId;
-
-    try {
-      await syncLandmarkToSheet(newLandmarkFeature, spreadsheetId || 'default');
-    } catch (err) {
-      console.error('Failed to sync landmark to Google Sheets:', err);
-    }
-
     toast.success(`Landmark "${name.trim()}" added successfully!`);
     setIsSaving(false);
     if (onSaved) onSaved(newLandmarkFeature);
     onClose();
+
+    // Trigger Map -> Sheet sync
+    window.dispatchEvent(new Event('trigger-update-sheet'));
   };
 
   return (

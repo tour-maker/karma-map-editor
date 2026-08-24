@@ -409,3 +409,10 @@ body.hide-ui-for-screenshot nav {
   border-color: #3b82f6 !important;
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.35), inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
+/* Hide Google Maps Billing Error Popup */
+.gm-err-container, .gm-err-content, .gm-err-title { display: none !important; }
+.dismissButton { display: none !important; }
+
+/* Aggressive Google Maps Popup Hide */
+div[style*="z-index: 1000000"] { display: none !important; }
+div[style*="z-index: 1000001"] { display: none !important; }

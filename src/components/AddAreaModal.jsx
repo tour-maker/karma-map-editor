@@ -47,6 +47,9 @@ export default function AddAreaModal({ onClose, onSaved }) {
     setIsSaving(false);
     if (onSaved) onSaved(name);
     if (onClose) onClose();
+
+    // Trigger Map -> Sheet sync
+    window.dispatchEvent(new Event('trigger-update-sheet'));
   };
 
   return (
