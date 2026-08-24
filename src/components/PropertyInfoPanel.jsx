@@ -131,7 +131,7 @@ export default function PropertyInfoPanel() {
   const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const customAreas = useMapStore(state => state.customAreas) || [];
   const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
-  const allSecondaryLocations = Array.from(new Set(Object.values(CATEGORY_MAP).flat())).filter(Boolean).sort();
+  const allSecondaryLocations = Array.from(new Set([...Object.values(CATEGORY_MAP).flat(), ...customAreas])).filter(Boolean).sort();
   const allLandmarks = Array.from(new Set(features.map(f => f.data?.landmark || f.landmark).filter(Boolean))).sort();
 
   const feature = features.find(f => f.id === selectedFeatureId);
