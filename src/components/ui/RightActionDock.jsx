@@ -52,7 +52,7 @@ export default function RightActionDock() {
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
     const features = useMapStore.getState().features;
 
-    let text = "Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\nhttps://360eye.in/gallery/realestate/karmagroupland/index.html";
+    let text = "Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/";
 
     if (selectedFeatureId) {
       const feature = features.find(f => f.id === selectedFeatureId);
@@ -60,7 +60,7 @@ export default function RightActionDock() {
         const name = feature.data.name || feature.data.project || '';
         const tpFp = feature.data.tpNo ? ` (TP ${feature.data.tpNo} / FP ${feature.data.fpNo})` : '';
         if (name) {
-          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\nhttps://360eye.in/gallery/realestate/karmagroupland/index.html`;
+          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/`;
         }
       }
     }
@@ -129,7 +129,9 @@ export default function RightActionDock() {
         });
       }
     } else {
-      const generalShareText = `Explore our exclusive Land Project with custom filters like Sq Yard & Wingha. Choose your ideal plot based on category. Take a virtual tour now 👇\nhttps://360eye.in/gallery/realestate/karmagroupland/index.html`;
+      const generalShareText = `Karma Realtors - Exclusive Land Project
+Explore our exclusive Land Project with custom filters like Sq Yard & Wingha. Choose your ideal plot based on category. Take a virtual tour now 👇
+https://karma-map-editor.onrender.com/`;
 
       if (navigator.share) {
         try {
