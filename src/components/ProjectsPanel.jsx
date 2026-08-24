@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu } from 'react-icons/fi';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor } from '../config/categories';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -85,6 +85,7 @@ export function formatProjectDisplayName(feature) {
 
 export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'landmarks'
+  const [isTabDropdownOpen, setIsTabDropdownOpen] = useState(false);
   const appMode = useMapStore(state => state.appMode);
   const features = useMapStore(state => state.features);
   const selectedFeatureId = useMapStore(state => state.selectedFeatureId);
@@ -360,6 +361,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     return rows;
   }, [activeTab, filteredPolygons, filteredLandmarks, filteredAreas, expandedGroups, filterPrimary, filterSecondary]);
 
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const parentRef = useRef(null);
 
   const getItemSize = useCallback((index) => {
@@ -378,7 +380,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   });
 
   return (
-    <div style={sidebarStyle} className="slide-in-left responsive-sidebar projects-panel-container">
+    <>
+    <div style={sidebarStyle} className={`slide-in-left responsive-sidebar projects-panel-container ${isMobileOpen ? 'mobile-open' : ''}`}>
       {/* Header Panel */}
       <div style={{ padding: '14px 14px', borderBottom: `1px solid ${borderColor}`, background: headerBg, display: 'flex', flexDirection: 'column', gap: 12 }}>
 
@@ -392,17 +395,31 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             alt="Karma Realtors Logo"
             style={{ height: 38, maxWidth: 220, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.25))' }}
           />
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: '#f59e0b',
-            background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
-            padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
-          }}>
-            Map Editor
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: '#f59e0b',
+              background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
+              padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
+            }}>
+              Map Editor
+            </span>
+            {isMobileOpen && (
+              <button 
+                onClick={() => setIsMobileOpen(false)}
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', 
+                  color: '#94a3b8', cursor: 'pointer', padding: 6, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                }}
+              >
+                <FiX size={16} />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Navigation Tabs Bar (Underline Indicator Style) */}
-        <div style={{
+        {/* Desktop Navigation Tabs Bar (Horizontal) */}
+        <div className="desktop-tabs-wrapper" style={{
           position: 'relative',
           display: 'flex',
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -491,8 +508,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           </button>
         </div>
 
-        {/* Dynamic Action Button & Google Sheets Button */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        {/* Desktop Action Buttons */}
+        <div className="desktop-tabs-wrapper" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           {activeTab === 'projects' ? (
             appMode === 'edit' && (
               <button
@@ -544,7 +561,163 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           )}
         </div>
 
+        {/* Navigation Tabs Bar (Hamburger Dropdown Style for Landscape Mobile) */}
+        <div className="landscape-hamburger-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center', paddingBottom: 8, gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => setIsTabDropdownOpen(!isTabDropdownOpen)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: 8,
+              padding: '6px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#f8fafc',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <FiMenu size={18} />
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {activeTab === 'projects' && (
+              <>
+                <FiLayers size={15} color="#f59e0b" />
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Projects</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#fde68a', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 7px', borderRadius: 10 }}>{polygons.length}</span>
+              </>
+            )}
+            {activeTab === 'landmarks' && (
+              <>
+                <FiMapPin size={15} color="#f59e0b" />
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Landmarks</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#fde68a', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 7px', borderRadius: 10 }}>{landmarksList.length}</span>
+              </>
+            )}
+            {activeTab === 'areas' && (
+              <>
+                <FiGlobe size={15} color="#f59e0b" />
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Areas</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#fde68a', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 7px', borderRadius: 10 }}>{parentLocationsList.length}</span>
+              </>
+            )}
+          </div>
+          
+          {/* Dynamic Action Button beside tab */}
+          <div style={{ marginLeft: 'auto', display: 'flex' }}>
+            {activeTab === 'projects' && appMode === 'edit' && (
+              <button
+                type="button"
+                onClick={onAddProject}
+                className="btn-hover-effect"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '5px 12px', background: '#f59e0b', color: '#000000', border: 'none',
+                  borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
+                }}
+              >
+                <FiPlus size={13} color="#000000" /> <span className="desktop-only-text">Add</span>
+              </button>
+            )}
+            {activeTab === 'landmarks' && appMode === 'edit' && (
+              <button
+                type="button"
+                onClick={onAddLandmark}
+                className="btn-hover-effect"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '5px 12px', background: 'linear-gradient(135deg, #475569 0%, #334155 100%)', color: '#fff', border: '1px solid #64748b',
+                  borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(71, 85, 105, 0.35)', transition: 'all 0.2s'
+                }}
+              >
+                <FiPlus size={13} /> <span className="desktop-only-text">Add</span>
+              </button>
+            )}
+            {activeTab === 'areas' && appMode === 'edit' && (
+              <button
+                type="button"
+                onClick={() => setIsAddingArea(true)}
+                className="btn-hover-effect"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '5px 12px', background: '#f59e0b', color: '#000000', border: 'none',
+                  borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
+                }}
+              >
+                <FiPlus size={13} color="#000000" /> <span className="desktop-only-text">Add</span>
+              </button>
+            )}
+          </div>
+
+          {isTabDropdownOpen && (
+             <div 
+               className="slide-in-up"
+               style={{
+                  position: 'absolute', top: 40, left: 0, width: 220,
+                  background: 'rgba(15, 23, 42, 0.98)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 12, padding: 8, zIndex: 1100,
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.7)',
+                  display: 'flex', flexDirection: 'column', gap: 4
+             }}>
+                <button
+                  onClick={() => { setActiveTab('projects'); setIsTabDropdownOpen(false); }}
+                  className="btn-hover-effect"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                    background: activeTab === 'projects' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                    border: 'none', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                    color: activeTab === 'projects' ? '#f8fafc' : '#94a3b8'
+                  }}
+                >
+                  <FiLayers size={15} color={activeTab === 'projects' ? '#f59e0b' : '#94a3b8'} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'projects' ? 700 : 500 }}>Projects</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === 'projects' ? '#fde68a' : '#64748b', background: activeTab === 'projects' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 8 }}>{polygons.length}</span>
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('landmarks'); setIsTabDropdownOpen(false); }}
+                  className="btn-hover-effect"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                    background: activeTab === 'landmarks' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                    border: 'none', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                    color: activeTab === 'landmarks' ? '#f8fafc' : '#94a3b8'
+                  }}
+                >
+                  <FiMapPin size={15} color={activeTab === 'landmarks' ? '#f59e0b' : '#94a3b8'} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'landmarks' ? 700 : 500 }}>Landmarks</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === 'landmarks' ? '#fde68a' : '#64748b', background: activeTab === 'landmarks' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 8 }}>{landmarksList.length}</span>
+                </button>
+
+                <button
+                  onClick={() => { setActiveTab('areas'); setIsTabDropdownOpen(false); }}
+                  className="btn-hover-effect"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                    background: activeTab === 'areas' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                    border: 'none', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                    color: activeTab === 'areas' ? '#f8fafc' : '#94a3b8'
+                  }}
+                >
+                  <FiGlobe size={15} color={activeTab === 'areas' ? '#f59e0b' : '#94a3b8'} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'areas' ? 700 : 500 }}>Areas</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === 'areas' ? '#fde68a' : '#64748b', background: activeTab === 'areas' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 8 }}>{parentLocationsList.length}</span>
+                </button>
+             </div>
+          )}
+        </div>
+
         {/* Google Sheets Sync Row */}
+{/* Google Sheets Sync Row */}
+{/* Google Sheets Sync Row */}
         <div style={{ marginTop: 2, marginBottom: 8 }}>
           <GoogleSheetsConnect />
         </div>
@@ -965,6 +1138,30 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           onClose={() => setIsAddingArea(false)}
         />
       )}
+
     </div>
+
+    {/* MOBILE BACKDROP */}
+    {isMobileOpen && (
+      <div 
+        className="mobile-projects-backdrop"
+        onClick={() => setIsMobileOpen(false)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 2199,
+          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)'
+        }}
+      />
+    )}
+
+    {/* MOBILE NOTCH */}
+    <div 
+      className="mobile-projects-dock-bar"
+      onClick={() => setIsMobileOpen(true)}
+    >
+      <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc' }}>
+        dropdown of sidebar
+      </span>
+    </div>
+  </>
   );
 }

@@ -948,10 +948,21 @@ export default function FilterBar() {
             padding: '0 2px'
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b', fontVariantNumeric: 'tabular-nums' }}>
-            {visibleCount}
-          </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }} className="desktop-only-text">
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.1), 0 2px 6px rgba(245, 158, 11, 0.15)'
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#fbbf24', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.5px' }}>
+              {visibleCount}
+            </span>
+          </div>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: '#cbd5e1', letterSpacing: '0.3px', marginLeft: 4 }} className="desktop-only-text">
             properties found
           </span>
         </div>

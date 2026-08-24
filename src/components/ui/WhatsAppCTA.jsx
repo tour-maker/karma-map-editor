@@ -49,32 +49,48 @@ export default function WhatsAppCTA() {
   };
 
   return (
-    <div
-      onClick={handleWhatsAppClick}
-      title="Direct Message on WhatsApp (+91 9824712471)"
-      className="btn-hover-effect whatsapp-cta-button"
-      style={{
-        position: 'absolute',
-        bottom: 24,
-        right: 20,
-        zIndex: 1000,
-        width: 52,
-        height: 52,
-        borderRadius: 18,
-        background: 'rgba(20, 24, 33, 0.85)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1.5px solid #d9a74a',
-        boxShadow: '0 8px 30px rgba(0, 0, 0, 0.65), 0 0 15px rgba(245, 158, 11, 0.2)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        userSelect: 'none',
-        transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
-      }}
-    >
-      <WhatsAppIcon color="#f59e0b" size={28} />
+    <div className="whatsapp-cta-wrapper" style={{
+      position: 'absolute',
+      bottom: 24,
+      right: 20,
+      zIndex: 1000,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 6
+    }}>
+      <div
+        onClick={handleWhatsAppClick}
+        title="Direct Message on WhatsApp (+91 9824712471)"
+        className="btn-hover-effect whatsapp-cta-button"
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 18,
+          background: 'rgba(20, 24, 33, 0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1.5px solid #d9a74a',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.65), 0 0 15px rgba(245, 158, 11, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        }}
+      >
+        <WhatsAppIcon color="#f59e0b" size={28} />
+      </div>
+      <span className="desktop-only-text" style={{ 
+        color: '#ffffff', 
+        fontSize: '11px', 
+        fontWeight: 600, 
+        textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+        letterSpacing: '0.5px'
+      }}>
+        Contact Us
+      </span>
     </div>
   );
 }

@@ -295,7 +295,7 @@ https://karma-map-editor.onrender.com/`;
             type="button"
             onClick={handleShare}
             title="Share map view"
-            className="btn-hover-effect"
+            className="btn-hover-effect mobile-hidden"
             style={{
               background: 'transparent',
               border: 'none',

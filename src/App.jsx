@@ -10,8 +10,10 @@ function App() {
     // If URL ends with 'admin', set edit mode. Otherwise viewer mode.
     if (window.location.pathname.replace(/\/$/, '').endsWith('admin')) {
       useMapStore.getState().setAppMode('edit');
+      document.body.classList.add('is-admin');
     } else {
       useMapStore.getState().setAppMode('viewer');
+      document.body.classList.remove('is-admin');
     }
   }, []);
 
