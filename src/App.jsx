@@ -24,9 +24,15 @@ function App() {
       if (isMobilePortrait) {
         useMapStore.getState().setAppMode('viewer');
         document.body.classList.remove('is-admin');
+        if (window.location.pathname.replace(/\/$/, '').endsWith('admin')) {
+          window.history.replaceState(null, '', '/');
+        }
       } else if (isMobileLandscape) {
         useMapStore.getState().setAppMode('edit');
         document.body.classList.add('is-admin');
+        if (!window.location.pathname.replace(/\/$/, '').endsWith('admin')) {
+          window.history.replaceState(null, '', '/admin');
+        }
       }
     };
 
