@@ -1,4 +1,4 @@
-import { RiShareBoxLine } from 'react-icons/ri';
+import { FaRegShareSquare } from 'react-icons/fa';
 import React, { useState, useEffect } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
@@ -266,7 +266,7 @@ https://karma-map-editor.onrender.com/`;
         onClick={handleShare}
         title="Share map view"
       >
-        <RiShareBoxLine size={26} />
+        <FaRegShareSquare size={22} />
       </button>
 
       {/* Outer Dock Container Anchored at Top 38% (NO transform: translateY(-50%) so top buttons NEVER move when opening!) */}
