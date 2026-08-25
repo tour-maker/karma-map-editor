@@ -209,13 +209,11 @@ body.hide-ui-for-screenshot nav {
     width: 44px !important;
     height: 44px !important;
     border-radius: 50% !important;
-    background: rgba(10, 14, 23, 0.70) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    background: transparent !important;
+    border: none !important;
     align-items: center !important;
     justify-content: center !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65) !important;
+    box-shadow: none !important;
     z-index: 1050 !important;
     cursor: pointer !important;
   }
