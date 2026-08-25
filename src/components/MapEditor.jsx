@@ -692,6 +692,7 @@ export default function MapEditor() {
             setSearchMarkerPos(null);
           }}
           options={{
+            gestureHandling: 'greedy',
             backgroundColor: '#000000',
             disableDefaultUI: true, // we use custom zoom control now
             zoomControl: false, // disable native zoom control

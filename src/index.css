@@ -204,7 +204,7 @@ body.hide-ui-for-screenshot nav {
   .mobile-share-floating-btn {
     display: flex !important;
     position: fixed !important;
-    bottom: 136px !important;
+    bottom: 130px !important;
     right: 20px !important;
     width: 44px !important;
     height: 44px !important;
