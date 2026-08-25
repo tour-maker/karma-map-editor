@@ -1,3 +1,4 @@
+.mobile-share-floating-btn { display: none; }
 :root {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-synthesis: none;
@@ -151,8 +152,8 @@ body.hide-ui-for-screenshot nav {
   .responsive-right-dock > div:first-child {
     flex-direction: column !important;
     border-radius: 50% !important;
-    width: 52px !important;
-    height: 52px !important;
+    width: 44px !important;
+    height: 44px !important;
     border: 1px solid rgba(255, 255, 255, 0.22) !important;
     background: rgba(10, 14, 23, 0.70) !important;
     backdrop-filter: blur(16px) !important;
@@ -198,6 +199,29 @@ body.hide-ui-for-screenshot nav {
   /* Hide WhatsApp inside combined right dock on Mobile portrait */
   .mobile-only-whatsapp-btn {
     display: none !important;
+  }
+
+  .mobile-share-floating-btn {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 136px !important;
+    right: 20px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    background: rgba(10, 14, 23, 0.70) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65) !important;
+    z-index: 1050 !important;
+    cursor: pointer !important;
+  }
+  
+  .mobile-share-floating-btn svg {
+    color: #f59e0b !important;
   }
 
   /* Show Standalone WhatsApp wrapper on Mobile portrait (Bottom Right CTA) */

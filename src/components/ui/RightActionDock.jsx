@@ -259,6 +259,15 @@ https://karma-map-editor.onrender.com/`;
         }
       `}</style>
 
+      <button
+        type="button"
+        className="mobile-share-floating-btn btn-hover-effect"
+        onClick={handleShare}
+        title="Share map view"
+      >
+        <FiShare2 size={20} />
+      </button>
+
       {/* Outer Dock Container Anchored at Top 38% (NO transform: translateY(-50%) so top buttons NEVER move when opening!) */}
       <div
         className="responsive-right-dock"
