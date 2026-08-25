@@ -543,4 +543,12 @@ div[style*="z-index: 1000001"] { display: none !important; }
   .whatsapp-cta-button {
     display: flex !important;
   }
+
+  /* Property Info Panel in Landscape */
+  .responsive-info-panel {
+    transform: scale(0.65) !important;
+    transform-origin: center right !important;
+    right: 76px !important;
+    max-height: 140vh !important; 
+  }
 }
