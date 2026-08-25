@@ -74,7 +74,7 @@ export async function resolveLandmarkLocation(landmark, fallbackCenter) {
     if (bestMatch) {
       const pos = bestMatch.center || bestMatch.position;
       if (pos) {
-        console.log(`[LandmarkManager] Local match found for '${cleanLandmark}' at polygon:`, bestMatch.id);
+
         geocodeCache.set(cacheKey, pos);
         return pos;
       }
