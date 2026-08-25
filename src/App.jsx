@@ -4,6 +4,7 @@ import MapEditor from './components/MapEditor'
 import { GoogleMapProvider } from './context/GoogleMapContext'
 import { Toaster } from 'react-hot-toast'
 import { useMapStore } from './store/useMapStore'
+import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 
 function App() {
   useEffect(() => {
@@ -49,6 +50,7 @@ function App() {
   return (
     <GoogleMapProvider>
       <Toaster position="top-center" />
+      <GoogleSheetsConnect />
       <MapEditor />
     </GoogleMapProvider>
   )

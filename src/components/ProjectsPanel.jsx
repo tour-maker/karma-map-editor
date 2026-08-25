@@ -715,12 +715,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           )}
         </div>
 
-        {/* Google Sheets Sync Row */}
-{/* Google Sheets Sync Row */}
-{/* Google Sheets Sync Row */}
-        <div style={{ marginTop: 2, marginBottom: 8 }}>
-          <GoogleSheetsConnect />
-        </div>
+                
 
         {/* Search Bar Input */}
         <div style={{ position: 'relative' }}>
