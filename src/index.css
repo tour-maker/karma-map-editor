@@ -468,8 +468,7 @@ div[style*="z-index: 1000001"] { display: none !important; }
   
   /* 1. HIDE MOBILE ELEMENTS */
   .mobile-filter-dock-bar,
-  .mobile-projects-dock-bar,
-  .whatsapp-cta-wrapper {
+  .mobile-projects-dock-bar {
     display: none !important;
   }
 
@@ -521,7 +520,8 @@ div[style*="z-index: 1000001"] { display: none !important; }
     transform-origin: bottom right !important;
     left: auto !important; 
     right: 12px !important;
-    bottom: 12px !important;
+    bottom: 0px !important;
+    border-radius: 20px 20px 0 0 !important;
   }
 
   /* Right Action Dock */
@@ -533,11 +533,14 @@ div[style*="z-index: 1000001"] { display: none !important; }
   }
 
   /* WhatsApp button */
-  .whatsapp-cta-button {
+  .whatsapp-cta-wrapper {
     display: flex !important;
     transform: scale(0.68) !important;
     transform-origin: bottom right !important;
-    bottom: 12px !important;
+    bottom: 50px !important;
     right: 12px !important;
+  }
+  .whatsapp-cta-button {
+    display: flex !important;
   }
 }
