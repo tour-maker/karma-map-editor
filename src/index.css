@@ -139,7 +139,7 @@ body.hide-ui-for-screenshot nav {
   /* 3. Opts Button Top Right */
   .responsive-right-dock {
     position: fixed !important;
-    top: 16px !important;
+    top: 20px !important;
     right: 16px !important;
     bottom: auto !important;
     left: auto !important;
