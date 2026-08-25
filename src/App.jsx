@@ -7,7 +7,7 @@ import { useMapStore } from './store/useMapStore'
 
 function App() {
   useEffect(() => {
-    // If URL ends with 'admin', set edit mode. Otherwise viewer mode.
+    // Initial routing logic
     if (window.location.pathname.replace(/\/$/, '').endsWith('admin')) {
       useMapStore.getState().setAppMode('edit');
       document.body.classList.add('is-admin');
@@ -15,6 +15,29 @@ function App() {
       useMapStore.getState().setAppMode('viewer');
       document.body.classList.remove('is-admin');
     }
+
+    // Auto-switch modes on mobile based on orientation
+    const handleOrientationChange = () => {
+      const isMobilePortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
+      const isMobileLandscape = window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches;
+      
+      if (isMobilePortrait) {
+        useMapStore.getState().setAppMode('viewer');
+        document.body.classList.remove('is-admin');
+      } else if (isMobileLandscape) {
+        useMapStore.getState().setAppMode('edit');
+        document.body.classList.add('is-admin');
+      }
+    };
+
+    handleOrientationChange();
+    window.addEventListener('resize', handleOrientationChange);
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      window.removeEventListener('resize', handleOrientationChange);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
   }, []);
 
   return (
