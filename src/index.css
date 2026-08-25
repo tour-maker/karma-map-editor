@@ -278,6 +278,10 @@ body.hide-ui-for-screenshot nav {
     max-height: 75vh !important;
     border-radius: 24px !important;
     z-index: 2000 !important;
+    transform: translateY(120%) !important;
+  }
+  .responsive-info-panel.is-open {
+    transform: translateY(0) !important;
   }
 }
 
@@ -546,9 +550,12 @@ div[style*="z-index: 1000001"] { display: none !important; }
 
   /* Property Info Panel in Landscape */
   .responsive-info-panel {
-    transform: scale(0.65) !important;
     transform-origin: center right !important;
     right: 76px !important;
     max-height: 140vh !important; 
+    transform: scale(0.65) translateX(150%) !important;
+  }
+  .responsive-info-panel.is-open {
+    transform: scale(0.65) translateX(0) !important;
   }
 }
