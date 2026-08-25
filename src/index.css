@@ -228,9 +228,7 @@ body.hide-ui-for-screenshot nav {
     bottom: 74px !important;
     right: 16px !important;
   }
-  .whatsapp-cta-wrapper .desktop-only-text {
-    display: none !important;
-  }
+
 
   /* 4. Google Maps Attribution: Sits cleanly at bottom (bottom: 4px) below the Filters card with zero overlap */
   .gm-style-logo {
