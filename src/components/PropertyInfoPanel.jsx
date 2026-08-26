@@ -353,26 +353,28 @@ export default function PropertyInfoPanel() {
           : `${d.area} sq. yard`;
       }
 
-      const title = d.name || d.location || `Plot ${displayFeature.id}`;
-      const tpFpStr = [
-        d.tpNo || d.tp ? `TP: ${d.tpNo || d.tp}` : '',
-        d.opNo || d.op ? `OP: ${d.opNo || d.op}` : '',
-        d.fpNo || d.fp ? `FP: ${d.fpNo || d.fp}` : ''
-      ].filter(Boolean).join(' | ');
-
-      const locationStr = d.location ? `${d.location}${d.parentLocation ? `, ${d.parentLocation}` : ''}` : 'Surat';
-      const categoryStr = d.type ? d.type.toUpperCase() : 'LAND';
-
       const shareUrl = new URL(window.location.href);
       shareUrl.searchParams.set('feature', displayFeature.id);
 
-      const shareText = `📍 *Karma Realtors - Selected Plot Details*\n\n` +
-        `🏢 *Title*: ${title}\n` +
-        `📍 *Location*: ${locationStr}\n` +
-        (tpFpStr ? `📐 *TP/OP/FP*: ${tpFpStr}\n` : '') +
-        (areaStr ? `📏 *Area*: ${areaStr}\n` : '') +
-        `🏷️ *Category*: ${categoryStr}\n\n` +
-        `🔗 *View on Interactive Map*:\n${shareUrl.toString()}`;
+      const tp = d.tpNo || d.tp || '';
+      const fp = d.fpNo || d.fp || '';
+      const op = d.opNo || d.op || '';
+      const tpFpOpStr = [
+        tp ? `TP: ${tp}` : '',
+        fp ? `FP: ${fp}` : '',
+        op ? `OP: ${op}` : ''
+      ].filter(Boolean).join(' | ');
+
+      const landmarkStr = d.landmark || '';
+      const remarkStr = d.remarks || d.remark || '';
+
+      const shareTextParts = [];
+      if (tpFpOpStr) shareTextParts.push(`📐 ${tpFpOpStr}`);
+      if (areaStr) shareTextParts.push(`📏 Area: ${areaStr}`);
+      if (landmarkStr) shareTextParts.push(`📍 Landmark: ${landmarkStr}`);
+      if (remarkStr) shareTextParts.push(`📝 Remark: ${remarkStr}`);
+
+      const shareText = (shareTextParts.length > 0 ? shareTextParts.join('\n') + '\n\n' : '') + `🔗 View on Map:\n${shareUrl.toString()}`;
 
       if (navigator.share) {
         navigator.share({
