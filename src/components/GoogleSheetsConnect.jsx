@@ -5,7 +5,7 @@ import { CATEGORY_MAP, determineParentLocation } from '../config/categories';
 import { fetchAndMergeSheetUpdates, repairSheet1Headers, overwriteSheetWithFeatures, overwriteAreasSheet, overwriteLandmarksSheet } from '../services/googleSheets';
 import toast from 'react-hot-toast';
 
-const DEFAULT_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SHEETS_SCRIPT_URL || '';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6PYhg46pRnBkkcAfp-RkmreiGHIkwYLcNXI03eujyc1bSSTH0kZZ93auAm7XtcjI/exec';
 
 export default function GoogleSheetsConnect() {
   const [isUpdatingMap, setIsUpdatingMap] = useState(false);
