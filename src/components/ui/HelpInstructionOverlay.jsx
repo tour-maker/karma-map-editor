@@ -2,10 +2,16 @@ import React from 'react';
 
 export default function HelpInstructionOverlay({ onClose }) {
   const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isMobileLandscape, setIsMobileLandscape] = React.useState(
+    typeof window !== 'undefined' && window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches
+  );
   const isAdmin = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
 
   React.useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setIsMobileLandscape(window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches);
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
