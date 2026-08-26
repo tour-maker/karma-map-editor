@@ -381,7 +381,7 @@ export default function PropertyInfoPanel() {
 
       if (navigator.share) {
         navigator.share({
-          title: `Karma Realtors - ${title}`,
+          title: `Karma Realtors - Selected Plot Details`,
           text: shareText,
           url: shareUrl.toString()
         }).then(() => {
