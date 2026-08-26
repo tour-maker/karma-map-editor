@@ -1048,9 +1048,19 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 >
                   <div
                     onClick={() => {
-                      setSelectedFeatureId(row.feature.id);
-                      setIsInfoPanelOpen(true);
-                      if (map) zoomToProperty(map, row.feature);
+                      const state = useMapStore.getState();
+                      if (state.isInfoPanelOpen && state.selectedFeatureId !== row.feature.id) {
+                        setIsInfoPanelOpen(false);
+                        setTimeout(() => {
+                          setSelectedFeatureId(row.feature.id);
+                          setIsInfoPanelOpen(true);
+                          if (map) zoomToProperty(map, row.feature);
+                        }, 250);
+                      } else {
+                        setSelectedFeatureId(row.feature.id);
+                        setIsInfoPanelOpen(true);
+                        if (map) zoomToProperty(map, row.feature);
+                      }
                     }}
                     title={formatProjectDisplayName(row.feature)}
                     className="project-card-interactive"

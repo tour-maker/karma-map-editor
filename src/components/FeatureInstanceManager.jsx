@@ -181,10 +181,18 @@ export default function FeatureInstanceManager() {
           state.setSelectedFeatureId(null);
           state.setIsInfoPanelOpen(false);
         } else {
-          setSelectedFeatureId(feature.id);
-          setIsInfoPanelOpen(true);
-          if (map) {
-            zoomToProperty(map, feature);
+          // If panel is already open for another polygon, slide it out first
+          if (state.isInfoPanelOpen) {
+            state.setIsInfoPanelOpen(false);
+            setTimeout(() => {
+              setSelectedFeatureId(feature.id);
+              setIsInfoPanelOpen(true);
+              if (map) zoomToProperty(map, feature);
+            }, 250); // wait for slide-out animation to almost finish
+          } else {
+            setSelectedFeatureId(feature.id);
+            setIsInfoPanelOpen(true);
+            if (map) zoomToProperty(map, feature);
           }
         }
       };
