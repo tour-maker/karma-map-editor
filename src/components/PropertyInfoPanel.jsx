@@ -356,21 +356,16 @@ export default function PropertyInfoPanel() {
       const shareUrl = new URL(window.location.href);
       shareUrl.searchParams.set('feature', displayFeature.id);
 
-      const tp = d.tpNo || d.tp || '';
-      const fp = d.fpNo || d.fp || '';
-      const op = d.opNo || d.op || '';
-      const tpFpOpStr = [
-        tp ? `TP: ${tp}` : '',
-        fp ? `FP: ${fp}` : '',
-        op ? `OP: ${op}` : ''
-      ].filter(Boolean).join(' | ');
+      const tp = d.tpNo || d.tp || '-';
+      const fp = d.fpNo || d.fp || '-';
+      const op = d.opNo || d.op || '-';
 
       const categoryStr = d.type ? d.type.toUpperCase() : 'LAND';
       const landmarkStr = d.landmark || '';
       const remarkStr = d.remarks || d.remark || '';
 
       const shareTextParts = [];
-      if (tpFpOpStr) shareTextParts.push(`📐 *TP/FP/OP*: ${tpFpOpStr}`);
+      shareTextParts.push(`📐 TP: ${tp} | FP: ${fp} | OP: ${op}`);
       if (areaStr) shareTextParts.push(`📏 *Area*: ${areaStr}`);
       if (categoryStr) shareTextParts.push(`🏷️ *Category*: ${categoryStr}`);
       if (landmarkStr) shareTextParts.push(`📍 *Landmark*: ${landmarkStr}`);
