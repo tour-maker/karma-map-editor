@@ -265,7 +265,7 @@ export default function HelpInstructionOverlay({ onClose }) {
 
           {/* BOTTOM FILTER BAR: LANDMARKS TOGGLE */}
           <div style={{
-            position: 'absolute', bottom: 7, left: 'calc(50% - 270px)',
+            position: 'absolute', bottom: 7, left: 'calc(50% - 415px)',
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
           }}>
             <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff' }}>Toggle Landmarks</span>
