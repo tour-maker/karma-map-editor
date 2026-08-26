@@ -555,9 +555,9 @@ div[style*="z-index: 1000001"] { display: none !important; }
     right: 76px !important;
     max-height: 140vh !important;
     overflow-y: auto !important;
-    transform: scale(0.65) translate(150%, -50%) !important;
+    transform: translate(150%, -50%) scale(0.65) !important;
   }
   .responsive-info-panel.is-open {
-    transform: scale(0.65) translate(0, -50%) !important;
+    transform: translate(0, -50%) scale(0.65) !important;
   }
 }
