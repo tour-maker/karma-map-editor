@@ -64,23 +64,16 @@ export default function WhatsAppCTA() {
         title="Direct Message on WhatsApp (+91 9824712471)"
         className="btn-hover-effect whatsapp-cta-button"
         style={{
-          width: 52,
-          height: 52,
-          borderRadius: 18,
-          background: 'rgba(20, 24, 33, 0.85)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1.5px solid #d9a74a',
-          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.65), 0 0 15px rgba(245, 158, 11, 0.2)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           userSelect: 'none',
-          transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          filter: 'drop-shadow(0 4px 12px rgba(245, 158, 11, 0.35))'
         }}
       >
-        <WhatsAppIcon color="#f59e0b" size={28} />
+        <WhatsAppIcon color="#f59e0b" size={48} />
       </div>
       <span className="desktop-only-text" style={{ 
         color: '#ffffff', 
