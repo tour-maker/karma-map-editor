@@ -413,12 +413,11 @@ export default function PropertyInfoPanel() {
           borderRadius: 16,
           padding: '20px 16px 16px 16px',
           color: '#e2e8f0',
-          
-          
-          
           boxShadow: `0 20px 48px rgba(0, 0, 0, 0.5), 0 0 16px ${themeColor}40`,
           cursor: 'pointer',
-          
+          transform: isOpen ? 'translateX(0)' : 'translateX(120%)',
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -534,14 +533,14 @@ export default function PropertyInfoPanel() {
   return (
     <div
       key={displayFeature.id}
+      className={`responsive-info-panel ${isOpen ? 'is-open' : ''}`}
       style={{
         ...panelStyle,
         border: `2px solid ${themeColor}`,
         boxShadow: `0 20px 48px rgba(0, 0, 0, 0.5), 0 0 16px ${themeColor}40`,
-        
-        
-        
-        
+        transform: isOpen ? 'translateX(0)' : 'translateX(120%)',
+        opacity: isOpen ? 1 : 0,
+        pointerEvents: isOpen ? 'auto' : 'none',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
