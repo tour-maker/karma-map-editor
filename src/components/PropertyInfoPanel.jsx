@@ -104,7 +104,7 @@ function getMatchBadge(feature) {
 
 const panelStyle = {
   position: 'absolute',
-  top: 70,
+  top: 16,
   right: 20,
   zIndex: 1100,
   width: 340,
