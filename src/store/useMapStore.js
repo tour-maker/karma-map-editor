@@ -8,7 +8,9 @@ export const useMapStore = create(
       (set, get) => ({
         features: [],
         selectedFeatureId: null,
+        selectedAreaName: null,
         appMode: 'viewer',
+        isAdminAuthenticated: false,
         kmlLayers: [],
         isInfoPanelOpen: false,
         theme: 'dark',
@@ -31,6 +33,48 @@ export const useMapStore = create(
           if (exists) return state;
           return { customAreas: [...(state.customAreas || []), name] };
         }),
+        
+        renameArea: (oldName, newName) => set((state) => {
+          const trimmedOld = oldName?.trim();
+          const trimmedNew = newName?.trim();
+          if (!trimmedOld || !trimmedNew || trimmedOld === trimmedNew) return state;
+          
+          // update customAreas
+          const customAreas = (state.customAreas || []).map(a => 
+             a.toLowerCase() === trimmedOld.toLowerCase() ? trimmedNew : a
+          );
+          
+          // update all features with this location or parentLocation
+          const features = state.features.map(f => {
+             let changed = false;
+             const newData = { ...f.data };
+             
+             if (newData.location?.toLowerCase() === trimmedOld.toLowerCase()) {
+                newData.location = trimmedNew;
+                changed = true;
+             }
+             if (newData.parentLocation?.toLowerCase() === trimmedOld.toLowerCase()) {
+                newData.parentLocation = trimmedNew;
+                changed = true;
+             }
+             
+             if (changed) {
+                return { ...f, data: newData };
+             }
+             return f;
+          });
+          
+          return { customAreas, features, selectedAreaName: trimmedNew };
+        }),
+        
+        deleteArea: (areaName) => set((state) => {
+          const trimmed = areaName?.trim();
+          if (!trimmed) return state;
+          
+          const customAreas = (state.customAreas || []).filter(a => a.toLowerCase() !== trimmed.toLowerCase());
+          
+          return { customAreas, selectedAreaName: null };
+        }),
 
         googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID?.replace(/["']/g, '') || '752087917175-92ui9g4v2mct86k9eqgr11kki843v2pe.apps.googleusercontent.com',
         googleAccessToken: null,
@@ -41,6 +85,7 @@ export const useMapStore = create(
 
         setTheme: (theme) => set({ theme }),
         setAppMode: (mode) => set({ appMode: mode }),
+        setIsAdminAuthenticated: (auth) => set({ isAdminAuthenticated: auth }),
         setIsInfoPanelOpen: (isOpen) => set({ isInfoPanelOpen: isOpen }),
         setUiHidden: (hidden) => set({ uiHidden: Boolean(hidden) }),
         toggleUiHidden: () => set((state) => ({ uiHidden: !state.uiHidden })),
@@ -48,6 +93,7 @@ export const useMapStore = create(
         toggleLandmarks: () => set((state) => ({ showLandmarks: !state.showLandmarks })),
 
         setSelectedFeatureId: (id) => set({ selectedFeatureId: id }),
+        setSelectedAreaName: (name) => set({ selectedAreaName: name }),
 
         setFilterPrimary: (city) => set({ filterPrimary: city, filterSecondary: null }),
         setFilterSecondary: (location) => set({ filterSecondary: location }),

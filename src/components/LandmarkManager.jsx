@@ -52,8 +52,7 @@ export async function resolveLandmarkLocation(landmark, fallbackCenter) {
         f.id,
         d.name,
         d.location,
-        d.subLocation,
-        d.landmark
+        d.subLocation
       ].filter(Boolean);
       
       for (const name of possibleNames) {
@@ -434,13 +433,14 @@ export default function LandmarkManager() {
 
     features.forEach(feature => {
       const isDedicatedLandmark = feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark';
-      const rawText = feature.data?.landmark?.trim() || (isDedicatedLandmark ? (feature.data?.name?.trim() || 'Landmark') : '');
-      if (!rawText) return;
+      if (!isDedicatedLandmark) return;
+      
+      const rawText = feature.data?.name?.trim() || 'Landmark';
       const landmarkText = cleanLandmarkTitle(rawText);
       if (!landmarkText) return;
       const key = landmarkText.toLowerCase();
 
-      const pos = isDedicatedLandmark ? (feature.position || feature.center) : null;
+      const pos = feature.position || feature.center;
 
       if (!landmarkItemMap.has(key)) {
         landmarkItemMap.set(key, {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2 } from 'react-icons/fi';
+import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useMapStore } from '../store/useMapStore';
 import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, CATEGORY_MAP } from '../config/categories';
 
@@ -119,6 +119,7 @@ const panelStyle = {
 };
 
 export default function PropertyInfoPanel() {
+  const [showPartyDetails, setShowPartyDetails] = useState(false);
   const isOpen = useMapStore(state => state.isInfoPanelOpen);
   const setIsOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const appMode = useMapStore(state => state.appMode);
@@ -161,7 +162,11 @@ export default function PropertyInfoPanel() {
     parentLocation: '',
     landmark: '',
     type: '',
-    remarks: ''
+    remarks: '',
+    partyName: '',
+    partyPhone: '',
+    brokerName: '',
+    brokerPhone: ''
   });
 
   useEffect(() => {
@@ -178,7 +183,11 @@ export default function PropertyInfoPanel() {
         parentLocation: pLoc,
         landmark: displayFeature.data.landmark || '',
         type: displayFeature.data.type || '',
-        remarks: displayFeature.data.remarks || ''
+        remarks: displayFeature.data.remarks || '',
+        partyName: displayFeature.data.partyName || '',
+        partyPhone: displayFeature.data.partyPhone || '',
+        brokerName: displayFeature.data.brokerName || '',
+        brokerPhone: displayFeature.data.brokerPhone || ''
       });
     }
   }, [displayFeature]);
@@ -237,7 +246,11 @@ export default function PropertyInfoPanel() {
       parentLocation: formData.parentLocation || determineParentLocation(formData.location),
       landmark: formData.landmark,
       type: formData.type,
-      remarks: formData.remarks
+      remarks: formData.remarks,
+      partyName: formData.partyName,
+      partyPhone: formData.partyPhone,
+      brokerName: formData.brokerName,
+      brokerPhone: formData.brokerPhone
     };
 
     const typeColor = getPropertyTypeColor(formData.type);
@@ -545,7 +558,9 @@ export default function PropertyInfoPanel() {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#e2e8f0' }}>Property Info</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#e2e8f0' }}>
+            {formData.landmark ? 'Landmark Info' : 'Property Info'}
+          </h3>
         </div>
         <button
           onClick={() => {
@@ -686,7 +701,7 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Landmark nearby</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Landmark Remarks</label>
             <input
               type="text"
               value={formData.landmark || ''}
@@ -736,6 +751,7 @@ export default function PropertyInfoPanel() {
             </div>
           </div>
 
+
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Remarks</label>
             <textarea
@@ -750,6 +766,77 @@ export default function PropertyInfoPanel() {
               }}
             />
           </div>
+          
+          {isEdit && (
+            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowPartyDetails(!showPartyDetails)}
+                title="Private Details"
+                style={{ 
+                  background: 'none', border: 'none', cursor: 'pointer', display: 'flex', 
+                  alignItems: 'center', justifyContent: 'center', padding: '4px',
+                  color: showPartyDetails ? '#f59e0b' : 'rgba(148, 163, 184, 0.4)', 
+                  transition: 'color 0.2s'
+                }}
+              >
+                {showPartyDetails ? <FiEye size={14} /> : <FiEyeOff size={14} />}
+              </button>
+              
+              {showPartyDetails && (
+                <div style={{ 
+                  marginTop: 4, padding: 12, borderRadius: 12, background: 'rgba(15, 23, 42, 0.6)', 
+                  border: '1px solid rgba(245, 158, 11, 0.2)', width: '100%', boxSizing: 'border-box',
+                  display: 'flex', flexDirection: 'column', gap: 10 
+                }}>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Party Name</label>
+                      <input
+                        type="text"
+                        value={formData.partyName}
+                        onChange={(e) => handleChange('partyName', e.target.value)}
+                        placeholder="Name"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Party Phone</label>
+                      <input
+                        type="text"
+                        value={formData.partyPhone}
+                        onChange={(e) => handleChange('partyPhone', e.target.value)}
+                        placeholder="Phone No"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Broker Name</label>
+                      <input
+                        type="text"
+                        value={formData.brokerName}
+                        onChange={(e) => handleChange('brokerName', e.target.value)}
+                        placeholder="Broker"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Broker Phone</label>
+                      <input
+                        type="text"
+                        value={formData.brokerPhone}
+                        onChange={(e) => handleChange('brokerPhone', e.target.value)}
+                        placeholder="Phone No"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

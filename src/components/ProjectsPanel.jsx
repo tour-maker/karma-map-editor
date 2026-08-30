@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu } from 'react-icons/fi';
+import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor } from '../config/categories';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -89,7 +90,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const appMode = useMapStore(state => state.appMode);
   const features = useMapStore(state => state.features);
   const selectedFeatureId = useMapStore(state => state.selectedFeatureId);
+  const selectedAreaName = useMapStore(state => state.selectedAreaName);
   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
+  const setSelectedAreaName = useMapStore(state => state.setSelectedAreaName);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const theme = useMapStore(state => state.theme);
   const map = useGoogleMap();
@@ -183,9 +186,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     const list = [];
 
     features.forEach(f => {
-      const rawText = f.data?.landmark?.trim();
       const isLandmarkType = f.data?.type === 'Landmark' || f.id?.startsWith('landmark-');
-      if (!rawText && !isLandmarkType) return;
+      if (!isLandmarkType) return;
 
       let isVisible = true;
       if (f.source === 'kml' && f.layerId) {
@@ -193,7 +195,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       }
       if (!isVisible || f.style?.visible === false) return;
 
-      const title = cleanLandmarkTitle(rawText || f.data?.name || 'Landmark');
+      const title = cleanLandmarkTitle(f.data?.name || 'Landmark');
       if (!title) return;
       const key = title.toLowerCase();
       if (seen.has(key)) return;
@@ -396,6 +398,24 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             style={{ height: 38, maxWidth: 220, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.25))' }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {appMode === 'edit' && (
+              <a
+                href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
+                target="_blank"
+                rel="noreferrer"
+                title="Open Google Sheet"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#10b981', cursor: 'pointer', transition: 'transform 0.2s',
+                  background: 'rgba(16, 185, 129, 0.1)', padding: 6, borderRadius: '50%',
+                  border: '1px solid rgba(16, 185, 129, 0.3)'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                <FaFileExcel size={16} />
+              </a>
+            )}
             <span style={{
               fontSize: 10, fontWeight: 700, color: '#f59e0b',
               background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
@@ -853,17 +873,18 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             map.setZoom(17);
                           }
                         } else {
-                          // For geocoded landmarks from property notes, zoom directly to landmark location without opening property polygon panel
-                          setSelectedFeatureId(null);
-                          setIsInfoPanelOpen(false);
-
-                          if (map) {
-                            const pos = await resolveLandmarkLocation(row.landmark.title, row.feature?.center || row.feature?.position);
-                            if (pos) {
-                              map.panTo(pos);
-                              map.setZoom(17);
-                            } else {
-                              zoomToProperty(map, row.feature);
+                          // Property Landmark -> open parent polygon
+                          if (row.feature && row.feature.id) {
+                            setSelectedFeatureId(row.feature.id);
+                            setIsInfoPanelOpen(true);
+                            if (map) {
+                              const pos = await resolveLandmarkLocation(row.landmark.title, row.feature?.center || row.feature?.position);
+                              if (pos) {
+                                map.panTo(pos);
+                                map.setZoom(17);
+                              } else {
+                                zoomToProperty(map, row.feature);
+                              }
                             }
                           }
                         }
@@ -944,8 +965,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       onClick={() => {
                         if (isSelected) {
                           setFilterPrimary(null);
+                          setSelectedAreaName(null);
                         } else {
                           setFilterPrimary(row.area.name);
+                          setSelectedAreaName(row.area.name);
                           if (map && row.area.features.length > 0) {
                             fitAllBounds(map, row.area.features);
                           }

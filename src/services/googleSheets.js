@@ -453,6 +453,10 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
     const landmarkVal = d.landmark || feature.landmark || '';
     const typeVal = d.type || feature.type || '';
     const remarksVal = d.remarks || feature.remarks || '';
+    const partyNameVal = d.partyName || feature.partyName || '';
+    const partyPhoneVal = d.partyPhone || feature.partyPhone || '';
+    const brokerNameVal = d.brokerName || feature.brokerName || '';
+    const brokerPhoneVal = d.brokerPhone || feature.brokerPhone || '';
 
     const cleanRow = [
       feature.id || '',
@@ -465,6 +469,10 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       landmarkVal,
       typeVal,
       remarksVal,
+      partyNameVal,
+      partyPhoneVal,
+      brokerNameVal,
+      brokerPhoneVal,
       feature.coordinates && feature.coordinates.length > 0 ? JSON.stringify(feature.coordinates) : ''
     ];
 
@@ -525,15 +533,15 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
           } else if (action === 'update' || action === 'edit' || action === 'save') {
             if (targetRowIndex > 1) {
               // Update ONLY the specific matched row
-              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:J${targetRowIndex}`, [cleanRow]);
+              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:N${targetRowIndex}`, [cleanRow]);
             } else {
               console.warn(`[syncFeatureToSheet] No matching row found in Google Sheet for polygon id="${feature.id}" (TP: ${tpVal}, FP: ${fpVal}). Skipping update to avoid creating new rows or overwriting unrelated polygons.`);
             }
           } else if (action === 'create' || action === 'add') {
             if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:J${targetRowIndex}`, [cleanRow]);
+              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:N${targetRowIndex}`, [cleanRow]);
             } else {
-              await appendSheetRow(spreadsheetId, 'Polygons!A:J', cleanRow);
+              await appendSheetRow(spreadsheetId, 'Polygons!A:N', cleanRow);
             }
           }
         }
@@ -563,7 +571,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 };
 
 export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], range = 'Polygons') => {
-  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'Landmark Nearby', 'type', 'remarks', 'coordinates'];
+  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'Landmark Remarks', 'type', 'remarks', 'coordinates'];
   
   const polygonFeatures = features.filter(f => !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark'));
 
@@ -742,7 +750,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     const areaIdx = !isCorruptedHeaders && rawHeaders.indexOf('area') >= 0 ? rawHeaders.indexOf('area') : 4;
     const locIdx = !isCorruptedHeaders && rawHeaders.indexOf('location') >= 0 ? rawHeaders.indexOf('location') : 5;
     const parentLocIdx = !isCorruptedHeaders && (rawHeaders.indexOf('parent location') >= 0 ? rawHeaders.indexOf('parent location') : rawHeaders.indexOf('parent_location')) >= 0 ? (rawHeaders.indexOf('parent location') >= 0 ? rawHeaders.indexOf('parent location') : rawHeaders.indexOf('parent_location')) : 6;
-    const landmarkIdx = !isCorruptedHeaders && (rawHeaders.indexOf('landmark nearby') >= 0 ? rawHeaders.indexOf('landmark nearby') : rawHeaders.indexOf('landmark')) >= 0 ? (rawHeaders.indexOf('landmark nearby') >= 0 ? rawHeaders.indexOf('landmark nearby') : rawHeaders.indexOf('landmark')) : 7;
+    const landmarkIdx = !isCorruptedHeaders && (rawHeaders.indexOf('landmark remarks') >= 0 ? rawHeaders.indexOf('landmark remarks') : rawHeaders.indexOf('landmark')) >= 0 ? (rawHeaders.indexOf('landmark remarks') >= 0 ? rawHeaders.indexOf('landmark remarks') : rawHeaders.indexOf('landmark')) : 7;
     const catIdx = !isCorruptedHeaders && (rawHeaders.indexOf('category') >= 0 ? rawHeaders.indexOf('category') : rawHeaders.indexOf('type')) >= 0 ? (rawHeaders.indexOf('category') >= 0 ? rawHeaders.indexOf('category') : rawHeaders.indexOf('type')) : 8;
     const remarksIdx = !isCorruptedHeaders && rawHeaders.indexOf('remarks') >= 0 ? rawHeaders.indexOf('remarks') : 9;
     const coordsIdx = !isCorruptedHeaders && rawHeaders.indexOf('coordinates') >= 0 ? rawHeaders.indexOf('coordinates') : 10;

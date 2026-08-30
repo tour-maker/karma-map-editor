@@ -3,19 +3,19 @@ export const CATEGORY_MAP = {
     'Adajan', 'Vesu', 'Pal', 'Nanpura', 'Dumas', 'Gavier', 'Bhimrad',
     'Magdalla', 'Piplod', 'Althan', 'Bhatar', 'Rander', 'Jahangirpura',
     'Katargam', 'Varachha', 'Sarthana', 'Udhna', 'Pandesara', 'Sachin',
-    'Hazira', 'Ichchhapor', 'Bhesan', 'Palsana', 'Kamrej', 'Barbodhan'
+    'Hazira', 'Ichchhapor', 'Bhesan', 'Palsana', 'Kamrej', 'Barbodhan',
+    'Tarsadi', 'Kudsad', 'Hathuran', 'Kharach', 'Lunsikui', 'Jamalpore',
+    'Vejalpore', 'Chhapra', 'Other'
   ],
-  'Kosamba': [],
-  'Tarsadi': [],
-  'Kudsad': [],
-  'Hathuran': [],
-  'Kharach': [],
+  'Sandalpore': [],
+  'NH 48 , Palsana': [],
   'Navsari': [],
-  'Lunsikui': [],
-  'Jamalpore': [],
-  'Vejalpore': [],
-  'Chhapra': [],
-  'Other': []
+  'Valsad': [],
+  'Vapi': [],
+  'Kosamba': [],
+  'Kachholi': [],
+  'Surat Vyara Highway': [],
+  'Jhagadia GIDC': []
 };
 
 export const PROPERTY_TYPES = [
@@ -68,25 +68,23 @@ export function getPropertyTypeColor(rawType) {
 }
 
 export function determineParentLocation(location) {
-  if (!location) return '';
+  if (!location) return 'Surat';
   const locStr = String(location).trim();
 
+  // 1. Exact match with any top-level key first
   for (const [parent, subs] of Object.entries(CATEGORY_MAP)) {
     if (locStr.toLowerCase() === parent.toLowerCase()) return parent;
+  }
+  
+  // 2. Exact match with any sub-location
+  for (const [parent, subs] of Object.entries(CATEGORY_MAP)) {
     if (Array.isArray(subs) && subs.some(sub => sub.toLowerCase() === locStr.toLowerCase())) {
       return parent;
     }
   }
 
-  const suratSubs = CATEGORY_MAP['Surat'] || ['Adajan', 'Vesu', 'Pal', 'Nanpura'];
-  const isSurat = locStr.toLowerCase() === 'surat' ||
-    locStr.toLowerCase().includes('surat') ||
-    suratSubs.some(sub => sub.toLowerCase() === locStr.toLowerCase());
-
-  if (isSurat) {
-    return 'Surat';
-  }
-  return locStr;
+  // 3. Fallback: Anything unknown falls under Surat
+  return 'Surat';
 }
 
 

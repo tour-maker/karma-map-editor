@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { CATEGORY_MAP, PROPERTY_TYPES, PROPERTY_TYPE_COLORS } from '../../config/categories';
+import { CATEGORY_MAP, PROPERTY_TYPES, PROPERTY_TYPE_COLORS, determineParentLocation } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX } from 'react-icons/fi';
@@ -622,12 +622,12 @@ export default function FilterBar() {
     features.forEach(f => {
       const loc = f.data?.location;
       if (loc) {
-        const primary = subLocationToPrimary[loc];
-        if (primary) {
-          if (!categoryMap[primary]) categoryMap[primary] = new Set();
+        // Use determineParentLocation to dynamically enforce the exact same logic
+        const primary = determineParentLocation(loc);
+        if (!categoryMap[primary]) categoryMap[primary] = new Set();
+        // Only add to the sub-locations set if it is NOT the exact primary location name
+        if (loc.toLowerCase() !== primary.toLowerCase()) {
           categoryMap[primary].add(loc);
-        } else {
-          if (!categoryMap[loc]) categoryMap[loc] = new Set();
         }
       }
     });

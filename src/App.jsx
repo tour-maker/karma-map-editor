@@ -5,6 +5,7 @@ import { GoogleMapProvider } from './context/GoogleMapContext'
 import { Toaster } from 'react-hot-toast'
 import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
+import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 
 function App() {
   useEffect(() => {
@@ -47,8 +48,12 @@ function App() {
     };
   }, []);
 
+  const appMode = useMapStore(state => state.appMode);
+  const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
+
   return (
     <GoogleMapProvider>
+      {appMode === 'edit' && !isAdminAuthenticated && <AdminAuthOverlay />}
       <Toaster position="top-center" />
       <GoogleSheetsConnect />
       <MapEditor />
