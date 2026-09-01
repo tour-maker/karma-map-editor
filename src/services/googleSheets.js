@@ -773,8 +773,11 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
          if (!loc || loc === pLoc) loc = pLoc;
          else loc = `${pLoc}, ${loc}`;
          pLoc = 'Surat';
-      } else if (!pLoc) {
-         pLoc = determineParentLocation(loc);
+      }
+      
+      const betterPLoc = determineParentLocation(loc);
+      if (!pLoc || (pLoc === 'Surat' && betterPLoc !== 'Surat')) {
+         pLoc = betterPLoc;
       }
 
       const rowData = {
@@ -820,8 +823,11 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
              if (!loc || loc === pLoc) loc = pLoc;
              else loc = `${pLoc}, ${loc}`;
              pLoc = 'Surat';
-          } else if (!pLoc) {
-             pLoc = determineParentLocation(loc);
+          }
+          
+          const betterPLoc = determineParentLocation(loc);
+          if (!pLoc || (pLoc === 'Surat' && betterPLoc !== 'Surat')) {
+             pLoc = betterPLoc;
           }
 
           if (sheetMap.has(`id:${id}`)) {
