@@ -400,6 +400,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {appMode === 'edit' && (
               <>
+                {/* 
                 <button
                   onClick={async () => {
                     const state = useMapStore.getState();
@@ -445,6 +446,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 >
                   Fix DB
                 </button>
+                */}
                 <a
                   href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
                   target="_blank"
