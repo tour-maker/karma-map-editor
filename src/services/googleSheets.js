@@ -1,4 +1,4 @@
-import { determineParentLocation, getPropertyTypeColor } from '../config/categories.js';
+import { determineParentLocation, getPropertyTypeColor, CATEGORY_MAP } from '../config/categories.js';
 import { useMapStore } from '../store/useMapStore.js';
 
 let tokenClient = null;
@@ -763,11 +763,25 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       const tp = tpIdx >= 0 ? String(row[tpIdx] || '').trim() : '';
       const fp = fpIdx >= 0 ? String(row[fpIdx] || '').trim() : '';
 
+      let loc = locIdx >= 0 ? String(row[locIdx] || '').trim() : '';
+      let pLoc = parentLocIdx >= 0 ? String(row[parentLocIdx] || '').trim() : '';
+
+      const customAreas = useMapStore.getState().customAreas || [];
+      const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
+
+      if (pLoc && !allParentLocations.includes(pLoc)) {
+         if (!loc || loc === pLoc) loc = pLoc;
+         else loc = `${pLoc}, ${loc}`;
+         pLoc = 'Surat';
+      } else if (!pLoc) {
+         pLoc = determineParentLocation(loc);
+      }
+
       const rowData = {
         id, tp, op: opIdx >= 0 ? String(row[opIdx] || '').trim() : '', fp,
         area: areaIdx >= 0 ? String(row[areaIdx] || '').trim() : '',
-        location: locIdx >= 0 ? String(row[locIdx] || '').trim() : '',
-        parentLocation: parentLocIdx >= 0 ? String(row[parentLocIdx] || '').trim() : '',
+        location: loc,
+        parentLocation: pLoc,
         landmark: landmarkIdx >= 0 ? String(row[landmarkIdx] || '').trim() : '',
         type: catIdx >= 0 ? String(row[catIdx] || '').trim() : '',
         remarks: remarksIdx >= 0 ? String(row[remarksIdx] || '').trim() : '',
@@ -795,16 +809,34 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const id = lIdIdx >= 0 ? String(row[lIdIdx] || '').trim() : '';
         if (id) {
           const lName = lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '';
+          
+          let loc = lLocIdx >= 0 ? String(row[lLocIdx] || '').trim() : '';
+          let pLoc = lParentLocIdx >= 0 ? String(row[lParentLocIdx] || '').trim() : '';
+          
+          const customAreas = useMapStore.getState().customAreas || [];
+          const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
+
+          if (pLoc && !allParentLocations.includes(pLoc)) {
+             if (!loc || loc === pLoc) loc = pLoc;
+             else loc = `${pLoc}, ${loc}`;
+             pLoc = 'Surat';
+          } else if (!pLoc) {
+             pLoc = determineParentLocation(loc);
+          }
+
           if (sheetMap.has(`id:${id}`)) {
              sheetMap.get(`id:${id}`).landmark = lName;
+             // Ensure parent location is corrected in the existing polygon data too
+             sheetMap.get(`id:${id}`).location = loc;
+             sheetMap.get(`id:${id}`).parentLocation = pLoc;
              continue;
           }
           sheetMap.set(`id:${id}`, {
             id,
             name: lName,
             landmark: lName,
-            location: lLocIdx >= 0 ? String(row[lLocIdx] || '').trim() : '',
-            parentLocation: lParentLocIdx >= 0 ? String(row[lParentLocIdx] || '').trim() : '',
+            location: loc,
+            parentLocation: pLoc,
             lat: lLatIdx >= 0 ? String(row[lLatIdx] || '').trim() : '',
             lng: lLngIdx >= 0 ? String(row[lLngIdx] || '').trim() : '',
             remarks: lRemarksIdx >= 0 ? String(row[lRemarksIdx] || '').trim() : '',

@@ -6,9 +6,16 @@ import { Toaster } from 'react-hot-toast'
 import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
+import { initGoogleIdentity, setAccessToken } from './services/googleSheets'
 
 function App() {
   useEffect(() => {
+    const { googleClientId } = useMapStore.getState();
+    initGoogleIdentity(googleClientId, (response) => {
+      setAccessToken(response.access_token);
+      useMapStore.setState({ googleSheetsConnected: true });
+    });
+
     // Initial routing logic
     if (window.location.pathname.replace(/\/$/, '').endsWith('admin')) {
       useMapStore.getState().setAppMode('edit');

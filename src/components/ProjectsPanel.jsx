@@ -399,22 +399,71 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {appMode === 'edit' && (
-              <a
-                href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
-                target="_blank"
-                rel="noreferrer"
-                title="Open Google Sheet"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#10b981', cursor: 'pointer', transition: 'transform 0.2s',
-                  background: 'rgba(16, 185, 129, 0.1)', padding: 6, borderRadius: '50%',
-                  border: '1px solid rgba(16, 185, 129, 0.3)'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
+              <>
+                {/* 
+                <button
+                  onClick={async () => {
+                    const state = useMapStore.getState();
+                    if (!state.googleSheetsConnected) {
+                      const { requestLogin } = await import('../services/googleSheets');
+                      requestLogin();
+                      return;
+                    }
+                    if (!confirm('Are you sure you want to fix all locations and overwrite the Google Sheet?')) return;
+                    try {
+                      const { features, customAreas, spreadsheetId } = state;
+                      const { CATEGORY_MAP, determineParentLocation } = await import('../config/categories');
+                      const { overwriteSheetWithFeatures } = await import('../services/googleSheets');
+                      
+                      const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
+                      
+                      const fixedFeatures = features.map(f => {
+                        let loc = f.data?.location || '';
+                        let pLoc = f.data?.parentLocation || f.data?.parent_location;
+                        if (pLoc && !allParentLocations.includes(pLoc)) {
+                          if (!loc || loc === pLoc) loc = pLoc;
+                          else loc = `${pLoc}, ${loc}`;
+                          pLoc = 'Surat';
+                        } else if (!pLoc) {
+                          pLoc = determineParentLocation(loc);
+                        }
+                        return { ...f, data: { ...f.data, parentLocation: pLoc, parent_location: pLoc, location: loc } };
+                      });
+                      
+                      useMapStore.setState({ features: fixedFeatures });
+                      await overwriteSheetWithFeatures(spreadsheetId, fixedFeatures, 'Polygons');
+                      alert('Done! Successfully fixed locations and overwrote Polygons sheet.');
+                    } catch (e) {
+                      console.error(e);
+                      alert('Error: ' + e.message);
+                    }
+                  }}
+                  style={{
+                    padding: '6px 12px', background: '#ef4444', color: 'white', 
+                    borderRadius: 8, fontSize: 12, border: 'none', cursor: 'pointer',
+                    fontWeight: 'bold', boxShadow: '0 4px 10px rgba(239, 68, 68, 0.4)'
+                  }}
+                >
+                  Fix DB
+                </button>
+                */}
+                <a
+                  href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open Google Sheet"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#10b981', cursor: 'pointer', transition: 'transform 0.2s',
+                    background: 'rgba(16, 185, 129, 0.1)', padding: 6, borderRadius: '50%',
+                    border: '1px solid rgba(16, 185, 129, 0.3)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                >
                 <FaFileExcel size={16} />
               </a>
+              </>
             )}
             <span style={{
               fontSize: 10, fontWeight: 700, color: '#f59e0b',

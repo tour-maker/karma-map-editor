@@ -44,7 +44,7 @@ function SearchableSelect({ value, options, onChange, disabled }) {
              <input 
                 type="text" 
                 autoFocus
-                placeholder="Search areas..."
+                placeholder="Search or add new..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 style={{
@@ -53,6 +53,7 @@ function SearchableSelect({ value, options, onChange, disabled }) {
                 }}
               />
           </div>
+          
           {filteredOptions.length === 0 ? (
             <div style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>No matching areas</div>
           ) : (
@@ -171,8 +172,19 @@ export default function PropertyInfoPanel() {
 
   useEffect(() => {
     if (displayFeature && displayFeature.data) {
-      const loc = displayFeature.data.location || '';
-      const pLoc = displayFeature.data.parentLocation || displayFeature.data.parent_location || determineParentLocation(loc);
+      let loc = displayFeature.data.location || '';
+      let pLoc = displayFeature.data.parentLocation || displayFeature.data.parent_location;
+      
+      if (pLoc && !allParentLocations.includes(pLoc)) {
+        if (!loc || loc === pLoc) {
+          loc = pLoc;
+        } else {
+          loc = `${pLoc}, ${loc}`;
+        }
+        pLoc = 'Surat';
+      } else if (!pLoc) {
+        pLoc = determineParentLocation(loc);
+      }
       setFormData({
         name: displayFeature.data.name || '',
         tp: displayFeature.data.tp || '',
@@ -681,7 +693,7 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Parent Location</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Primary Location</label>
             <SearchableSelect
               value={formData.parentLocation || determineParentLocation(formData.location)}
               options={allParentLocations}
@@ -691,7 +703,7 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Location</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
             <SearchableSelect
               value={formData.location}
               options={allSecondaryLocations}

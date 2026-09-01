@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { FiLock, FiArrowRight } from 'react-icons/fi';
+import { FiLock, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function AdminAuthOverlay() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
 
   const handleLogin = (e) => {
@@ -93,23 +94,45 @@ export default function AdminAuthOverlay() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'left' }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginLeft: 4 }}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter Password"
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                borderRadius: 12,
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(30, 41, 59, 0.6)',
-                color: '#fff',
-                fontSize: 14,
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter Password"
+                style={{
+                  width: '100%',
+                  padding: '12px 40px 12px 16px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'rgba(30, 41, 59, 0.6)',
+                  color: '#fff',
+                  fontSize: 14,
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 4
+                }}
+              >
+                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button
