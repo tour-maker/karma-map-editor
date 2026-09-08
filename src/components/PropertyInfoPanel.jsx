@@ -190,12 +190,12 @@ function PolygonDocuments({ polygonId }) {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)'
             }}>
-              <a href={`http://localhost:5050/api/documents/download/${doc._id}`} target="_blank" rel="noreferrer"
+              <a href={`/viewer/${doc._id}?name=${encodeURIComponent(doc.originalName)}`} target="_blank" rel="noreferrer"
                  style={{ color: '#cbd5e1', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden' }}>
-                <FiExternalLink size={12} />
+                <FiExternalLink size={12} style={{ flexShrink: 0 }} />
                 <span style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{doc.originalName}</span>
               </a>
-              <button onClick={() => handleDelete(doc._id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}>
+              <button onClick={() => handleDelete(doc._id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4, flexShrink: 0 }}>
                 <FiTrash2 size={14} />
               </button>
             </div>
@@ -220,6 +220,8 @@ const panelStyle = {
   transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease',
   display: 'flex',
   flexDirection: 'column',
+  maxHeight: 'calc(100vh - 32px)',
+  overflowY: 'auto'
 };
 
 export default function PropertyInfoPanel() {
