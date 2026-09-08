@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor } from '../config/categories';
@@ -9,6 +9,7 @@ import AddAreaModal from './AddAreaModal';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { zoomToProperty, fitAllBounds } from '../services/googleMaps';
 import { cleanLandmarkTitle, resolveLandmarkLocation } from './LandmarkManager';
+import PendingSubmissionsPanel from './PendingSubmissionsPanel';
 
 // Inject Custom Scrollbar for Projects Panel
 if (typeof document !== 'undefined' && !document.getElementById('projects-panel-scrollbar-styles')) {
@@ -95,6 +96,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const setSelectedAreaName = useMapStore(state => state.setSelectedAreaName);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const theme = useMapStore(state => state.theme);
+  const googleAccessToken = useMapStore(state => state.googleAccessToken);
   const map = useGoogleMap();
 
   const isDark = theme === 'dark';
@@ -392,61 +394,20 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           paddingBottom: 10, borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
         }}>
-          <img
-            src="https://karmagroup.co.in/images/Karma%20logo%20R%20PNG%20(1)%20(1).png"
-            alt="Karma Realtors Logo"
-            style={{ height: 38, maxWidth: 220, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.25))' }}
-          />
+          <a
+            href="http://karmagroup.co.in/Home/Index?Area=Surat&Latitude=21.1702&Longitude=72.8311"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'flex', cursor: 'pointer', outline: 'none' }}
+          >
+            <img
+              src="https://karmagroup.co.in/images/Karma%20logo%20R%20PNG%20(1)%20(1).png"
+              alt="Karma Realtors Logo"
+              style={{ height: 38, maxWidth: 220, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.25))' }}
+            />
+          </a>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {appMode === 'edit' && (
-              <>
-                {/* 
-                <button
-                  onClick={async () => {
-                    const state = useMapStore.getState();
-                    if (!state.googleSheetsConnected) {
-                      const { requestLogin } = await import('../services/googleSheets');
-                      requestLogin();
-                      return;
-                    }
-                    if (!confirm('Are you sure you want to fix all locations and overwrite the Google Sheet?')) return;
-                    try {
-                      const { features, customAreas, spreadsheetId } = state;
-                      const { CATEGORY_MAP, determineParentLocation } = await import('../config/categories');
-                      const { overwriteSheetWithFeatures } = await import('../services/googleSheets');
-                      
-                      const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
-                      
-                      const fixedFeatures = features.map(f => {
-                        let loc = f.data?.location || '';
-                        let pLoc = f.data?.parentLocation || f.data?.parent_location;
-                        if (pLoc && !allParentLocations.includes(pLoc)) {
-                          if (!loc || loc === pLoc) loc = pLoc;
-                          else loc = `${pLoc}, ${loc}`;
-                          pLoc = 'Surat';
-                        } else if (!pLoc) {
-                          pLoc = determineParentLocation(loc);
-                        }
-                        return { ...f, data: { ...f.data, parentLocation: pLoc, parent_location: pLoc, location: loc } };
-                      });
-                      
-                      useMapStore.setState({ features: fixedFeatures });
-                      await overwriteSheetWithFeatures(spreadsheetId, fixedFeatures, 'Polygons');
-                      alert('Done! Successfully fixed locations and overwrote Polygons sheet.');
-                    } catch (e) {
-                      console.error(e);
-                      alert('Error: ' + e.message);
-                    }
-                  }}
-                  style={{
-                    padding: '6px 12px', background: '#ef4444', color: 'white', 
-                    borderRadius: 8, fontSize: 12, border: 'none', cursor: 'pointer',
-                    fontWeight: 'bold', boxShadow: '0 4px 10px rgba(239, 68, 68, 0.4)'
-                  }}
-                >
-                  Fix DB
-                </button>
-                */}
                 <a
                   href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
                   target="_blank"
@@ -461,17 +422,18 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                <FaFileExcel size={16} />
-              </a>
-              </>
+                  <FaFileExcel size={16} />
+                </a>
             )}
-            <span style={{
-              fontSize: 10, fontWeight: 700, color: '#f59e0b',
-              background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
-              padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
-            }}>
-              Map Editor
-            </span>
+            {appMode === 'edit' && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: '#f59e0b',
+                background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
+                padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
+              }}>
+                Map Editor
+              </span>
+            )}
             {isMobileOpen && (
               <button 
                 onClick={() => setIsMobileOpen(false)}
@@ -579,8 +541,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
 
         {/* Desktop Action Buttons */}
         <div className="desktop-tabs-wrapper" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          {activeTab === 'projects' ? (
-            appMode === 'edit' && (
+          {activeTab === 'projects' || activeTab === 'submissions' ? (
+            <>
               <button
                 type="button"
                 onClick={onAddProject}
@@ -592,9 +554,27 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
                 }}
               >
-                <FiPlus size={14} color="#000000" /> Add Project
+                <FiPlus size={14} color="#000000" /> {appMode === 'edit' ? 'Add Project' : 'Add Polygon'}
               </button>
-            )
+              
+              {appMode === 'edit' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('submissions')}
+                  className="btn-hover-effect"
+                  style={{
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '9px 0', 
+                    background: activeTab === 'submissions' ? '#10b981' : 'linear-gradient(135deg, #475569 0%, #334155 100%)', 
+                    color: '#fff', border: 'none',
+                    borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(71, 85, 105, 0.35)', transition: 'all 0.2s'
+                  }}
+                >
+                  <FiClock size={14} color="#fff" /> Requests
+                </button>
+              )}
+            </>
           ) : activeTab === 'landmarks' ? (
             appMode === 'edit' && (
               <button
@@ -611,8 +591,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 <FiMapPin size={14} /> Add Landmark
               </button>
             )
-          ) : (
-            appMode === 'edit' && (
+          ) : activeTab === 'areas' && appMode === 'edit' ? (
               <button
                 type="button"
                 onClick={() => setIsAddingArea(true)}
@@ -626,8 +605,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               >
                 <FiPlus size={14} color="#000000" /> Add Area
               </button>
-            )
-          )}
+          ) : null}
         </div>
 
         {/* Navigation Tabs Bar (Hamburger Dropdown Style for Landscape Mobile) */}
@@ -671,6 +649,12 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 <FiGlobe size={15} color="#f59e0b" />
                 <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Areas</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#fde68a', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 7px', borderRadius: 10 }}>{parentLocationsList.length}</span>
+              </>
+            )}
+            {activeTab === 'submissions' && (
+              <>
+                <FiClock size={15} color="#f59e0b" />
+                <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Requests</span>
               </>
             )}
           </div>
@@ -780,41 +764,57 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'areas' ? 700 : 500 }}>Areas</span>
                   <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === 'areas' ? '#fde68a' : '#64748b', background: activeTab === 'areas' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 8 }}>{parentLocationsList.length}</span>
                 </button>
+
+                {appMode === 'edit' && (
+                  <button
+                    onClick={() => { setActiveTab('submissions'); setIsTabDropdownOpen(false); }}
+                    className="btn-hover-effect"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                      background: activeTab === 'submissions' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                      border: 'none', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                      color: activeTab === 'submissions' ? '#f8fafc' : '#94a3b8'
+                    }}
+                  >
+                    <FiClock size={15} color={activeTab === 'submissions' ? '#f59e0b' : '#94a3b8'} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'submissions' ? 700 : 500 }}>Requests</span>
+                  </button>
+                )}
              </div>
           )}
         </div>
 
-                
-
         {/* Search Bar Input */}
-        <div style={{ position: 'relative' }}>
-          <FiSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245, 158, 11, 0.75)' }} size={14} />
-          <input
-            type="text"
-            placeholder={activeTab === 'projects' ? "Search projects..." : activeTab === 'landmarks' ? "Search landmarks..." : "Search areas..."}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input-styled"
-            style={{
-              width: '100%', padding: '8.5px 30px 8.5px 32px', borderRadius: 10,
-              border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : '#cbd5e1'}`, fontSize: 12.5, boxSizing: 'border-box',
-              outline: 'none', transition: 'all 0.2s', background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff', color: isDark ? '#f8fafc' : '#0f172a',
-              boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
-            }}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
+        {activeTab !== 'submissions' && (
+          <div style={{ position: 'relative' }}>
+            <FiSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245, 158, 11, 0.75)' }} size={14} />
+            <input
+              type="text"
+              placeholder={activeTab === 'projects' ? "Search projects..." : activeTab === 'landmarks' ? "Search landmarks..." : "Search areas..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input-styled"
               style={{
-                position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex'
+                width: '100%', padding: '8.5px 30px 8.5px 32px', borderRadius: 10,
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.18)' : '#cbd5e1'}`, fontSize: 12.5, boxSizing: 'border-box',
+                outline: 'none', transition: 'all 0.2s', background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff', color: isDark ? '#f8fafc' : '#0f172a',
+                boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
               }}
-            >
-              <FiX size={14} />
-            </button>
-          )}
-        </div>
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex'
+                }}
+              >
+                <FiX size={14} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Items List Container */}
@@ -823,9 +823,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
         className="projects-list-scroll"
         style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}
       >
-        {virtualRows.length === 0 ? (
+        {activeTab === 'submissions' ? (
+          <PendingSubmissionsPanel />
+        ) : virtualRows.length === 0 ? (
           <div style={{ padding: '24px 16px', color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
-            {activeTab === 'projects' ? 'No projects found.' : 'No landmarks found.'}
+            {activeTab === 'projects' ? 'No projects found.' : activeTab === 'landmarks' ? 'No landmarks found.' : 'No areas match your search.'}
           </div>
         ) : (
           <div

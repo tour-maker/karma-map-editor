@@ -523,6 +523,11 @@ export default function LandmarkManager() {
           cluster.featureIds,
           () => {
             map.panTo(cluster.pos);
+            const { setSelectedFeatureId, setIsInfoPanelOpen } = useMapStore.getState();
+            if (cluster.featureIds && cluster.featureIds.length > 0) {
+              setSelectedFeatureId(cluster.featureIds[0]);
+              setIsInfoPanelOpen(true);
+            }
           }
         );
 

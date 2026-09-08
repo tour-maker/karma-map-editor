@@ -5,7 +5,7 @@ import { CATEGORY_MAP, determineParentLocation } from '../config/categories';
 import { fetchAndMergeSheetUpdates, repairSheet1Headers, overwriteSheetWithFeatures, overwriteAreasSheet, overwriteLandmarksSheet } from '../services/googleSheets';
 import toast from 'react-hot-toast';
 
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6PYhg46pRnBkkcAfp-RkmreiGHIkwYLcNXI03eujyc1bSSTH0kZZ93auAm7XtcjI/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz-uODChErEEwzVQOeQUefR-Q0yhsOWFHxolbpxmSTu4SyVl_0Hpec-mG2kgIZH7-A/exec';
 
 export default function GoogleSheetsConnect() {
   const [isUpdatingMap, setIsUpdatingMap] = useState(false);
@@ -80,6 +80,17 @@ export default function GoogleSheetsConnect() {
         const landmarkVal = d.landmark || f.landmark || '';
         const typeVal = d.type || '';
         const remarksVal = d.remarks || f.remarks || '';
+        
+        let partyNameVal = d.partyName || f.partyName || '';
+        let partyPhoneVal = d.partyPhone || f.partyPhone || '';
+        let brokerNameVal = d.brokerName || f.brokerName || '';
+        let brokerPhoneVal = d.brokerPhone || f.brokerPhone || '';
+
+        if (partyNameVal.includes('[{"lat":')) partyNameVal = '';
+        if (partyPhoneVal.includes('[{"lat":')) partyPhoneVal = '';
+        if (brokerNameVal.includes('[{"lat":')) brokerNameVal = '';
+        if (brokerPhoneVal.includes('[{"lat":')) brokerPhoneVal = '';
+
         return {
           id: f.id,
           type: f.type,
@@ -93,33 +104,50 @@ export default function GoogleSheetsConnect() {
           landmark: landmarkVal,
           category: typeVal,
           remarks: remarksVal,
-          data: { tp: tpVal, op: opVal, fp: fpVal, area: areaVal, location: loc, parentLocation: parentLoc, landmark: landmarkVal, type: typeVal, remarks: remarksVal }
+          partyName: partyNameVal,
+          partyPhone: partyPhoneVal,
+          brokerName: brokerNameVal,
+          brokerPhone: brokerPhoneVal,
+          data: { tp: tpVal, op: opVal, fp: fpVal, area: areaVal, location: loc, parentLocation: parentLoc, landmark: landmarkVal, type: typeVal, remarks: remarksVal, partyName: partyNameVal, partyPhone: partyPhoneVal, brokerName: brokerNameVal, brokerPhone: brokerPhoneVal }
         };
       });
 
       const polygonFeatures = cleanFeatures.filter(cf => !(cf.id?.startsWith('landmark-') || cf.category === 'Landmark'));
 
-      const headerRow = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'coordinates'];
+      const headerRow = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates'];
       const dataRows = polygonFeatures.map(cf => [
         cf.id || '', cf.tp || '', cf.op || '', cf.fp || '',
         cf.area != null ? String(cf.area) : '',
         cf.location || '', cf.parentLocation || '', cf.landmark || '',
         cf.category || '', cf.remarks || '',
+        cf.partyName || '', cf.partyPhone || '', cf.brokerName || '', cf.brokerPhone || '',
         cf.coordinates && cf.coordinates.length > 0 ? JSON.stringify(cf.coordinates) : ''
       ]);
       const cleanRowsWithHeaders = [headerRow, ...dataRows];
 
       // Build areaRows
-      const areaHeaders = ['Parent Location', 'Secondary Location'];
+      const areaHeaders = ['Parent Location', 'Secondary Location', 'Polygon IDs'];
       const areaRows = [areaHeaders];
       const customAreas = useMapStore.getState().customAreas || [];
       const allParents = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
       allParents.forEach(parent => {
         const subs = CATEGORY_MAP[parent] || [];
         if (subs.length > 0) {
-          subs.forEach(sub => areaRows.push([parent, sub]));
+          subs.forEach(sub => {
+            const matchedIds = polygonFeatures
+              .filter(pf => pf.parentLocation === parent && pf.location === sub)
+              .map(pf => pf.id)
+              .filter(Boolean)
+              .join(',');
+            areaRows.push([parent, sub, matchedIds]);
+          });
         } else {
-          areaRows.push([parent, '']);
+          const matchedIds = polygonFeatures
+            .filter(pf => pf.parentLocation === parent && (!pf.location || pf.location === parent))
+            .map(pf => pf.id)
+            .filter(Boolean)
+            .join(',');
+          areaRows.push([parent, '', matchedIds]);
         }
       });
 

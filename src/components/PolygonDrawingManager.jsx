@@ -33,7 +33,6 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
 
   useImperativeHandle(ref, () => ({
     startDrawing: () => {
-      if (appMode === 'viewer') return;
       setIsDrawing(true);
     },
     stopDrawing: () => {
@@ -119,7 +118,7 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
   }, [clearActivePolygon, onPolygonComplete, removePathListeners, appMode])
 
   useEffect(() => {
-    if (!map || !isDrawing || appMode === 'viewer') {
+    if (!map || !isDrawing) {
       return undefined
     }
 

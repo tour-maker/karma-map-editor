@@ -70,20 +70,29 @@ export function getPropertyTypeColor(rawType) {
 export function determineParentLocation(location) {
   if (!location) return 'Surat';
   const locStr = String(location).trim();
+  const locLower = locStr.toLowerCase();
 
   // 1. Exact match with any top-level key first
-  for (const [parent, subs] of Object.entries(CATEGORY_MAP)) {
-    if (locStr.toLowerCase() === parent.toLowerCase()) return parent;
+  for (const parent of Object.keys(CATEGORY_MAP)) {
+    if (locLower === parent.toLowerCase()) return parent;
   }
   
   // 2. Exact match with any sub-location
   for (const [parent, subs] of Object.entries(CATEGORY_MAP)) {
-    if (Array.isArray(subs) && subs.some(sub => sub.toLowerCase() === locStr.toLowerCase())) {
+    if (Array.isArray(subs) && subs.some(sub => sub.toLowerCase() === locLower)) {
       return parent;
     }
   }
 
-  // 3. Fallback: Anything unknown falls under Surat
+  // 3. Substring match for Primary Locations (ignore Surat fallback for now)
+  for (const parent of Object.keys(CATEGORY_MAP)) {
+    if (parent === 'Surat') continue;
+    if (locLower.includes(parent.toLowerCase())) {
+      return parent;
+    }
+  }
+
+  // 4. Fallback: Anything unknown falls under Surat
   return 'Surat';
 }
 

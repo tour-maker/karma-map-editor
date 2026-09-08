@@ -101,6 +101,109 @@ function getMatchBadge(feature) {
     : badge.label;
 
   return { ...badge, label };
+  return { ...badge, label };
+}
+
+function PolygonDocuments({ polygonId }) {
+  const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (polygonId) fetchDocs();
+  }, [polygonId]);
+
+  const fetchDocs = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5050/api/documents/${polygonId}`);
+      if (res.ok) setDocs(await res.json());
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('pdfs', files[i]);
+    }
+    try {
+      const res = await fetch(`http://localhost:5050/api/documents/${polygonId}`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        toast.success('Documents uploaded!');
+        fetchDocs();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Upload failed');
+      }
+    } catch (e) {
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
+      e.target.value = null; // reset input
+    }
+  };
+
+  const handleDelete = async (docId) => {
+    if (!window.confirm('Delete this document permanently?')) return;
+    try {
+      const res = await fetch(`http://localhost:5050/api/documents/${docId}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Document deleted');
+        setDocs(docs.filter(d => d._id !== docId));
+      } else {
+        toast.error('Failed to delete');
+      }
+    } catch (e) {
+      toast.error('Delete failed');
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h3 style={{ color: '#f8fafc', fontSize: 13, margin: 0 }}>Admin Documents</h3>
+        <label style={{
+          background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)',
+          padding: '4px 8px', borderRadius: 6, fontSize: 11, cursor: uploading ? 'wait' : 'pointer', fontWeight: 600
+        }}>
+          {uploading ? 'Uploading...' : '+ Upload PDF'}
+          <input type="file" multiple accept=".pdf" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
+        </label>
+      </div>
+
+      {loading ? <div style={{ color: '#94a3b8', fontSize: 12 }}>Loading documents...</div> : 
+       docs.length === 0 ? <div style={{ color: '#94a3b8', fontSize: 12 }}>No documents attached.</div> : 
+       (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {docs.map(doc => (
+            <div key={doc._id} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)'
+            }}>
+              <a href={`http://localhost:5050/api/documents/download/${doc._id}`} target="_blank" rel="noreferrer"
+                 style={{ color: '#cbd5e1', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden' }}>
+                <FiExternalLink size={12} />
+                <span style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{doc.originalName}</span>
+              </a>
+              <button onClick={() => handleDelete(doc._id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}>
+                <FiTrash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const panelStyle = {
@@ -135,6 +238,7 @@ export default function PropertyInfoPanel() {
   const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
   const allSecondaryLocations = Array.from(new Set([...Object.values(CATEGORY_MAP).flat(), ...customAreas])).filter(Boolean).sort();
   const allLandmarks = Array.from(new Set(features.map(f => f.data?.landmark || f.landmark).filter(Boolean))).sort();
+  const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
 
   const feature = features.find(f => f.id === selectedFeatureId);
   const [cachedFeature, setCachedFeature] = useState(null);
@@ -175,8 +279,9 @@ export default function PropertyInfoPanel() {
       let loc = displayFeature.data.location || '';
       let pLoc = displayFeature.data.parentLocation || displayFeature.data.parent_location;
       
-      if (pLoc && !allParentLocations.includes(pLoc)) {
-        if (!loc || loc === pLoc) {
+      const lowerAllParentLocs = allParentLocations.map(l => l.toLowerCase());
+      if (pLoc && !lowerAllParentLocs.includes(pLoc.toLowerCase())) {
+        if (!loc || loc.toLowerCase() === pLoc.toLowerCase()) {
           loc = pLoc;
         } else {
           loc = `${pLoc}, ${loc}`;
@@ -206,9 +311,8 @@ export default function PropertyInfoPanel() {
 
   if (!displayFeature) return null;
 
-  // Landmarks have their own UI — don't show the polygon Property Info panel for them
-  const isLandmarkFeature = displayFeature.id?.startsWith('landmark-') || displayFeature.data?.type === 'Landmark';
-  if (isLandmarkFeature) return null;
+  const isLandmarkFeature = displayFeature.id?.startsWith('landmark-') || displayFeature.data?.type === 'Landmark' || displayFeature.type === 'marker';
+  if (appMode !== 'edit' && isLandmarkFeature) return null;
 
   const isEdit = appMode === 'edit';
   const matchBadge = getMatchBadge(displayFeature);
@@ -555,6 +659,8 @@ export default function PropertyInfoPanel() {
     );
   }
 
+  const isMarker = displayFeature?.type === 'marker';
+
   return (
     <div
       key={displayFeature.id}
@@ -571,7 +677,7 @@ export default function PropertyInfoPanel() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#e2e8f0' }}>
-            {formData.landmark ? 'Landmark Info' : 'Property Info'}
+            {isMarker ? 'Landmark info' : 'Polygon info'}
           </h3>
         </div>
         <button
@@ -600,7 +706,61 @@ export default function PropertyInfoPanel() {
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          {isMarker ? (
+            <>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Landmark Name</label>
+                <input
+                  type="text"
+                  value={formData.name || formData.landmark || ''}
+                  onChange={(e) => { handleChange('name', e.target.value); handleChange('landmark', e.target.value); }}
+                  disabled={!isEdit}
+                  style={{
+                    width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
+                    fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
+                    outline: 'none', boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Primary Location</label>
+                <SearchableSelect
+                  value={formData.parentLocation || determineParentLocation(formData.location)}
+                  options={allParentLocations}
+                  onChange={(val) => handleChange('parentLocation', val)}
+                  disabled={!isEdit}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
+                <SearchableSelect
+                  value={formData.location}
+                  options={allSecondaryLocations}
+                  onChange={(val) => handleChange('location', val)}
+                  disabled={!isEdit}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Remarks</label>
+                <textarea
+                  value={formData.remarks}
+                  onChange={(e) => handleChange('remarks', e.target.value)}
+                  disabled={!isEdit}
+                  rows={3}
+                  style={{
+                    width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
+                    fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
+                    outline: 'none', boxSizing: 'border-box', resize: 'vertical'
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 8 }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>T.P.</label>
               <input
@@ -848,6 +1008,12 @@ export default function PropertyInfoPanel() {
                 </div>
               )}
             </div>
+          )}
+          
+          {isAdminAuthenticated && (
+            <PolygonDocuments polygonId={displayFeature.id} />
+          )}
+          </>
           )}
         </div>
       </div>

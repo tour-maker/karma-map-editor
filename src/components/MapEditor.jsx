@@ -1,4 +1,4 @@
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, Polygon } from '@react-google-maps/api';
 import { useCallback, useRef, useEffect, useState } from 'react';
 import SearchBox from './SearchBox';
 import PolygonDrawingManager from './PolygonDrawingManager';
@@ -13,6 +13,7 @@ import RightActionDock from './ui/RightActionDock';
 import WhatsAppCTA from './ui/WhatsAppCTA';
 import FeatureInstanceManager from './FeatureInstanceManager';
 import LandmarkManager from './LandmarkManager';
+import UserSubmissionModal from './ui/UserSubmissionModal';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap, useSetGoogleMap } from '../context/GoogleMapContext';
 import {
@@ -58,6 +59,9 @@ export default function MapEditor() {
   const setKmlLayers = useMapStore(state => state.setKmlLayers);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const setUnresolvedExcelRows = useMapStore(state => state.setUnresolvedExcelRows);
+  const isInfoPanelOpen = useMapStore(state => state.isInfoPanelOpen);
+  const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
+  const previewSubmission = useMapStore(state => state.previewSubmission);
 
   const isDark = theme === 'dark';
   const containerStyle = {
@@ -70,6 +74,7 @@ export default function MapEditor() {
 
   const drawingManagerRef = useRef(null);
   const [searchMarkerPos, setSearchMarkerPos] = useState(null);
+  const [userSubmissionData, setUserSubmissionData] = useState(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
@@ -138,6 +143,22 @@ export default function MapEditor() {
       const path = coordinates.map(c => new window.google.maps.LatLng(c.lat, c.lng));
       const areaSqMeters = window.google.maps.geometry.spherical.computeArea(path);
       calculatedArea = Math.round(areaSqMeters * 1.19599); // convert sq meters to sq yards
+    }
+
+    const currentMode = useMapStore.getState().appMode;
+    
+    // Viewer Mode Interception for Submissions
+    if (currentMode === 'viewer') {
+      setUserSubmissionData({ coordinates, area: calculatedArea });
+      
+      // Remove the instance from map so it doesn't clutter until approved
+      polygonInstance.setMap(null);
+      if (Array.isArray(polygonInstance.pathListeners)) {
+        polygonInstance.pathListeners.forEach((listener) => {
+          window.google?.maps.event.removeListener(listener);
+        });
+      }
+      return;
     }
 
     const id = `drawn-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -658,10 +679,54 @@ export default function MapEditor() {
           onAddLandmark={handleStartAddLandmark}
         />
       )}
+
+      {appMode === 'viewer' && (
+        <div style={{
+          position: 'absolute', top: 20, left: 20, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 16,
+          background: 'rgba(15, 23, 42, 0.85)', padding: '8px 10px 8px 14px', borderRadius: 12,
+          backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+        }}>
+          <a
+            href="http://karmagroup.co.in/Home/Index?Area=Surat&Latitude=21.1702&Longitude=72.8311"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'flex', cursor: 'pointer', outline: 'none' }}
+          >
+            <img
+              src="https://karmagroup.co.in/images/Karma%20logo%20R%20PNG%20(1)%20(1).png"
+              alt="Karma Realtors Logo"
+              style={{ height: 32, maxWidth: 180, objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3))' }}
+            />
+          </a>
+          <button
+            type="button"
+            onClick={() => drawingManagerRef.current?.startDrawing()}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '8px 12px', background: 'rgba(245, 158, 11, 0.12)', color: '#fde68a', border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.25)'; e.currentTarget.style.transform = 'scale(1.02)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)'; e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <span style={{ fontSize: 14 }}>+</span> Add Your Property
+          </button>
+        </div>
+      )}
       <FilterBar />
       <RightActionDock />
       <WhatsAppCTA />
       <PropertyInfoPanel />
+
+      {userSubmissionData && (
+        <UserSubmissionModal 
+          data={userSubmissionData} 
+          onClose={() => setUserSubmissionData(null)}
+          onSubmitSuccess={() => setUserSubmissionData(null)}
+        />
+      )}
 
       {landmarkModalPos && (
         <AddLandmarkModal
@@ -715,6 +780,20 @@ export default function MapEditor() {
                 url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
               }}
               animation={window.google?.maps?.Animation?.DROP}
+            />
+          )}
+
+          {previewSubmission && previewSubmission.coordinates && (
+            <Polygon
+              paths={previewSubmission.coordinates}
+              options={{
+                fillColor: '#3b82f6',
+                fillOpacity: 0.6,
+                strokeColor: '#60a5fa',
+                strokeWeight: 4,
+                zIndex: 9999,
+                clickable: false
+              }}
             />
           )}
 

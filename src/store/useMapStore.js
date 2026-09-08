@@ -25,6 +25,9 @@ export const useMapStore = create(
         globalAreaUnit: 'yards',
         customAreas: [],
         syncedAreas: [],
+        previewSubmission: null,
+
+        setPreviewSubmission: (sub) => set({ previewSubmission: sub }),
 
         addCustomArea: (areaName) => set((state) => {
           const name = areaName?.trim();
@@ -216,7 +219,10 @@ export const useMapStore = create(
           showLabels: state.showLabels,
           spreadsheetId: state.spreadsheetId,
           globalAreaUnit: state.globalAreaUnit,
-          customAreas: state.customAreas
+          customAreas: state.customAreas,
+          syncedAreas: state.syncedAreas,
+          isAdminAuthenticated: state.isAdminAuthenticated,
+          googleAccessToken: state.googleAccessToken,
         };
       }
     }

@@ -7,22 +7,36 @@ export default function AdminAuthOverlay() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const validUsername = import.meta.env.VITE_ADMIN_USER || 'admin';
-    const validPassword = import.meta.env.VITE_ADMIN_PASS || 'karma@2024';
-
-    if (username === validUsername && password === validPassword) {
-      setIsAdminAuthenticated(true);
-      toast.success('Admin access granted!', {
-        style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5050/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
       });
-    } else {
-      toast.error('Invalid ID or Password!', {
+      const data = await res.json();
+      if (res.ok && data.token) {
+        localStorage.setItem('karmaAdminJWT', data.token);
+        setIsAdminAuthenticated(true);
+        toast.success('Admin access granted!', {
+          style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
+        });
+      } else {
+        toast.error('Invalid ID or Password!', {
+          style: { background: '#0f172a', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }
+        });
+      }
+    } catch (err) {
+      toast.error('Cannot reach server. Make sure the backend is running.', {
         style: { background: '#0f172a', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }
       });
+    } finally {
+      setLoading(false);
     }
   };
 
