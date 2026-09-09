@@ -91,12 +91,12 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const appMode = useMapStore(state => state.appMode);
   const features = useMapStore(state => state.features);
   const selectedFeatureId = useMapStore(state => state.selectedFeatureId);
-  const selectedAreaName = useMapStore(state => state.selectedAreaName);
+//   const selectedAreaName = useMapStore(state => state.selectedAreaName);
   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
   const setSelectedAreaName = useMapStore(state => state.setSelectedAreaName);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const theme = useMapStore(state => state.theme);
-  const googleAccessToken = useMapStore(state => state.googleAccessToken);
+//   const googleAccessToken = useMapStore(state => state.googleAccessToken);
   const map = useGoogleMap();
 
   const isDark = theme === 'dark';

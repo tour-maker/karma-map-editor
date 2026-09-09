@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useMapStore } from '../../store/useMapStore';
+import { CATEGORY_MAP, determineParentLocation } from '../../config/categories';
+import SearchableSelect from './SearchableSelect';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
   const [formData, setFormData] = useState({
@@ -21,6 +24,10 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
     brokerPhone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const customAreas = useMapStore(state => state.customAreas) || [];
+  const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
+  const allSecondaryLocations = Array.from(new Set([...Object.values(CATEGORY_MAP).flat(), ...customAreas])).filter(Boolean).sort();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -95,13 +102,19 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Primary Location</label>
-              <input type="text" name="parentLocation" value={formData.parentLocation} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <SearchableSelect
+                value={formData.parentLocation || determineParentLocation(formData.location)}
+                options={allParentLocations}
+                onChange={(val) => setFormData(prev => ({ ...prev, parentLocation: val }))}
+              />
             </div>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Secondary Location</label>
-              <input type="text" name="location" value={formData.location} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <SearchableSelect
+                value={formData.location}
+                options={allSecondaryLocations}
+                onChange={(val) => setFormData(prev => ({ ...prev, location: val }))}
+              />
             </div>
           </div>
 

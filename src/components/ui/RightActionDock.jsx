@@ -1,5 +1,5 @@
 import { FaRegShareSquare } from 'react-icons/fa';
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -30,8 +30,8 @@ const WhatsAppIcon = ({ color = "#f59e0b", size = 22 }) => (
 );
 
 export default function RightActionDock() {
-  const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
-  const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
+//   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
+//   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const uiHidden = useMapStore(state => state.uiHidden);
 
   const [isOpen, setIsOpen] = useState(false);

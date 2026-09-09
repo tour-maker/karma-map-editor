@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { CATEGORY_MAP } from '../../config/categories';
 

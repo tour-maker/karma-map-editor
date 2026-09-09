@@ -1,4 +1,3 @@
-import React from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import toast from 'react-hot-toast';
 

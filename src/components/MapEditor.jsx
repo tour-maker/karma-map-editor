@@ -46,21 +46,21 @@ export default function MapEditor() {
   // Zustand State
   const appMode = useMapStore(state => state.appMode);
   const theme = useMapStore(state => state.theme);
-  const uiHidden = useMapStore(state => state.uiHidden);
+//   const uiHidden = useMapStore(state => state.uiHidden);
   const showLabels = useMapStore(state => state.showLabels);
   const features = useMapStore(state => state.features);
-  const selectedFeatureId = useMapStore(state => state.selectedFeatureId);
+//   const selectedFeatureId = useMapStore(state => state.selectedFeatureId);
   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
   const addFeatures = useMapStore(state => state.addFeatures);
-  const updateFeature = useMapStore(state => state.updateFeature);
-  const removeFeature = useMapStore(state => state.removeFeature);
+//   const updateFeature = useMapStore(state => state.updateFeature);
+//   const removeFeature = useMapStore(state => state.removeFeature);
   const removeFeatures = useMapStore(state => state.removeFeatures);
   const setFeatures = useMapStore(state => state.setFeatures);
   const setKmlLayers = useMapStore(state => state.setKmlLayers);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const setUnresolvedExcelRows = useMapStore(state => state.setUnresolvedExcelRows);
-  const isInfoPanelOpen = useMapStore(state => state.isInfoPanelOpen);
-  const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
+//   const isInfoPanelOpen = useMapStore(state => state.isInfoPanelOpen);
+//   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const previewSubmission = useMapStore(state => state.previewSubmission);
 
   const isDark = theme === 'dark';

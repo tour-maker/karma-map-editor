@@ -15,7 +15,7 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
 
   const addFeatures = useMapStore(state => state.addFeatures);
 
-  const locationsList = Object.keys(CATEGORY_MAP);
+//   const locationsList = Object.keys(CATEGORY_MAP);
 
   const handleSave = async (e) => {
     e.preventDefault();

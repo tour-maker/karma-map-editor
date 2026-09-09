@@ -1,5 +1,4 @@
 import React from 'react';
-
 export default function HelpInstructionOverlay({ onClose }) {
   const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' && window.innerWidth <= 768);
   const [isMobileLandscape, setIsMobileLandscape] = React.useState(

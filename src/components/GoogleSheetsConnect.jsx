@@ -12,7 +12,7 @@ export default function GoogleSheetsConnect() {
   const [isUpdatingSheet, setIsUpdatingSheet] = useState(false);
   const theme = useMapStore(state => state.theme);
   const spreadsheetId = useMapStore(state => state.spreadsheetId);
-  const isDark = theme === 'dark';
+//   const isDark = theme === 'dark';
 
   // ─── Update Map (Sheet → Map) ────────────────────────────────────────────────
   const updateMap = async (silent = false) => {

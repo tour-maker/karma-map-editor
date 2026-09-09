@@ -2,85 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useMapStore } from '../store/useMapStore';
 import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, CATEGORY_MAP } from '../config/categories';
+import SearchableSelect from './ui/SearchableSelect';
 
-function SearchableSelect({ value, options, onChange, disabled }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [wrapperRef]);
-  
-  const filteredOptions = options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
-
-  return (
-    <div ref={wrapperRef} style={{ position: 'relative' }}>
-      <div 
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        style={{
-          width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-          fontSize: 13, color: '#e2e8f0', background: disabled ? 'rgba(30, 41, 59, 0.4)' : 'rgba(30, 41, 59, 0.8)',
-          cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-        }}
-      >
-        <span style={{ opacity: value ? 1 : 0.6 }}>{value || 'Select Parent Location'}</span>
-        <span style={{ fontSize: 10, color: '#94a3b8' }}>▼</span>
-      </div>
-      
-      {isOpen && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 9999, marginTop: 4,
-          background: '#1e293b', border: '1px solid rgba(99,102,241,0.35)', borderRadius: 8,
-          maxHeight: 220, overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-        }}>
-          <div style={{ padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', position: 'sticky', top: 0, background: '#1e293b' }}>
-             <input 
-                type="text" 
-                autoFocus
-                placeholder="Search or add new..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                style={{
-                  width: '100%', padding: '6px 8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4,
-                  color: '#e2e8f0', outline: 'none', boxSizing: 'border-box', fontSize: 13
-                }}
-              />
-          </div>
-          
-          {filteredOptions.length === 0 ? (
-            <div style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>No matching areas</div>
-          ) : (
-            filteredOptions.map(opt => (
-              <div 
-                key={opt}
-                onClick={() => {
-                  onChange(opt);
-                  setIsOpen(false);
-                  setSearchTerm('');
-                }}
-                style={{
-                  padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#cbd5e1',
-                  background: value === opt ? 'rgba(59,130,246,0.2)' : 'transparent',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                onMouseOut={(e) => e.currentTarget.style.background = value === opt ? 'rgba(59,130,246,0.2)' : 'transparent'}
-              >
-                {opt}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
 import toast from 'react-hot-toast';
 import { requestLogin, syncFeatureToSheet } from '../services/googleSheets';
 
@@ -234,12 +157,12 @@ export default function PropertyInfoPanel() {
   const features = useMapStore(state => state.features);
   const updateFeature = useMapStore(state => state.updateFeature);
   const removeFeature = useMapStore(state => state.removeFeature);
-  const googleSheetsConnected = useMapStore(state => state.googleSheetsConnected);
-  const spreadsheetId = useMapStore(state => state.spreadsheetId);
+//   const googleSheetsConnected = useMapStore(state => state.googleSheetsConnected);
+//   const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const customAreas = useMapStore(state => state.customAreas) || [];
   const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
   const allSecondaryLocations = Array.from(new Set([...Object.values(CATEGORY_MAP).flat(), ...customAreas])).filter(Boolean).sort();
-  const allLandmarks = Array.from(new Set(features.map(f => f.data?.landmark || f.landmark).filter(Boolean))).sort();
+//   const allLandmarks = Array.from(new Set(features.map(f => f.data?.landmark || f.landmark).filter(Boolean))).sort();
   const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
 
   const feature = features.find(f => f.id === selectedFeatureId);

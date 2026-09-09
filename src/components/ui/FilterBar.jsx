@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { CATEGORY_MAP, PROPERTY_TYPES, PROPERTY_TYPE_COLORS, determineParentLocation } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
