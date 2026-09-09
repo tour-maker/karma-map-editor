@@ -110,6 +110,8 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                     const next = { ...prev, parentLocation: val };
                     if (val && val.toLowerCase() !== 'surat') {
                       next.location = val;
+                    } else if (val && val.toLowerCase() === 'surat') {
+                      next.location = '';
                     }
                     return next;
                   });

@@ -267,6 +267,8 @@ export default function PropertyInfoPanel() {
       if (field === 'parentLocation') {
         if (value && value.toLowerCase() !== 'surat') {
           next.location = value;
+        } else if (value && value.toLowerCase() === 'surat') {
+          next.location = '';
         }
       }
       if (displayFeature) {
