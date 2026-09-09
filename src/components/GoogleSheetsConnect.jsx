@@ -71,8 +71,12 @@ export default function GoogleSheetsConnect() {
       const currentFeatures = useMapStore.getState().features;
       const cleanFeatures = currentFeatures.map(f => {
         const d = f.data || {};
-        const loc = d.location || f.location || '';
-        const parentLoc = d.parentLocation || d.parent_location || f.parentLocation || determineParentLocation(loc) || '';
+        let loc = d.location || f.location || '';
+        let parentLoc = d.parentLocation || d.parent_location || f.parentLocation || determineParentLocation(loc) || '';
+        
+        if (parentLoc && parentLoc.toLowerCase() !== 'surat') {
+          loc = parentLoc;
+        }
         const tpVal = d.tp || f.tp || '';
         const opVal = d.op || f.op || '';
         const fpVal = d.fp || f.fp || '';

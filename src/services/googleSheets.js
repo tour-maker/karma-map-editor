@@ -832,6 +832,10 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
          pLoc = determineParentLocation(loc);
       }
 
+      if (pLoc && pLoc.toLowerCase() !== 'surat') {
+        loc = pLoc;
+      }
+
       const rawPartyName = partyNameIdx >= 0 ? String(row[partyNameIdx] || '').trim() : '';
       const rawPartyPhone = partyPhoneIdx >= 0 ? String(row[partyPhoneIdx] || '').trim() : '';
       const rawBrokerName = brokerNameIdx >= 0 ? String(row[brokerNameIdx] || '').trim() : '';

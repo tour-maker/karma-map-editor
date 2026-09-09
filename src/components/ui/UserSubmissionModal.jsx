@@ -105,7 +105,15 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               <SearchableSelect
                 value={formData.parentLocation || determineParentLocation(formData.location)}
                 options={allParentLocations}
-                onChange={(val) => setFormData(prev => ({ ...prev, parentLocation: val }))}
+                onChange={(val) => {
+                  setFormData(prev => {
+                    const next = { ...prev, parentLocation: val };
+                    if (val && val.toLowerCase() !== 'surat') {
+                      next.location = val;
+                    }
+                    return next;
+                  });
+                }}
               />
             </div>
             <div>

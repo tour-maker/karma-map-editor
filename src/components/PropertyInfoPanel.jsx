@@ -264,6 +264,11 @@ export default function PropertyInfoPanel() {
       if (field === 'location') {
         next.parentLocation = determineParentLocation(value);
       }
+      if (field === 'parentLocation') {
+        if (value && value.toLowerCase() !== 'surat') {
+          next.location = value;
+        }
+      }
       if (displayFeature) {
         updateFeature(displayFeature.id, {
           data: {
