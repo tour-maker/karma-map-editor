@@ -573,6 +573,11 @@ export default function FilterBar() {
     const visibleLayerIds = new Set(kmlLayers.filter(l => l.visible).map(l => l.id));
 
     return features.reduce((count, feature) => {
+      // Exclude dedicated landmarks so only polygons/properties are counted
+      if (feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark') {
+        return count;
+      }
+
       let isVisible = true;
       if (feature.source === 'kml' && feature.layerId) {
         isVisible = visibleLayerIds.has(feature.layerId);
