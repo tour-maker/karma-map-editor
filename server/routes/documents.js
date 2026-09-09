@@ -73,8 +73,8 @@ router.post('/:polygonId', upload.array('pdfs', 10), async (req, res) => {
               if (parts.length >= 3) {
                 const zIndex = parts.length - 3;
                 const z = parseInt(parts[zIndex], 10);
-                const x = parseInt(parts[zIndex + 1], 10);
-                const y = parseInt(parts[zIndex + 2].replace('.png', ''), 10);
+                const y = parseInt(parts[zIndex + 1], 10);
+                const x = parseInt(parts[zIndex + 2].replace('.png', ''), 10);
                 const data = entry.getData();
 
                 if (!isNaN(z) && !isNaN(x) && !isNaN(y)) {

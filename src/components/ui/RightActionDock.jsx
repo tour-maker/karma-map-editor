@@ -1,5 +1,5 @@
 import { FaRegShareSquare } from 'react-icons/fa';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -35,9 +35,21 @@ export default function RightActionDock() {
   const uiHidden = useMapStore(state => state.uiHidden);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isAudioOn, setIsAudioOn] = useState(true);
+  const [isAudioOn, setIsAudioOn] = useState(false); // start off due to autoplay policies
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isAudioOn) {
+        audioRef.current.play().catch(e => console.warn('Audio play blocked:', e));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isAudioOn]);
 
   useEffect(() => {
     function handleFullscreenChange() {
@@ -469,12 +481,20 @@ https://karma-map-editor.onrender.com/`;
               {isFullscreen ? (
                 <FiMinimize size={20} color="#f59e0b" />
               ) : (
-                <FiMaximize size={20} color="#f59e0b" />
+                <FiMaximize size={22} color="#f59e0b" />
               )}
             </button>
           </div>
         )}
       </div>
+
+      {/* Background Music Player */}
+      <audio 
+        ref={audioRef} 
+        src="/bg-music.mp3" 
+        loop 
+        preload="auto"
+      />
 
       {/* Help Instructions Overlay */}
       {showHelpModal && (
