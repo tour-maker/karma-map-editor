@@ -85,7 +85,12 @@ export function formatProjectDisplayName(feature) {
   return `${parts.locationTitle} | ${parts.areaTitle} | ${parts.tpOpFpTitle}`;
 }
 
-export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
+export default function ProjectsPanel({ 
+  onAddProject, 
+  onAddLandmark,
+  isDrawingPolygon,
+  isPlacingLandmark
+}) {
   const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'landmarks'
   const [isTabDropdownOpen, setIsTabDropdownOpen] = useState(false);
   const appMode = useMapStore(state => state.appMode);
@@ -554,7 +559,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
                 }}
               >
-                <FiPlus size={14} color="#000000" /> {appMode === 'edit' ? 'Add Project' : 'Add Polygon'}
+                {isDrawingPolygon ? <FiX size={14} color="#000000" /> : <FiPlus size={14} color="#000000" />} {isDrawingPolygon ? 'Cancel Polygon' : (appMode === 'edit' ? 'Add Project' : 'Add Polygon')}
               </button>
               
               {appMode === 'edit' && (
@@ -588,7 +593,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   boxShadow: '0 4px 14px rgba(71, 85, 105, 0.35)', transition: 'all 0.2s'
                 }}
               >
-                <FiMapPin size={14} /> Add Landmark
+                {isPlacingLandmark ? <FiX size={14} /> : <FiMapPin size={14} />} {isPlacingLandmark ? 'Cancel Landmark' : 'Add Landmark'}
               </button>
             )
           ) : activeTab === 'areas' && appMode === 'edit' ? (
@@ -603,7 +608,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
                 }}
               >
-                <FiPlus size={14} color="#000000" /> Add Area
+                {isAddingArea ? <FiX size={14} color="#000000" /> : <FiPlus size={14} color="#000000" />} {isAddingArea ? 'Cancel Area' : 'Add Area'}
               </button>
           ) : null}
         </div>
@@ -694,7 +699,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             {activeTab === 'areas' && appMode === 'edit' && (
               <button
                 type="button"
-                onClick={() => setIsAddingArea(true)}
+                onClick={() => setIsAddingArea(!isAddingArea)}
                 className="btn-hover-effect"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 4,
@@ -703,7 +708,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
                 }}
               >
-                <FiPlus size={13} color="#000000" /> <span className="desktop-only-text">Add</span>
+                {isAddingArea ? <FiX size={13} color="#000000" /> : <FiPlus size={13} color="#000000" />} <span className="desktop-only-text">{isAddingArea ? 'Cancel' : 'Add'}</span>
               </button>
             )}
           </div>

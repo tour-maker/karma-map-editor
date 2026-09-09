@@ -21,10 +21,15 @@ const polygonOptions = {
 }
 
 const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
-  { map, onPolygonComplete, onPolygonDeleted, appMode },
+  { map, onPolygonComplete, onPolygonDeleted, appMode, onDrawingStateChange },
   ref
 ) {
-  const [isDrawing, setIsDrawing] = useState(false)
+  const [isDrawing, setIsDrawingState] = useState(false)
+  
+  const setIsDrawing = useCallback((val) => {
+    setIsDrawingState(val);
+    if (onDrawingStateChange) onDrawingStateChange(val);
+  }, [onDrawingStateChange]);
   const activePolygonRef = useRef(null)
   const clickListenerRef = useRef(null)
   const dblClickListenerRef = useRef(null)

@@ -60,8 +60,8 @@ export default function MapEditor() {
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const setUnresolvedExcelRows = useMapStore(state => state.setUnresolvedExcelRows);
 //   const isInfoPanelOpen = useMapStore(state => state.isInfoPanelOpen);
-//   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const previewSubmission = useMapStore(state => state.previewSubmission);
+  const [isDrawingPolygon, setIsDrawingPolygon] = useState(false);
 
   const isDark = theme === 'dark';
   const containerStyle = {
@@ -598,10 +598,20 @@ export default function MapEditor() {
   const [landmarkModalPos, setLandmarkModalPos] = useState(null);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  const handleStartAddLandmark = () => {
-    setIsPlacingLandmark(true);
-    toast('Click anywhere on the map to place your Landmark pin', { icon: '📍' });
-  };
+  const handleToggleAddLandmark = useCallback(() => {
+    setIsPlacingLandmark(prev => {
+      if (!prev) toast('Click anywhere on the map to place your Landmark pin', { icon: '📍' });
+      return !prev;
+    });
+  }, []);
+
+  const handleToggleAddPolygon = useCallback(() => {
+    if (isDrawingPolygon) {
+      drawingManagerRef.current?.stopDrawing();
+    } else {
+      drawingManagerRef.current?.startDrawing();
+    }
+  }, [isDrawingPolygon]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -675,8 +685,10 @@ export default function MapEditor() {
 
       {appMode === 'edit' && (
         <ProjectsPanel
-          onAddProject={() => drawingManagerRef.current?.startDrawing()}
-          onAddLandmark={handleStartAddLandmark}
+          onAddProject={handleToggleAddPolygon}
+          onAddLandmark={handleToggleAddLandmark}
+          isDrawingPolygon={isDrawingPolygon}
+          isPlacingLandmark={isPlacingLandmark}
         />
       )}
 
@@ -803,6 +815,7 @@ export default function MapEditor() {
             map={map}
             appMode={appMode}
             onPolygonComplete={handlePolygonComplete}
+            onDrawingStateChange={setIsDrawingPolygon}
           />
         </GoogleMap>
       )}
