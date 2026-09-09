@@ -561,3 +561,49 @@ div[style*="z-index: 1000001"] { display: none !important; }
     transform: translate(0, -50%) scale(0.65) !important;
   }
 }
+
+/* Google Places Autocomplete Dark Theme Overrides */
+.pac-container {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+  margin-top: 6px !important;
+  font-family: Inter, system-ui, -apple-system, sans-serif !important;
+}
+
+.pac-item {
+  color: #94a3b8 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 10px 14px !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  transition: background 0.15s ease !important;
+}
+
+.pac-item:hover, .pac-item-selected {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+.pac-item-query {
+  color: #f8fafc !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin-right: 4px !important;
+}
+
+.pac-matched {
+  color: #f59e0b !important;
+  font-weight: 700 !important;
+}
+
+.pac-icon {
+  filter: invert(0.8) sepia(1) saturate(5) hue-rotate(350deg) !important; /* Turns the default grey icon roughly orange-ish to match theme */
+  margin-top: 2px !important;
+}
+
+/* Make 'Powered by Google' look better on dark bg */
+.pac-logo::after {
+  filter: invert(1) brightness(0.8) sepia(1) hue-rotate(180deg) saturate(2) !important;
+  background-color: transparent !important;
+}
