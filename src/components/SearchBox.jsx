@@ -177,7 +177,6 @@ function SearchBox({ onPlaceSelected, placeholder = 'Search for a place or prope
                 transition: 'all 0.2s',
                 padding: 0
               }}
-              className="btn-hover-effect"
             >
               <FiX size={14} color="#f8fafc" />
             </button>
