@@ -767,7 +767,8 @@ export default function MapEditor() {
             restriction: {
               latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
               strictBounds: true
-            }
+            },
+            draggableCursor: appMode === 'add' || isPlacingLandmark ? 'pointer' : null
           }}
         >
           <FeatureInstanceManager />
