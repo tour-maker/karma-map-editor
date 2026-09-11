@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Landmarks-Raw</name>
+    <Style id="icon-1899-FFD600-nodesc-normal">
+      <IconStyle>
+        <color>ff00d6ff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1899-FFD600-nodesc-highlight">
+      <IconStyle>
+        <color>ff00d6ff</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1899-FFD600-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-FFD600-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-FFD600-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-FFD600-1200-76-normal">
+      <LineStyle>
+        <color>ff00d6ff</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4c00d6ff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Style id="poly-FFD600-1200-76-highlight">
+      <LineStyle>
+        <color>ff00d6ff</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4c00d6ff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="poly-FFD600-1200-76">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-FFD600-1200-76-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-FFD600-1200-76-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Placemark>
+      <name>Anuvrat Dwar</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7970352,21.1604595,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>C K Pithawala College</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7189955,21.1313819,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Avadh Utopia</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7194948,21.1195271,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>ONGC Char Rasta</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7508277,21.1381783,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Luthra Circle</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7836428,21.1417564,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Khatu Shyam Temple</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7989467,21.1443719,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Parle Point</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7943487,21.1741914,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Udhana Darwaja</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8306439,21.1837072,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Sosyo Circle</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.826984,21.172937,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Bhatar Char Rasta</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8122175,21.1628604,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Veer Narmad South Gujarat University</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7831883,21.1535246,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>RR Mall</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7666689,21.1553444,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Y Junction</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7592941,21.145629,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Agarwal Vidya Vihar</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7769994,21.1359258,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Sarsana Convention Center</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7938622,21.1229713,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Althan Char Rasta</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8054524,21.1461395,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Abhva Chokdi</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.772097,21.1246849,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Tirupati Circle</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8282622,21.1288662,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Lashkari Bhajiya House</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7190416,21.0844516,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>RAM Chok</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.810966,21.1757219,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Bhatia Toll Plaza.</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9225048,21.0902946,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Roongta Industrial Estate</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9560067,21.0857766,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Etalwa Cricket Club</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9649204,21.0785859,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Diamond Industrial Park 3</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9964213,21.0873052,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Kanav Cricket Ground</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0053198,21.079567,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Galuda Bus Stop</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0211529,21.0959797,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Ena Cricket Ground</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0409375,21.1005625,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Ena Gam Sankari Mandli</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0498737,21.099334,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Diamond Village</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0675378,21.1010619,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Chamunda Restaurant</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.1111534,21.1069639,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Water World Water Park</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.1296355,21.0260948,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Laxmipati Engineering Works Limited</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9811278,21.0667481,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Rajhans Zesto</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9772029,21.0527736,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Lakhanpor</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0182139,21.0479405,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>The Parkway</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9917284,21.0216118,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Kuched Primary School</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.997239,21.0269,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>ANANTAM FARM HOUSE</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0082267,21.0140767,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Dholapipla Chokdi</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9675409,20.9897849,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Uday Palace Navsari</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9978287,20.9232255,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Boriach Toll Plaza</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0520644,20.8857308,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Dhamma Ambika Vipassana Meditation Centre</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0384458,20.8795309,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Filmtec LLP</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9399248,20.4699762,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Bank of Baroda Zaroli Branch</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.906201,20.243915,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Shri Pashupatinath Mahadev</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9388557,20.2312634,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Nelson Global Products India Pvt Ltd, Nandigam</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8835481,20.2328695,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Ugat</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0608304,20.9582588,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Supa Irrigation Sub Division</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          73.0269304,20.910257,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Maroli Chokdi</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9090782,21.0293802,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Magob Bhatha Bus stop</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7927568,21.0132852,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Mangrol Branch Post Office</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8141459,21.013465,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>CassaMarina</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7425338,20.9830161,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>SVNIT</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7852037,21.1671192,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Nirmal Hospital Pvt Ltd</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.8246493,21.1812543,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Silent Zone</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.7311505,21.1237832,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Palsana Chaukdi</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.977952,21.0863504,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Palsana Bus Station</name>
+      <styleUrl>#icon-1899-FFD600-nodesc</styleUrl>
+      <Point>
+        <coordinates>
+          72.9867335,21.0804786,0
+        </coordinates>
+      </Point>
+    </Placemark>
+    <Placemark>
+      <name>Karakhat</name>
+      <description><![CDATA[48 wingha<br>moje karakhat<br>resi. N.A. plan Pass<br><br>Bld Poddar]]></description>
+      <styleUrl>#poly-FFD600-1200-76</styleUrl>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <tessellate>1</tessellate>
+            <coordinates>
+              72.8187644,21.0263574,0
+              72.8188932,21.0263825,0
+              72.8188717,21.0270284,0
+              72.8183138,21.0270084,0
+              72.8182709,21.0277594,0
+              72.8180456,21.0277695,0
+              72.817992,21.0285806,0
+              72.8183782,21.0286207,0
+              72.8184211,21.02815,0
+              72.8189254,21.02812,0
+              72.8189468,21.0278295,0
+              72.8218865,21.0278796,0
+              72.8217578,21.0317751,0
+              72.8172731,21.0319554,0
+              72.8176486,21.0275792,0
+              72.8180778,21.0275692,0
+              72.8181207,21.0268882,0
+              72.8187537,21.0269282,0
+              72.8187644,21.0263574,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>
