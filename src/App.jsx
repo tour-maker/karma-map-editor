@@ -116,7 +116,7 @@ function App() {
       {appMode === 'edit' && !isAdminAuthenticated && <AdminAuthOverlay />}
       {appMode === 'edit' && isAdminAuthenticated && (
         <div style={{ position: 'fixed', top: 14, right: 16, zIndex: 1000, display: 'flex', gap: 8 }}>
-          <button
+          {/* <button
             onClick={() => requestLogin()}
             title={googleSheetsConnected ? 'Re-authenticate with Google Sheets' : 'Connect to Google Sheets'}
             style={{
@@ -135,7 +135,7 @@ function App() {
             }}
           >
             {googleSheetsConnected ? 'Google Sheets Connected' : 'Connect Google Sheets'}
-          </button>
+          </button> */}
           <button
             onClick={() => {
               localStorage.removeItem('karmaAdminJWT');
