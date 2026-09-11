@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useMapStore } from '../store/useMapStore';
-import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, CATEGORY_MAP } from '../config/categories';
+import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
 
 import toast from 'react-hot-toast';
@@ -158,10 +158,14 @@ export default function PropertyInfoPanel() {
   const updateFeature = useMapStore(state => state.updateFeature);
   const removeFeature = useMapStore(state => state.removeFeature);
 //   const googleSheetsConnected = useMapStore(state => state.googleSheetsConnected);
-//   const spreadsheetId = useMapStore(state => state.spreadsheetId);
+  const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const customAreas = useMapStore(state => state.customAreas) || [];
-  const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
-  const allSecondaryLocations = Array.from(new Set([...Object.values(CATEGORY_MAP).flat(), ...customAreas])).filter(Boolean).sort();
+  const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
+  const allParentLocations = Array.from(new Set([...Object.keys(dynamicLocationMap), ...customAreas])).sort((a, b) => {
+    if (a.toLowerCase() === 'surat') return -1;
+    if (b.toLowerCase() === 'surat') return 1;
+    return a.localeCompare(b);
+  });
 //   const allLandmarks = Array.from(new Set(features.map(f => f.data?.landmark || f.landmark).filter(Boolean))).sort();
   const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
 
@@ -188,6 +192,7 @@ export default function PropertyInfoPanel() {
     op: '',
     fp: '',
     area: '',
+    areaUnit: 'Sq Yard',
     location: '',
     parentLocation: '',
     landmark: '',
@@ -221,6 +226,7 @@ export default function PropertyInfoPanel() {
         op: displayFeature.data.op || '',
         fp: displayFeature.data.fp || '',
         area: displayFeature.data.area || '',
+        areaUnit: displayFeature.data.areaUnit || 'Sq Yard',
         location: loc,
         parentLocation: pLoc,
         landmark: displayFeature.data.landmark || '',
@@ -285,21 +291,31 @@ export default function PropertyInfoPanel() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const updatedData = {
-      tp: formData.tp,
-      op: formData.op,
-      fp: formData.fp,
-      area: formData.area,
-      location: formData.location,
-      parentLocation: formData.parentLocation || determineParentLocation(formData.location),
-      landmark: formData.landmark,
-      type: formData.type,
-      remarks: formData.remarks,
-      partyName: formData.partyName,
-      partyPhone: formData.partyPhone,
-      brokerName: formData.brokerName,
-      brokerPhone: formData.brokerPhone
-    };
+    const updatedData = isMarker
+      ? {
+          ...displayFeature.data,
+          name: formData.name,
+          landmark: formData.landmark,
+          type: formData.type,
+          remarks: formData.remarks
+        }
+      : {
+          ...displayFeature.data,
+          tp: formData.tp,
+          op: formData.op,
+          fp: formData.fp,
+          area: formData.area,
+          areaUnit: formData.areaUnit,
+          location: formData.location,
+          parentLocation: formData.parentLocation || determineParentLocation(formData.location),
+          landmark: formData.landmark,
+          type: formData.type,
+          remarks: formData.remarks,
+          partyName: formData.partyName,
+          partyPhone: formData.partyPhone,
+          brokerName: formData.brokerName,
+          brokerPhone: formData.brokerPhone
+        };
 
     const typeColor = getPropertyTypeColor(formData.type);
     const updatedStyle = {
@@ -321,19 +337,21 @@ export default function PropertyInfoPanel() {
         data: updatedData,
         style: updatedStyle
       };
-      // User requested to fire the global 'connect sheet' (syncData) function on save
-      window.dispatchEvent(new CustomEvent('trigger-global-sync'));
-      toast.success('Saved property changes. Syncing to Google Sheets...');
+      
+      if (spreadsheetId) {
+        toast.loading('Syncing to Google Sheets...', { id: 'sync-sheet' });
+        await syncFeatureToSheet(spreadsheetId, updatedFeature, 'update');
+        toast.success('Saved and synced property!', { id: 'sync-sheet' });
+      } else {
+        toast.success('Saved property locally!');
+      }
     } catch (err) {
       console.error(err);
-      toast.success('Saved property locally!');
+      toast.error('Failed to sync to Google Sheets', { id: 'sync-sheet' });
     }
 
     setIsOpen(false);
     setIsSaving(false);
-    
-    // Trigger Map -> Sheet sync
-    window.dispatchEvent(new Event('trigger-update-sheet'));
   };
 
   const handleDelete = async () => {
@@ -342,10 +360,18 @@ export default function PropertyInfoPanel() {
     removeFeature(displayFeature.id);
     setIsOpen(false);
     setSelectedFeatureId(null);
-    toast.success('Polygon deleted. Syncing to Google Sheets...');
-
-    // Trigger Map -> Sheet sync
-    window.dispatchEvent(new Event('trigger-update-sheet'));
+    
+    if (spreadsheetId) {
+      toast.loading('Deleting from Google Sheets...', { id: 'delete-sheet' });
+      try {
+        await syncFeatureToSheet(spreadsheetId, displayFeature, 'delete');
+        toast.success('Polygon deleted from map and sheets!', { id: 'delete-sheet' });
+      } catch (e) {
+        toast.error('Failed to delete from sheets', { id: 'delete-sheet' });
+      }
+    } else {
+      toast.success('Polygon deleted locally!');
+    }
   };
 
   if (!isEdit) {
@@ -656,26 +682,6 @@ export default function PropertyInfoPanel() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Primary Location</label>
-                <SearchableSelect
-                  value={formData.parentLocation || determineParentLocation(formData.location)}
-                  options={allParentLocations}
-                  onChange={(val) => handleChange('parentLocation', val)}
-                  disabled={!isEdit}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
-                <SearchableSelect
-                  value={formData.location}
-                  options={allSecondaryLocations}
-                  onChange={(val) => handleChange('location', val)}
-                  disabled={!isEdit}
-                />
-              </div>
-
-              <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Remarks</label>
                 <textarea
                   value={formData.remarks}
@@ -785,6 +791,40 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Area Unit (for Google Sheet)</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => handleChange('areaUnit', 'Sq Yard')}
+                disabled={!isEdit}
+                style={{
+                  flex: 1, padding: '8px 0', borderRadius: 8,
+                  border: formData.areaUnit === 'Sq Yard' ? '1px solid #f59e0b' : '1px solid rgba(99,102,241,0.35)',
+                  background: formData.areaUnit === 'Sq Yard' ? 'rgba(245, 158, 11, 0.15)' : (isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)'),
+                  color: formData.areaUnit === 'Sq Yard' ? '#f59e0b' : '#94a3b8',
+                  fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
+                }}
+              >
+                Add in Sq Yard
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('areaUnit', 'Wingha')}
+                disabled={!isEdit}
+                style={{
+                  flex: 1, padding: '8px 0', borderRadius: 8,
+                  border: formData.areaUnit === 'Wingha' ? '1px solid #f59e0b' : '1px solid rgba(99,102,241,0.35)',
+                  background: formData.areaUnit === 'Wingha' ? 'rgba(245, 158, 11, 0.15)' : (isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)'),
+                  color: formData.areaUnit === 'Wingha' ? '#f59e0b' : '#94a3b8',
+                  fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
+                }}
+              >
+                Add in Wingha
+              </button>
+            </div>
+          </div>
+
+          <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Primary Location</label>
             <SearchableSelect
               value={formData.parentLocation || determineParentLocation(formData.location)}
@@ -798,7 +838,7 @@ export default function PropertyInfoPanel() {
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
             <SearchableSelect
               value={formData.location}
-              options={allSecondaryLocations}
+              options={dynamicLocationMap[formData.parentLocation || determineParentLocation(formData.location)] || []}
               onChange={(val) => handleChange('location', val)}
               disabled={!isEdit}
             />

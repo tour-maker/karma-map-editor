@@ -30,7 +30,10 @@ export default function PendingSubmissionsPanel() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/submissions/stats');
+      const jwt = localStorage.getItem('karmaAdminJWT');
+      const response = await fetch('http://localhost:5050/api/submissions/stats', {
+        headers: { 'Authorization': `Bearer ${jwt}` }
+      });
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -45,7 +48,10 @@ export default function PendingSubmissionsPanel() {
   const fetchSubmissions = async (status) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5050/api/submissions?status=${status}`);
+      const jwt = localStorage.getItem('karmaAdminJWT');
+      const response = await fetch(`http://localhost:5050/api/submissions?status=${status}`, {
+        headers: { 'Authorization': `Bearer ${jwt}` }
+      });
       if (response.ok) {
         const data = await response.json();
         setSubmissions(data);
@@ -228,7 +234,7 @@ export default function PendingSubmissionsPanel() {
           onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{sub.loginId}</span>
+              <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{sub.username}</span>
               <span style={{ color: '#64748b', fontSize: 12 }}><FiClock /> {new Date(sub.createdAt).toLocaleDateString()}</span>
             </div>
             

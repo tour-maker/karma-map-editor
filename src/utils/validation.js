@@ -33,7 +33,7 @@ export const FeatureDataSchema = z.object({
 
 export const FeatureSchema = z.object({
   id: z.string(),
-  source: z.enum(['drawn', 'excel', 'kml', 'geojson']),
+  source: z.enum(['drawn']),
   type: z.enum(['polygon', 'marker']),
   layerId: z.string().optional(),
   

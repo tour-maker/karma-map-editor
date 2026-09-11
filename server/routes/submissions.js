@@ -1,23 +1,23 @@
 import express from 'express';
 import Submission from '../models/Submission.js';
 import { appendApprovedSubmission, removeSubmissionFromSheet } from '../sheetsHelper.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireAdmin, requireUser } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // @route   POST /api/submissions
-// @desc    Submit a new polygon from the viewer panel
-router.post('/', async (req, res) => {
+// @desc    Submit a new polygon from the viewer panel (requires a signed-in viewer account)
+router.post('/', requireUser, async (req, res) => {
   try {
-    const { loginId, password, coordinates, ...details } = req.body;
+    const { coordinates, ...details } = req.body;
 
-    if (!loginId || !password || !coordinates || coordinates.length === 0) {
-      return res.status(400).json({ error: 'Missing required fields or coordinates' });
+    if (!coordinates || coordinates.length === 0) {
+      return res.status(400).json({ error: 'Missing polygon coordinates' });
     }
 
     const newSubmission = new Submission({
-      loginId,
-      password,
+      userId: req.userId,
+      username: req.username,
       coordinates,
       ...details
     });
@@ -30,9 +30,21 @@ router.post('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/submissions/mine
+// @desc    Get the signed-in viewer's own submissions, across all statuses
+router.get('/mine', requireUser, async (req, res) => {
+  try {
+    const submissions = await Submission.find({ userId: req.userId }).sort({ createdAt: -1 });
+    res.json(submissions);
+  } catch (error) {
+    console.error('Fetch my submissions error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // @route   GET /api/submissions/stats
 // @desc    Get counts of submissions by status (Admin only)
-router.get('/stats', async (req, res) => {
+router.get('/stats', requireAdmin, async (req, res) => {
   try {
     const stats = await Submission.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } }
@@ -52,7 +64,7 @@ router.get('/stats', async (req, res) => {
 
 // @route   GET /api/submissions
 // @desc    Get submissions, optionally filtered by status (Admin only)
-router.get('/', async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const { status } = req.query;
     const filter = status ? { status } : {};

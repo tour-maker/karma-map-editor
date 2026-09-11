@@ -3,6 +3,7 @@ import { useMapStore } from '../store/useMapStore';
 import { FiRefreshCw, FiDownload, FiUpload } from 'react-icons/fi';
 import { CATEGORY_MAP, determineParentLocation } from '../config/categories';
 import { fetchAndMergeSheetUpdates, repairSheet1Headers, overwriteSheetWithFeatures, overwriteAreasSheet, overwriteLandmarksSheet } from '../services/googleSheets';
+import { calculatePolygonCenter } from '../services/googleMaps';
 import toast from 'react-hot-toast';
 
 const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz-uODChErEEwzVQOeQUefR-Q0yhsOWFHxolbpxmSTu4SyVl_0Hpec-mG2kgIZH7-A/exec';
@@ -118,15 +119,21 @@ export default function GoogleSheetsConnect() {
 
       const polygonFeatures = cleanFeatures.filter(cf => !(cf.id?.startsWith('landmark-') || cf.category === 'Landmark'));
 
-      const headerRow = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates'];
-      const dataRows = polygonFeatures.map(cf => [
-        cf.id || '', cf.tp || '', cf.op || '', cf.fp || '',
-        cf.area != null ? String(cf.area) : '',
-        cf.location || '', cf.parentLocation || '', cf.landmark || '',
-        cf.category || '', cf.remarks || '',
-        cf.partyName || '', cf.partyPhone || '', cf.brokerName || '', cf.brokerPhone || '',
-        cf.coordinates && cf.coordinates.length > 0 ? JSON.stringify(cf.coordinates) : ''
-      ]);
+      const headerRow = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates', 'center pin lat long', 'reference', 'area unit'];
+      const dataRows = polygonFeatures.map(cf => {
+        const center = cf.center || calculatePolygonCenter(cf.coordinates);
+        return [
+          cf.id || '', cf.tp || '', cf.op || '', cf.fp || '',
+          cf.area != null ? String(cf.area) : '',
+          cf.location || '', cf.parentLocation || '', cf.landmark || '',
+          cf.category || '', cf.remarks || '',
+          cf.partyName || '', cf.partyPhone || '', cf.brokerName || '', cf.brokerPhone || '',
+          cf.coordinates && cf.coordinates.length > 0 ? JSON.stringify(cf.coordinates) : '',
+          center ? `${center.lat}, ${center.lng}` : '',
+          cf.reference || cf.data?.reference || '',
+          cf.areaUnit || cf.data?.areaUnit || ''
+        ];
+      });
       const cleanRowsWithHeaders = [headerRow, ...dataRows];
 
       // Build areaRows
@@ -161,14 +168,11 @@ export default function GoogleSheetsConnect() {
         .filter(f => f.id?.startsWith('landmark-') || f.data?.type === 'Landmark')
         .map(f => {
           const d = f.data || {};
-          const loc = d.location || 'Surat';
           const landmarkName = d.landmark || d.name || 'Landmark';
-          
+
           return {
             id: f.id,
             landmarkName,
-            loc,
-            parentLoc: d.parentLocation || d.parent_location || determineParentLocation(loc),
             lat: f.position?.lat || f.center?.lat || '',
             lng: f.position?.lng || f.center?.lng || '',
             remarks: d.remarks || ''
@@ -179,7 +183,7 @@ export default function GoogleSheetsConnect() {
           seenLandmarkNames.add(r.landmarkName.toLowerCase());
           return true;
         })
-        .map(r => [r.id, r.landmarkName, r.loc, r.parentLoc, r.lat, r.lng, r.remarks]);
+        .map(r => [r.id, r.landmarkName, r.lat, r.lng, r.remarks]);
 
       toast('Updating Google Sheets…');
 
@@ -191,6 +195,7 @@ export default function GoogleSheetsConnect() {
       if (spreadsheetId) {
         try {
           const currentPolygons = currentFeatures.filter(f => !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark'));
+          console.log('[UpdateSheet] Data being sent to sheet:', currentPolygons[0]?.data);
           await overwriteSheetWithFeatures(spreadsheetId, currentPolygons);
           await overwriteAreasSheet(spreadsheetId, areaRows);
           console.log('[UpdateSheet] Calling overwriteLandmarksSheet with', landmarkRows.length, 'rows');
@@ -202,7 +207,7 @@ export default function GoogleSheetsConnect() {
       }
 
       // Apps Script webhook backup
-      const landmarkHeaders = ['id', 'Landmark Name', 'Location', 'Parent Location', 'Latitude', 'Longitude', 'Remarks'];
+      const landmarkHeaders = ['id', 'Landmark Name', 'Latitude', 'Longitude', 'Remarks'];
       const landmarkRowsWithHeaders = [landmarkHeaders, ...landmarkRows];
       await fetch(DEFAULT_SCRIPT_URL, {
         method: 'POST',

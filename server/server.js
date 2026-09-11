@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import submissionRoutes from './routes/submissions.js';
 import authRoutes from './routes/auth.js';
 import documentRoutes from './routes/documents.js';
+import sheetsRoutes from './routes/sheets.js';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/sheets', sheetsRoutes);
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sleepyraj10_db_user:FWRjDCAij8ynvAEU@test-0.opmgpmd.mongodb.net/?appName=test-0';

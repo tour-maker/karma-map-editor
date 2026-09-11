@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { CATEGORY_MAP } from '../../config/categories';
+import { buildDynamicLocationMap } from '../../config/categories';
 
 export default function TopStatsBar() {
   const uiHidden = useMapStore(state => state.uiHidden);
   const features = useMapStore(state => state.features);
-  const kmlLayers = useMapStore(state => state.kmlLayers);
   const filterPrimary = useMapStore(state => state.filterPrimary);
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
@@ -18,8 +17,8 @@ export default function TopStatsBar() {
   }
 
   const visibleCount = useMemo(() => {
-    const visibleLayerIds = new Set(kmlLayers.filter(l => l.visible).map(l => l.id));
-    
+    const dynamicLocationMap = buildDynamicLocationMap(features);
+
     return features.reduce((count, feature) => {
       // Exclude dedicated landmarks from Property count
       if (feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark') {
@@ -27,16 +26,13 @@ export default function TopStatsBar() {
       }
 
       let isVisible = true;
-      if (feature.source === 'kml' && feature.layerId) {
-        isVisible = visibleLayerIds.has(feature.layerId);
-      }
 
       if (isVisible && (filterPrimary || filterSecondary)) {
         const loc = feature.data?.location;
         if (filterSecondary) {
           if (loc !== filterSecondary) isVisible = false;
         } else if (filterPrimary) {
-          const validLocations = [filterPrimary, ...(CATEGORY_MAP[filterPrimary] || [])];
+          const validLocations = [filterPrimary, ...(dynamicLocationMap[filterPrimary] || [])];
           if (!validLocations.includes(loc)) isVisible = false;
         }
       }
@@ -50,7 +46,7 @@ export default function TopStatsBar() {
       }
       return count;
     }, 0);
-  }, [features, kmlLayers, filterPrimary, filterSecondary, filterType]);
+  }, [features, filterPrimary, filterSecondary, filterType]);
 
   if (uiHidden) return null;
 

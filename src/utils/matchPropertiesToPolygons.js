@@ -81,14 +81,32 @@ export function matchPropertiesToPolygons(pins = [], polygons = [], options = {}
   const safePins = Array.isArray(pins) ? pins : []
   const safePolygons = Array.isArray(polygons) ? polygons : []
 
+  // For large datasets (300+ pins × 300+ polygons), skip the expensive
+  // nearest-border tier to prevent the browser from hanging.
+  const isLargeDataset = safePins.length * safePolygons.length > 50000
+
   const polygonEntries = safePolygons
     .filter((polygon) => polygon && Array.isArray(polygon.coordinates) && polygon.coordinates.length >= 3)
-    .map((polygon) => ({
-      polygon,
-      normalizedTp: normalizeIdentifier(polygon.tp),
-      normalizedFp: normalizeIdentifier(polygon.fp),
-      bbox: expandedBoundingBox(polygon.coordinates, maxDistanceMeters)
-    }))
+    .map((polygon) => {
+      // Tight bbox (no buffer) for the fast contains check
+      const lats = polygon.coordinates.map((c) => c.lat)
+      const lngs = polygon.coordinates.map((c) => c.lng)
+      const tightBbox = {
+        minLat: Math.min(...lats),
+        maxLat: Math.max(...lats),
+        minLng: Math.min(...lngs),
+        maxLng: Math.max(...lngs)
+      }
+      // Expanded bbox only used for nearest-border fallback
+      const expandedBbox = expandedBoundingBox(polygon.coordinates, maxDistanceMeters)
+      return {
+        polygon,
+        normalizedTp: normalizeIdentifier(polygon.tp),
+        normalizedFp: normalizeIdentifier(polygon.fp),
+        bbox: expandedBbox,
+        tightBbox
+      }
+    })
 
   const tpFpIndex = new Map()
   polygonEntries.forEach((entry) => {
@@ -105,6 +123,7 @@ export function matchPropertiesToPolygons(pins = [], polygons = [], options = {}
   const hasValidPosition = (pin) =>
     pin.position && Number.isFinite(pin.position.lat) && Number.isFinite(pin.position.lng)
 
+  // Tier 1: Exact TP/FP match
   const remainingAfterExact = []
   safePins.forEach((pin) => {
     const pinTp = normalizeIdentifier(pin.tp)
@@ -126,6 +145,7 @@ export function matchPropertiesToPolygons(pins = [], polygons = [], options = {}
     remainingAfterExact.push(pin)
   })
 
+  // Tier 2: Point-in-polygon (uses tight bbox — much faster)
   const remainingAfterContains = []
   remainingAfterExact.forEach((pin) => {
     if (!hasValidPosition(pin)) {
@@ -133,8 +153,14 @@ export function matchPropertiesToPolygons(pins = [], polygons = [], options = {}
       return
     }
 
+    // Use tight bbox first (no buffer) to quickly eliminate non-candidates
     const candidates = polygonEntries.filter(
-      (entry) => !claimedPolygonIds.has(entry.polygon.id) && isPointInBoundingBox(pin.position, entry.bbox)
+      (entry) =>
+        !claimedPolygonIds.has(entry.polygon.id) &&
+        pin.position.lat >= entry.tightBbox.minLat &&
+        pin.position.lat <= entry.tightBbox.maxLat &&
+        pin.position.lng >= entry.tightBbox.minLng &&
+        pin.position.lng <= entry.tightBbox.maxLng
     )
     const contains = candidates.find((entry) => isPointInPolygon(pin.position, entry.polygon.coordinates))
 
@@ -151,36 +177,39 @@ export function matchPropertiesToPolygons(pins = [], polygons = [], options = {}
     }
   })
 
-  const candidatePairs = []
-  remainingAfterContains.forEach((pin) => {
-    if (!hasValidPosition(pin)) return
+  // Tier 3: Nearest-border fallback (skipped for large datasets to prevent freeze)
+  if (!isLargeDataset) {
+    const candidatePairs = []
+    remainingAfterContains.forEach((pin) => {
+      if (!hasValidPosition(pin)) return
 
-    polygonEntries.forEach((entry) => {
-      if (claimedPolygonIds.has(entry.polygon.id) || !isPointInBoundingBox(pin.position, entry.bbox)) {
+      polygonEntries.forEach((entry) => {
+        if (claimedPolygonIds.has(entry.polygon.id) || !isPointInBoundingBox(pin.position, entry.bbox)) {
+          return
+        }
+        const distance = distanceToPolygonBoundaryMeters(pin.position, entry.polygon.coordinates)
+        if (distance <= maxDistanceMeters) {
+          candidatePairs.push({ pin, entry, distance })
+        }
+      })
+    })
+    candidatePairs.sort((a, b) => a.distance - b.distance)
+
+    const assignedPinIds = new Set()
+    candidatePairs.forEach(({ pin, entry, distance }) => {
+      if (assignedPinIds.has(pin.id) || claimedPolygonIds.has(entry.polygon.id)) {
         return
       }
-      const distance = distanceToPolygonBoundaryMeters(pin.position, entry.polygon.coordinates)
-      if (distance <= maxDistanceMeters) {
-        candidatePairs.push({ pin, entry, distance })
-      }
+      assignedPinIds.add(pin.id)
+      claimedPolygonIds.add(entry.polygon.id)
+      resultByPinId.set(pin.id, {
+        pinId: pin.id,
+        polygonId: entry.polygon.id,
+        tier: MATCH_TIERS.NEAREST_BORDER,
+        distanceMeters: Math.round(distance * 100) / 100
+      })
     })
-  })
-  candidatePairs.sort((a, b) => a.distance - b.distance)
-
-  const assignedPinIds = new Set()
-  candidatePairs.forEach(({ pin, entry, distance }) => {
-    if (assignedPinIds.has(pin.id) || claimedPolygonIds.has(entry.polygon.id)) {
-      return
-    }
-    assignedPinIds.add(pin.id)
-    claimedPolygonIds.add(entry.polygon.id)
-    resultByPinId.set(pin.id, {
-      pinId: pin.id,
-      polygonId: entry.polygon.id,
-      tier: MATCH_TIERS.NEAREST_BORDER,
-      distanceMeters: Math.round(distance * 100) / 100
-    })
-  })
+  }
 
   return safePins.map(
     (pin) =>
@@ -194,3 +223,4 @@ export function matchPropertiesToPolygons(pins = [], polygons = [], options = {}
 }
 
 export default matchPropertiesToPolygons;
+

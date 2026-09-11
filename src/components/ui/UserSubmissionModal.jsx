@@ -1,18 +1,18 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
-import { CATEGORY_MAP, determineParentLocation } from '../../config/categories';
+import { determineParentLocation, buildDynamicLocationMap } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
+  const viewerUsername = useMapStore(state => state.viewerUsername);
   const [formData, setFormData] = useState({
-    loginId: '',
-    password: '',
     tp: '',
     op: '',
     fp: '',
     area: data?.area || '',
+    areaUnit: 'Sq Yard',
     location: '',
     parentLocation: '',
     landmark: '',
@@ -26,8 +26,13 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const customAreas = useMapStore(state => state.customAreas) || [];
-  const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas])).sort();
-  const allSecondaryLocations = Array.from(new Set([...Object.values(CATEGORY_MAP).flat(), ...customAreas])).filter(Boolean).sort();
+  const features = useMapStore(state => state.features);
+  const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
+  const allParentLocations = Array.from(new Set([...Object.keys(dynamicLocationMap), ...customAreas])).sort((a, b) => {
+    if (a.toLowerCase() === 'surat') return -1;
+    if (b.toLowerCase() === 'surat') return 1;
+    return a.localeCompare(b);
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,8 +41,10 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.loginId || !formData.password) {
-      toast.error('Login ID and Password are required');
+
+    const jwt = localStorage.getItem('karmaUserJWT');
+    if (!jwt) {
+      toast.error('Please sign in first.');
       return;
     }
 
@@ -45,7 +52,10 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
     try {
       const response = await fetch('http://localhost:5050/api/submissions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`
+        },
         body: JSON.stringify({
           ...formData,
           coordinates: data.coordinates
@@ -86,17 +96,11 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Login ID *</label>
-              <input type="text" name="loginId" value={formData.loginId} onChange={handleChange} required
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Password *</label>
-              <input type="password" name="password" value={formData.password} onChange={handleChange} required
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
-            </div>
+          <div style={{
+            fontSize: 12.5, color: '#94a3b8', background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 8, padding: '8px 12px'
+          }}>
+            Submitting as <strong style={{ color: '#f59e0b' }}>{viewerUsername}</strong> — track this request anytime from "My Requests".
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -108,11 +112,8 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                 onChange={(val) => {
                   setFormData(prev => {
                     const next = { ...prev, parentLocation: val };
-                    if (val && val.toLowerCase() !== 'surat') {
-                      next.location = val;
-                    } else if (val && val.toLowerCase() === 'surat') {
-                      next.location = '';
-                    }
+                    const hasSubs = val && (dynamicLocationMap[val] || []).length > 0;
+                    next.location = hasSubs ? '' : (val || '');
                     return next;
                   });
                 }}
@@ -122,9 +123,41 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Secondary Location</label>
               <SearchableSelect
                 value={formData.location}
-                options={allSecondaryLocations}
+                options={dynamicLocationMap[formData.parentLocation || determineParentLocation(formData.location)] || []}
                 onChange={(val) => setFormData(prev => ({ ...prev, location: val }))}
               />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Area Unit</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, areaUnit: 'Sq Yard' }))}
+                style={{
+                  flex: 1, padding: '8px 0', borderRadius: 6,
+                  border: formData.areaUnit === 'Sq Yard' ? '1px solid #f59e0b' : '1px solid #334155',
+                  background: formData.areaUnit === 'Sq Yard' ? 'rgba(245, 158, 11, 0.15)' : '#0f172a',
+                  color: formData.areaUnit === 'Sq Yard' ? '#f59e0b' : '#94a3b8',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Add in Sq Yard
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, areaUnit: 'Wingha' }))}
+                style={{
+                  flex: 1, padding: '8px 0', borderRadius: 6,
+                  border: formData.areaUnit === 'Wingha' ? '1px solid #f59e0b' : '1px solid #334155',
+                  background: formData.areaUnit === 'Wingha' ? 'rgba(245, 158, 11, 0.15)' : '#0f172a',
+                  color: formData.areaUnit === 'Wingha' ? '#f59e0b' : '#94a3b8',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer'
+                }}
+              >
+                Add in Wingha
+              </button>
             </div>
           </div>
 

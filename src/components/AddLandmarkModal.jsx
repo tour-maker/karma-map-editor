@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import { useMapStore } from '../store/useMapStore';
-import { determineParentLocation, CATEGORY_MAP } from '../config/categories';
 
 import { FiMapPin, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 import { cleanLandmarkTitle } from './LandmarkManager';
+import { syncFeatureToSheet } from '../services/googleSheets';
 
 export default function AddLandmarkModal({ position, onClose, onSaved }) {
   const [name, setName] = useState('');
-  const [location, setLocation] = useState('Surat');
   const [remarks, setRemarks] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const addFeatures = useMapStore(state => state.addFeatures);
-
-//   const locationsList = Object.keys(CATEGORY_MAP);
+  const spreadsheetId = useMapStore(state => state.spreadsheetId);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -26,7 +24,6 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
 
     setIsSaving(true);
     const cleanedName = cleanLandmarkTitle(name);
-    const parentLoc = determineParentLocation(location);
 
     const newLandmarkFeature = {
       id: `landmark-${Date.now()}`,
@@ -38,8 +35,6 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
       data: {
         name: cleanedName,
         landmark: cleanedName,
-        location: location.trim(),
-        parentLocation: parentLoc,
         type: 'Landmark',
         remarks: remarks.trim()
       },
@@ -56,8 +51,15 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
     if (onSaved) onSaved(newLandmarkFeature);
     onClose();
 
-    // Trigger Map -> Sheet sync
-    window.dispatchEvent(new Event('trigger-update-sheet'));
+    // Targeted sync — only this one landmark, not a full sheet overwrite
+    if (spreadsheetId) {
+      try {
+        await syncFeatureToSheet(spreadsheetId, newLandmarkFeature, 'create');
+      } catch (err) {
+        console.error('Failed to sync new landmark to Google Sheets:', err);
+        toast.error('Landmark added locally, but sync to Google Sheets failed.');
+      }
+    }
   };
 
   return (
@@ -122,24 +124,6 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
               placeholder="e.g. VK Farm Plot, Tirupati Circle"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8,
-                border: '1px solid rgba(99, 102, 241, 0.35)', background: 'rgba(30, 41, 59, 0.8)',
-                color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          {/* Location */}
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#cbd5e1', marginBottom: 6 }}>
-              Location / Area
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Dumas, Adajan, Surat"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
               style={{
                 width: '100%', padding: '10px 12px', borderRadius: 8,
                 border: '1px solid rgba(99, 102, 241, 0.35)', background: 'rgba(30, 41, 59, 0.8)',

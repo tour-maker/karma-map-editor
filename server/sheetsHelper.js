@@ -5,7 +5,7 @@ import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID || '1-9eVBefBNnBJMp4iQBlnA4wdHmEiinHERilgu-b7GQ4';
+export const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID || '1-9eVBefBNnBJMp4iQBlnA4wdHmEiinHERilgu-b7GQ4';
 
 // Load service account credentials
 const credentials = JSON.parse(
@@ -13,7 +13,7 @@ const credentials = JSON.parse(
 );
 
 // Create authenticated Google Sheets client
-const getSheets = () => {
+export const getSheets = () => {
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -29,9 +29,18 @@ export const appendApprovedSubmission = async (submission) => {
   const sheets = getSheets();
 
   const id = submission._id?.toString() || `drawn-${Date.now()}`;
-  const coords = Array.isArray(submission.coordinates)
-    ? JSON.stringify(submission.coordinates)
-    : '';
+  const coordsArray = Array.isArray(submission.coordinates) ? submission.coordinates : [];
+  const coords = coordsArray.length > 0 ? JSON.stringify(coordsArray) : '';
+
+  let centerPinLatLong = '';
+  if (coordsArray.length > 0) {
+    const validPoints = coordsArray.filter(c => c && typeof c.lat === 'number' && typeof c.lng === 'number');
+    if (validPoints.length > 0) {
+      const avgLat = validPoints.reduce((sum, c) => sum + c.lat, 0) / validPoints.length;
+      const avgLng = validPoints.reduce((sum, c) => sum + c.lng, 0) / validPoints.length;
+      centerPinLatLong = `${avgLat}, ${avgLng}`;
+    }
+  }
 
   const row = [
     id,
@@ -49,11 +58,14 @@ export const appendApprovedSubmission = async (submission) => {
     '',  // Broker Name
     '',  // Broker Phone
     coords,
+    centerPinLatLong,
+    '',  // reference
+    submission.areaUnit || '',
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: 'Polygons!A:O',
+    range: 'Polygons!A:R',
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] },

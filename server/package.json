@@ -13,6 +13,7 @@
   "dependencies": {
     "@omsimos/pdf-raster": "^0.1.1",
     "adm-zip": "^0.6.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

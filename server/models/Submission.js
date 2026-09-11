@@ -1,12 +1,14 @@
 import mongoose from 'mongoose';
 
 const SubmissionSchema = new mongoose.Schema({
-  // The user's provided credentials
-  loginId: {
-    type: String,
-    required: true,
+  // The viewer account that submitted this request
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  password: {
+  // Denormalized for display without a join (e.g. admin panel, Google Sheet sync)
+  username: {
     type: String,
     required: true,
   },
@@ -15,6 +17,7 @@ const SubmissionSchema = new mongoose.Schema({
   op: String,
   fp: String,
   area: String,
+  areaUnit: String,
   location: String,
   parentLocation: String,
   landmark: String,

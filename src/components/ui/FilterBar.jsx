@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { CATEGORY_MAP, PROPERTY_TYPES, PROPERTY_TYPE_COLORS, determineParentLocation } from '../../config/categories';
+import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, buildDynamicLocationMap } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX } from 'react-icons/fi';
@@ -516,10 +516,14 @@ export default function FilterBar() {
   const toggleLandmarks = useMapStore(state => state.toggleLandmarks);
   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
-  const kmlLayers = useMapStore(state => state.kmlLayers);
   const map = useGoogleMap();
 
   const features = useMapStore(state => state.features);
+
+  // Build dynamic map of primary categories -> sub-locations, from live feature data
+  const dynamicCategoryMap = useMemo(() => {
+    return buildDynamicLocationMap(features);
+  }, [features]);
 
   const [animateKey, setAnimateKey] = useState(0);
 
@@ -527,22 +531,20 @@ export default function FilterBar() {
     const nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
     const nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
     const nextType = updates.type !== undefined ? updates.type : filterType;
+    const nextAreaUnit = updates.areaUnit !== undefined ? updates.areaUnit : globalAreaUnit;
 
     if (updates.primary !== undefined) setFilterPrimary(updates.primary);
     if (updates.secondary !== undefined) setFilterSecondary(updates.secondary);
     if (updates.type !== undefined) setFilterType(updates.type);
+    if (updates.areaUnit !== undefined) setGlobalAreaUnit(updates.areaUnit);
 
     setSelectedFeatureId(null);
     setIsInfoPanelOpen(false);
 
     if (map) {
-      const visibleLayerIds = new Set(kmlLayers.filter(l => l.visible).map(l => l.id));
       const visibleFeatures = features.filter(feature => {
         let isVisible = true;
-        if (feature.source === 'kml' && feature.layerId) {
-          isVisible = visibleLayerIds.has(feature.layerId);
-        }
-        if (isVisible && !isFeatureMatchingUnit(feature, globalAreaUnit)) {
+        if (isVisible && !isFeatureMatchingUnit(feature, nextAreaUnit)) {
           isVisible = false;
         }
         if (isVisible && (nextPrimary || nextSecondary)) {
@@ -551,7 +553,7 @@ export default function FilterBar() {
             if (loc && loc !== nextSecondary) isVisible = false;
           } else if (nextPrimary) {
             if (loc) {
-              const validLocations = [nextPrimary, ...(CATEGORY_MAP[nextPrimary] || [])];
+              const validLocations = [nextPrimary, ...(dynamicCategoryMap[nextPrimary] || [])];
               if (!validLocations.includes(loc)) isVisible = false;
             }
           }
@@ -570,8 +572,6 @@ export default function FilterBar() {
 
   // Compute visible features count
   const visibleCount = useMemo(() => {
-    const visibleLayerIds = new Set(kmlLayers.filter(l => l.visible).map(l => l.id));
-
     return features.reduce((count, feature) => {
       // Exclude dedicated landmarks so only polygons/properties are counted
       if (feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark') {
@@ -579,9 +579,6 @@ export default function FilterBar() {
       }
 
       let isVisible = true;
-      if (feature.source === 'kml' && feature.layerId) {
-        isVisible = visibleLayerIds.has(feature.layerId);
-      }
       if (isVisible && !isFeatureMatchingUnit(feature, globalAreaUnit)) {
         return count;
       }
@@ -592,7 +589,7 @@ export default function FilterBar() {
           if (loc && loc !== filterSecondary) isVisible = false;
         } else if (filterPrimary) {
           if (loc) {
-            const validLocations = [filterPrimary, ...(CATEGORY_MAP[filterPrimary] || [])];
+            const validLocations = [filterPrimary, ...(dynamicCategoryMap[filterPrimary] || [])];
             if (!validLocations.includes(loc)) isVisible = false;
           }
         }
@@ -607,55 +604,11 @@ export default function FilterBar() {
       }
       return count;
     }, 0);
-  }, [features, kmlLayers, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
+  }, [features, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
 
   useEffect(() => {
     setAnimateKey(prev => prev + 1);
   }, [visibleCount, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
-
-  // Build dynamic map of primary categories -> sub-locations
-  const dynamicCategoryMap = useMemo(() => {
-    const categoryMap = {};
-    const subLocationToPrimary = {};
-
-    Object.entries(CATEGORY_MAP).forEach(([primary, subs]) => {
-      subs.forEach(sub => {
-        subLocationToPrimary[sub] = primary;
-      });
-    });
-
-    features.forEach(f => {
-      const loc = f.data?.location;
-      if (loc) {
-        // Use determineParentLocation to dynamically enforce the exact same logic
-        const primary = determineParentLocation(loc);
-        if (!categoryMap[primary]) categoryMap[primary] = new Set();
-        // Only add to the sub-locations set if it is NOT the exact primary location name
-        if (loc.toLowerCase() !== primary.toLowerCase()) {
-          categoryMap[primary].add(loc);
-        }
-      }
-    });
-
-    const finalMap = {};
-    const sortedKeys = Object.keys(categoryMap).sort((a, b) => {
-      if (a.toLowerCase() === 'surat') return -1;
-      if (b.toLowerCase() === 'surat') return 1;
-      return a.localeCompare(b);
-    });
-
-    sortedKeys.forEach(primary => {
-      finalMap[primary] = Array.from(categoryMap[primary]).sort();
-    });
-
-    Object.entries(CATEGORY_MAP).forEach(([primary, subs]) => {
-      if (!finalMap[primary]) {
-        finalMap[primary] = subs;
-      }
-    });
-
-    return finalMap;
-  }, [features]);
 
   const primaryCategories = useMemo(() => {
     return Object.keys(dynamicCategoryMap).sort((a, b) => {
@@ -665,15 +618,13 @@ export default function FilterBar() {
     });
   }, [dynamicCategoryMap]);
 
-  // Strict 3-to-4 Field Logic:
-  // At the beginning (filterPrimary is null/unselected), EXACTLY 3 FIELDS ARE SHOWN (Secondary location field is HIDDEN!).
-  // ONLY if the user explicitly selects Surat (filterPrimary === 'Surat'), the secondary sub-location field APPEARS!
-  const isSuratExplicitlySelected = filterPrimary === 'Surat';
+  // Secondary location field appears whenever the selected primary location actually
+  // has sub-locations in the live data (not just Surat — e.g. "NH 48 , Palsana" too).
   const subLocationsForPrimary = useMemo(() => {
-    return isSuratExplicitlySelected ? (dynamicCategoryMap['Surat'] || []) : [];
-  }, [dynamicCategoryMap, isSuratExplicitlySelected]);
+    return filterPrimary ? (dynamicCategoryMap[filterPrimary] || []) : [];
+  }, [dynamicCategoryMap, filterPrimary]);
 
-  const showSecondaryLocationField = isSuratExplicitlySelected && subLocationsForPrimary.length > 0;
+  const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
   const isFilterActive = Boolean(filterPrimary || filterSecondary || filterType || globalAreaUnit);
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
@@ -863,7 +814,7 @@ export default function FilterBar() {
         }}>
           <button
             type="button"
-            onClick={() => setGlobalAreaUnit(globalAreaUnit === 'yards' ? null : 'yards')}
+            onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'yards' ? null : 'yards' })}
             title="Sq.Yard unit filter"
             className="btn-hover-effect"
             style={{
@@ -889,7 +840,7 @@ export default function FilterBar() {
           </button>
           <button
             type="button"
-            onClick={() => setGlobalAreaUnit(globalAreaUnit === 'wingha' ? null : 'wingha')}
+            onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'wingha' ? null : 'wingha' })}
             title="Wingha unit filter"
             className="btn-hover-effect"
             style={{
@@ -1207,7 +1158,7 @@ export default function FilterBar() {
                   }}>
                     <button
                       type="button"
-                      onClick={() => setGlobalAreaUnit(globalAreaUnit === 'yards' ? null : 'yards')}
+                      onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'yards' ? null : 'yards' })}
                       style={{
                         flex: 1, border: 'none', borderRadius: 9,
                         background: globalAreaUnit === 'yards' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
@@ -1219,7 +1170,7 @@ export default function FilterBar() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setGlobalAreaUnit(globalAreaUnit === 'wingha' ? null : 'wingha')}
+                      onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'wingha' ? null : 'wingha' })}
                       style={{
                         flex: 1, border: 'none', borderRadius: 9,
                         background: globalAreaUnit === 'wingha' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',

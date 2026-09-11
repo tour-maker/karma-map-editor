@@ -117,6 +117,48 @@
         <styleUrl>#icon-1899-9C27B0-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="icon-1899-E65100-nodesc-normal">
+      <IconStyle>
+        <color>ff0051e6</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>0</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="icon-1899-E65100-nodesc-highlight">
+      <IconStyle>
+        <color>ff0051e6</color>
+        <scale>1</scale>
+        <Icon>
+          <href>https://www.gstatic.com/mapspro/images/stock/503-wht-blank_maps.png</href>
+        </Icon>
+        <hotSpot x="32" xunits="pixels" y="64" yunits="insetPixels"/>
+      </IconStyle>
+      <LabelStyle>
+        <scale>1</scale>
+      </LabelStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="icon-1899-E65100-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#icon-1899-E65100-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#icon-1899-E65100-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="icon-1899-FFD600-nodesc-normal">
       <IconStyle>
         <color>ff00d6ff</color>
@@ -299,34 +341,6 @@
         <styleUrl>#line-3949AB-9138-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
-    <Style id="line-9C27B0-3906-nodesc-normal">
-      <LineStyle>
-        <color>ffb0279c</color>
-        <width>3.906</width>
-      </LineStyle>
-      <BalloonStyle>
-        <text><![CDATA[<h3>$[name]</h3>]]></text>
-      </BalloonStyle>
-    </Style>
-    <Style id="line-9C27B0-3906-nodesc-highlight">
-      <LineStyle>
-        <color>ffb0279c</color>
-        <width>5.859</width>
-      </LineStyle>
-      <BalloonStyle>
-        <text><![CDATA[<h3>$[name]</h3>]]></text>
-      </BalloonStyle>
-    </Style>
-    <StyleMap id="line-9C27B0-3906-nodesc">
-      <Pair>
-        <key>normal</key>
-        <styleUrl>#line-9C27B0-3906-nodesc-normal</styleUrl>
-      </Pair>
-      <Pair>
-        <key>highlight</key>
-        <styleUrl>#line-9C27B0-3906-nodesc-highlight</styleUrl>
-      </Pair>
-    </StyleMap>
     <Style id="line-AFB42B-16888-nodesc-normal">
       <LineStyle>
         <color>ff2bb4af</color>
@@ -353,6 +367,62 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#line-AFB42B-16888-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-B2EBF2-1200-nodesc-normal">
+      <LineStyle>
+        <color>fff2ebb2</color>
+        <width>1.2</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="line-B2EBF2-1200-nodesc-highlight">
+      <LineStyle>
+        <color>fff2ebb2</color>
+        <width>1.8</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="line-B2EBF2-1200-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-B2EBF2-1200-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-B2EBF2-1200-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-E65100-12625-nodesc-normal">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>12.625</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="line-E65100-12625-nodesc-highlight">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>18.9375</width>
+      </LineStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="line-E65100-12625-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-E65100-12625-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-E65100-12625-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="line-FFD600-10688-nodesc-normal">
@@ -431,6 +501,38 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#line-FFEA00-12819-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-000000-1200-77-normal">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d000000</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Style id="poly-000000-1200-77-highlight">
+      <LineStyle>
+        <color>ff000000</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d000000</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="poly-000000-1200-77">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-000000-1200-77-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-000000-1200-77-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="poly-000000-1200-77-nodesc-normal">
@@ -1041,6 +1143,44 @@
       <Pair>
         <key>highlight</key>
         <styleUrl>#poly-E65100-1200-196-nodesc-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="poly-E65100-1200-77-nodesc-normal">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d0051e6</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <Style id="poly-E65100-1200-77-nodesc-highlight">
+      <LineStyle>
+        <color>ff0051e6</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>4d0051e6</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+      <BalloonStyle>
+        <text><![CDATA[<h3>$[name]</h3>]]></text>
+      </BalloonStyle>
+    </Style>
+    <StyleMap id="poly-E65100-1200-77-nodesc">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-E65100-1200-77-nodesc-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-E65100-1200-77-nodesc-highlight</styleUrl>
       </Pair>
     </StyleMap>
     <Style id="poly-F57C00-1200-189-nodesc-normal">
@@ -3107,6 +3247,38 @@
         <styleUrl>#poly-FFEA00-1200-54-highlight</styleUrl>
       </Pair>
     </StyleMap>
+    <Style id="poly-FFEA00-1200-61-normal">
+      <LineStyle>
+        <color>ff00eaff</color>
+        <width>1.2</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>3d00eaff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <Style id="poly-FFEA00-1200-61-highlight">
+      <LineStyle>
+        <color>ff00eaff</color>
+        <width>1.8</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>3d00eaff</color>
+        <fill>1</fill>
+        <outline>1</outline>
+      </PolyStyle>
+    </Style>
+    <StyleMap id="poly-FFEA00-1200-61">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#poly-FFEA00-1200-61-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#poly-FFEA00-1200-61-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
     <Style id="poly-FFEA00-1200-77-normal">
       <LineStyle>
         <color>ff00eaff</color>
@@ -3506,32 +3678,12 @@
     <Folder>
       <name>Dumas/ olpad/dandi</name>
       <Placemark>
-        <name>Dumas</name>
-        <description><![CDATA[Tp 82<br>Plot no. <br>2285 sqyd, VK Farm<br>opp. Weekend address]]></description>
-        <styleUrl>#poly-FFD600-2701-133</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7214363,21.1264032,0
-                72.7217113,21.126467,0
-                72.7217355,21.126502,0
-                72.7216993,21.1267647,0
-                72.7213962,21.1267135,0
-                72.7214363,21.1264032,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
         <name>TP 31, FP 56/1, Moje gavier,</name>
-        <description><![CDATA[<img src="https://mymaps.usercontent.google.com/hostedimage/m/*/3AAjQbR7kS0kAoDJWfzGQL36mmv-glc4H-ivYBlzh9Oe-mlHUil-eIBBgPnRO9lohPJqSuiHl97UEPId91D8n6jLA7BoVf0JBocksmywxrlMZ-npygmJ_HgJ5CbbKyEkNXyJ-PZq_AYgx7S9vRtV0zT5EN10Ob6Zpx0yoW2adfMdEq5GkvUmggvaKiKhAvudrGYOxPFBeSTvvpeoPiHQZu0C8bR8rtcDqqTDeeMKVkXAR3668g9FEVeN40UZ4nb0?authuser=0&fife=s16383" height="200" width="auto" /><br><br>OP. 10915 sqyd, FP 7559 sqyd,                                                      Owner : Ali Sosyo]]></description>
+        <description><![CDATA[<img src="https://mymaps.usercontent.google.com/hostedimage/m/*/3AAjQbR5pEOJnYds38Z3iHG4XZGmyW8-QUrHDPJglnW4g7s6AQa27qhs0OAACRIaIfOFghRv8GPAY7PPeMqnKQD-nBucT_RrCW1-lCtqkSoXJcIB_e0S0lxQMdGsN1THGAPscwstIMUp7VhbHXaKuKeWLc2AbjJi1UW0gSp1e6Vxq9k9VHCzxF9FqmnS9zDXxpHqiltFlqad22fiCRJ2QdleJCDUTPxUWB6y3H_4ZGy6hHrufRKCdIh9GZE66FOE?fife=s16383" height="200" width="auto" /><br><br>OP. 10915 sqyd, FP 7559 sqyd,                                                      Owner : Ali Sosyo]]></description>
         <styleUrl>#poly-FFD600-1200-77</styleUrl>
         <ExtendedData>
           <Data name="gx_media_links">
-            <value><![CDATA[https://mymaps.usercontent.google.com/hostedimage/m/*/3AAjQbR7kS0kAoDJWfzGQL36mmv-glc4H-ivYBlzh9Oe-mlHUil-eIBBgPnRO9lohPJqSuiHl97UEPId91D8n6jLA7BoVf0JBocksmywxrlMZ-npygmJ_HgJ5CbbKyEkNXyJ-PZq_AYgx7S9vRtV0zT5EN10Ob6Zpx0yoW2adfMdEq5GkvUmggvaKiKhAvudrGYOxPFBeSTvvpeoPiHQZu0C8bR8rtcDqqTDeeMKVkXAR3668g9FEVeN40UZ4nb0?authuser=0&fife=s16383]]></value>
+            <value>https://mymaps.usercontent.google.com/hostedimage/m/*/3AAjQbR5pEOJnYds38Z3iHG4XZGmyW8-QUrHDPJglnW4g7s6AQa27qhs0OAACRIaIfOFghRv8GPAY7PPeMqnKQD-nBucT_RrCW1-lCtqkSoXJcIB_e0S0lxQMdGsN1THGAPscwstIMUp7VhbHXaKuKeWLc2AbjJi1UW0gSp1e6Vxq9k9VHCzxF9FqmnS9zDXxpHqiltFlqad22fiCRJ2QdleJCDUTPxUWB6y3H_4ZGy6hHrufRKCdIh9GZE66FOE?fife=s16383</value>
           </Data>
         </ExtendedData>
         <Polygon>
@@ -4042,21 +4194,6 @@
         </Point>
       </Placemark>
       <Placemark>
-        <name>Line 53</name>
-        <styleUrl>#line-000000-1200-nodesc</styleUrl>
-        <LineString>
-          <tessellate>1</tessellate>
-          <coordinates>
-            72.7100381,21.1220488,0
-            72.7105317,21.1229145,0
-            72.711626,21.1227143,0
-            72.7114704,21.122294,0
-            72.7106336,21.122389,0
-            72.7104673,21.1220438,0
-          </coordinates>
-        </LineString>
-      </Placemark>
-      <Placemark>
         <name>Point 55</name>
         <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
         <Point>
@@ -4170,25 +4307,6 @@
                 72.7230173,21.1377454,0
                 72.7227974,21.1382683,0
                 72.722395,21.1381182,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Dumas</name>
-        <description><![CDATA[2000 Syyd<br>TP 81<br>FP 187/B<br>Moje: Dumas<br><br>RC Smith/ Vicky Chawla]]></description>
-        <styleUrl>#poly-FFEA00-1200-158</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7161502,21.1129596,0
-                72.7165337,21.1129797,0
-                72.7164962,21.1134601,0
-                72.7161126,21.1134426,0
-                72.7161502,21.1129596,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -4511,7 +4629,7 @@
       </Placemark>
       <Placemark>
         <name>Dumas</name>
-        <description><![CDATA[880 Sqyd<br>VK Farm<br><br>RC Ratani]]></description>
+        <description><![CDATA[880 Sqyd<br>VK Farm<br><br>BLd Nitin Patel universal RC Ratani]]></description>
         <styleUrl>#poly-FFEA00-1200-94</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -4520,6 +4638,9 @@
               <coordinates>
                 72.7291586,21.1303656,0
                 72.7291693,21.1301666,0
+                72.729229,21.1300991,0
+                72.7293138,21.1301016,0
+                72.7293361,21.1301079,0
                 72.7293316,21.1301792,0
                 72.7293154,21.1303719,0
                 72.7291586,21.1303656,0
@@ -4745,26 +4866,6 @@
                 72.7234674,21.0958596,0
                 72.7357411,21.1077106,0
                 72.7354299,21.108071,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Kuched</name>
-        <description><![CDATA[1.4 wingha,<br>moje kuched<br><br> Rc Shailesh Jain]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.0046732,21.0294932,0
-                73.0039854,21.0294827,0
-                73.003883,21.0294051,0
-                73.0039527,21.0290955,0
-                73.0046849,21.0291392,0
-                73.0046732,21.0294932,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -5115,8 +5216,8 @@
         <LineString>
           <tessellate>1</tessellate>
           <coordinates>
-            72.7625138,21.1623957,0
-            72.7650887,21.1588938,0
+            72.7623904,21.1625808,0
+            72.7649653,21.1590789,0
           </coordinates>
         </LineString>
       </Placemark>
@@ -5713,25 +5814,6 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Vesu</name>
-        <description><![CDATA[2100 sqyd<br><br>KB]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7829211,21.1400529,0
-                72.7825805,21.1395426,0
-                72.7839564,21.1396201,0
-                72.7838948,21.1401405,0
-                72.7829211,21.1400529,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
         <name>Sithana</name>
         <description><![CDATA[3.5 wingha<br>Moje: Sithana<br><br>RC Shaiulesh Thakkar]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
@@ -5932,7 +6014,7 @@
       </Placemark>
       <Placemark>
         <name>Arak</name>
-        <description><![CDATA[5 wingha..<br><br>Sonu goswami (Imran)]]></description>
+        <description><![CDATA[5 wingha.... 190 no.<br><br>Sonu goswami (Imran)/ bni rahul jain]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -6253,7 +6335,7 @@
       </Placemark>
       <Placemark>
         <name>Bajipura</name>
-        <description><![CDATA[200 wingha..<br>Moje Bajipura<br><br>RC ADv Imran]]></description>
+        <description><![CDATA[200 wingha..<br>Moje Bajipura<br><br>RC Bharat gohil / RC ADv Imran]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -6413,13 +6495,13 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.7146094,21.1127038,0
-                72.7145879,21.1110574,0
-                72.7157037,21.1110824,0
-                72.7156555,21.111783,0
-                72.7154248,21.111753,0
-                72.7153443,21.1127589,0
-                72.7146094,21.1127038,0
+                72.7145879,21.1126538,0
+                72.7145664,21.1110074,0
+                72.7156822,21.1110324,0
+                72.715634,21.111733,0
+                72.7154033,21.111703,0
+                72.7153228,21.1127089,0
+                72.7145879,21.1126538,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -6550,126 +6632,6 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Vyara</name>
-        <description><![CDATA[27 wingha..<br>Moje Gheriyavav<br><br>RC Ravi songhadh]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.3273564,21.0096016,0
-                73.327217,21.009748,0
-                73.3269615,21.009927,0
-                73.3267922,21.0099852,0
-                73.3266443,21.0099783,0
-                73.3265618,21.0099383,0
-                73.3265196,21.0098594,0
-                73.326478,21.0097054,0
-                73.3264444,21.0095377,0
-                73.3262379,21.0091045,0
-                73.3264579,21.008759,0
-                73.3267368,21.0087139,0
-                73.3276863,21.0074119,0
-                73.3285393,21.0078676,0
-                73.3285339,21.008759,0
-                73.3279492,21.0091196,0
-                73.3275602,21.0094113,0
-                73.3273564,21.0096016,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Vyara</name>
-        <description><![CDATA[10 wingha...<br>Moje ghariyavav<br><br>RC Ravi Songhadh]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.3260918,21.0107083,0
-                73.3259067,21.0105906,0
-                73.3257538,21.0106031,0
-                73.3255285,21.0105755,0
-                73.3254588,21.0103527,0
-                73.325267,21.0100986,0
-                73.3255835,21.0098995,0
-                73.3257699,21.0096491,0
-                73.3258128,21.009574,0
-                73.3261186,21.0093887,0
-                73.326183,21.0092285,0
-                73.3262554,21.0093174,0
-                73.3263037,21.0094263,0
-                73.3263801,21.0096992,0
-                73.3264807,21.009952,0
-                73.3265639,21.0100597,0
-                73.3260918,21.0107083,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Vyara</name>
-        <description><![CDATA[43 wingha...<br>Moje Ghariyavav<br><br>RC Ravi Songhadh]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.3264512,21.0103602,0
-                73.326655,21.0100898,0
-                73.3269823,21.0099846,0
-                73.32739,21.0097543,0
-                73.3276796,21.0097768,0
-                73.3278137,21.0099083,0
-                73.3278593,21.0100673,0
-                73.3278298,21.0105856,0
-                73.3279317,21.0107308,0
-                73.3281678,21.0112316,0
-                73.3282885,21.0114619,0
-                73.3282885,21.0120103,0
-                73.3280283,21.0120052,0
-                73.3278835,21.0130293,0
-                73.3276367,21.0130293,0
-                73.3263922,21.0129743,0
-                73.3263117,21.0126688,0
-                73.3260382,21.0125837,0
-                73.3263117,21.0122131,0
-                73.3262849,21.0118976,0
-                73.3265209,21.0116472,0
-                73.3264298,21.011487,0
-                73.3269394,21.0109762,0
-                73.3264512,21.0103602,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Bajipura</name>
-        <description><![CDATA[18 wingha<br><br>Saurabh Ahuja/ mihal bhai]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.2590876,21.1013429,0
-                73.2593987,21.0995412,0
-                73.2610831,21.0996413,0
-                73.2608203,21.101478,0
-                73.2590876,21.1013429,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
         <name>Vyra</name>
         <description><![CDATA[65 +15 wingha<br><br>RC Ravi Songhadh]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
@@ -6695,6 +6657,226 @@
             </LinearRing>
           </outerBoundaryIs>
         </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Maroli</name>
+        <description>1.75 + 4 wingha</description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9066562,21.0358069,0
+                72.9057577,21.0358019,0
+                72.9057336,21.0353388,0
+                72.9067769,21.0352762,0
+                72.9076674,21.0354514,0
+                72.9073509,21.0364303,0
+                72.906616,21.0363101,0
+                72.9066562,21.0358069,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Kalakachha</name>
+        <description><![CDATA[block no. 167<br>3.75 wingha<br><br>KB]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9527334,21.0522294,0
+                72.9526127,21.0515461,0
+                72.9537741,21.0515911,0
+                72.9537875,21.0521969,0
+                72.9527334,21.0522294,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygon 196</name>
+        <styleUrl>#poly-E65100-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7976094,21.1379135,0
+                72.7975719,21.1368177,0
+                72.7982907,21.1368327,0
+                72.7982907,21.1379385,0
+                72.7976094,21.1379135,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Maroli</name>
+        <description><![CDATA[Moje Vada<br>Block no. 197<br><br>RC Mejal/RC Hevin]]></description>
+        <styleUrl>#icon-1899-0288D1</styleUrl>
+        <Point>
+          <coordinates>
+            72.9070729,21.0359255,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Maroli</name>
+        <description><![CDATA[Moje Vada<br>Block no. 198/1<br><br>RC Mejal/RC Hevin]]></description>
+        <styleUrl>#icon-1899-0288D1</styleUrl>
+        <Point>
+          <coordinates>
+            72.9061394,21.0356126,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Line 202</name>
+        <styleUrl>#line-E65100-12625-nodesc</styleUrl>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            72.907567,21.0358171,0
+            72.9080605,21.0359248,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>Line 204</name>
+        <styleUrl>#line-B2EBF2-1200-nodesc</styleUrl>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            72.9075643,21.0358171,0
+            72.9076205,21.0358306,0
+            72.9076647,21.0358406,0
+            72.907717,21.0358531,0
+            72.907768,21.0358644,0
+            72.9078243,21.0358744,0
+            72.907882,21.0358881,0
+            72.9079397,21.0359007,0
+            72.9079893,21.0359132,0
+            72.9080578,21.0359248,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+      <Placemark>
+        <name>Point 201</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.2593941,21.1003141,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Dumas</name>
+        <description><![CDATA[Tp 82<br>Plot no. <br>2285 sqyd, VK Farm<br>opp. Weekend address]]></description>
+        <styleUrl>#poly-FFD600-2701-133</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7214363,21.1264032,0
+                72.7217113,21.126467,0
+                72.7217355,21.126502,0
+                72.7216993,21.1267647,0
+                72.7213962,21.1267135,0
+                72.7214363,21.1264032,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 206</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9881316,20.9920496,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 207</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.1626901,21.0473808,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 209</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.797835,21.1374309,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 210</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.791198,21.1575135,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Dumas</name>
+        <description><![CDATA[1119 sqyd<br>VK FARM<br><br>RC Bhavesh Dave]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7201103,21.1263503,0
+                72.7201326,21.1259361,0
+                72.7203205,21.1259677,0
+                72.7202906,21.1263878,0
+                72.7201103,21.1263503,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 211</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7789325,21.1347963,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 206</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.3259522,21.0101697,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 207</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.3809661,21.0344508,0
+          </coordinates>
+        </Point>
       </Placemark>
     </Folder>
     <Folder>
@@ -6839,25 +7021,6 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Vesu, Beside Enjoy Apt.</name>
-        <description><![CDATA[1400 sqyd,<br>Owner: Subhash Bansal]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7778589,21.1374865,0
-                72.7779434,21.137095,0
-                72.7782036,21.1371675,0
-                72.7781191,21.1375515,0
-                72.7778589,21.1374865,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
         <name>Vesu, B/h Shubh Trident</name>
         <description><![CDATA[1766 sqyd,<br>RC Deepak Sharma]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
@@ -6931,25 +7094,6 @@
                 72.7739592,21.1420124,0
                 72.7739968,21.1421876,0
                 72.7734255,21.1421825,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Vesu</name>
-        <description><![CDATA[950 Sqyd, VIP Road, <br>Malhar dosa Plot.<br><br>KB]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.774115,21.140651,0
-                72.7741795,21.1402944,0
-                72.7743752,21.1403333,0
-                72.7743095,21.1406872,0
-                72.774115,21.140651,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -7036,25 +7180,6 @@
       </Placemark>
       <Placemark>
         <name>Vesu</name>
-        <description><![CDATA[1580 sqyd	<br>B/h Star galaxy	<br>Vesu.<br><br>RC Pritesh Patel]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7621767,21.1346681,0
-                72.7622598,21.1343917,0
-                72.7626608,21.1345043,0
-                72.7625683,21.134777,0
-                72.7621767,21.1346681,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Vesu</name>
         <description><![CDATA[2400 sqyd.<br>, TP 7, FP 37<br>B/h Star galaxy	<br>Vesu.<br><br>RC Pritesh Patel]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
@@ -7067,27 +7192,6 @@
                 72.7628805,21.1364882,0
                 72.7626914,21.1371849,0
                 72.7624621,21.1371324,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Vesu</name>
-        <description><![CDATA[1400 Sqyd<br>opp. shiv krupa, canal road <br>	Vesu<br><br>KB]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.760736,21.134328,0
-                72.760905,21.1340353,0
-                72.761188,21.1342004,0
-                72.7610257,21.1344143,0
-                72.7609868,21.1344481,0
-                72.7609452,21.1344493,0
-                72.760736,21.134328,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -7219,7 +7323,7 @@
       </Placemark>
       <Placemark>
         <name>Piplod</name>
-        <description><![CDATA[2000 sqyd, B/h Florence hospital<br>RC Munna jariwala]]></description>
+        <description><![CDATA[2000 sqyd, B/h Florence hospital<br>RC Munna jariwala/ rc bhushan chawla]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -7658,11 +7762,11 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.8098348,21.1789392,0
-                72.809926,21.1785741,0
-                72.8100936,21.1786116,0
-                72.809993,21.1789793,0
-                72.8098348,21.1789392,0
+                72.8099126,21.1789567,0
+                72.8100038,21.1785916,0
+                72.8101714,21.1786291,0
+                72.8100708,21.1789968,0
+                72.8099126,21.1789567,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -8050,11 +8154,13 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.798816,21.1399744,0
-                72.7991539,21.1399919,0
-                72.799111,21.1404422,0
-                72.7987918,21.1404247,0
-                72.798816,21.1399744,0
+                72.7988187,21.1400645,0
+                72.7995361,21.1401258,0
+                72.7995294,21.1405223,0
+                72.7995291,21.1410699,0
+                72.7995261,21.1416349,0
+                72.7987717,21.1416093,0
+                72.7988187,21.1400645,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -8272,13 +8378,13 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.7748382,21.1533009,0
-                72.7748409,21.1531271,0
-                72.7748033,21.1531283,0
-                72.7747966,21.1530395,0
-                72.7750823,21.1530433,0
-                72.7750756,21.1532972,0
-                72.7748382,21.1533009,0
+                72.7748784,21.1533059,0
+                72.7748811,21.1531321,0
+                72.7748435,21.1531333,0
+                72.7748368,21.1530445,0
+                72.7751225,21.1530483,0
+                72.7751158,21.1533022,0
+                72.7748784,21.1533059,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -8577,11 +8683,11 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.7994043,21.1524476,0
-                72.7994499,21.1523025,0
-                72.7996939,21.1523501,0
-                72.7996577,21.1525114,0
-                72.7994043,21.1524476,0
+                72.7994378,21.1524251,0
+                72.7994834,21.15228,0
+                72.7997274,21.1523276,0
+                72.7996912,21.1524889,0
+                72.7994378,21.1524251,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -8655,17 +8761,6 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Line 141</name>
-        <styleUrl>#line-9C27B0-3906-nodesc</styleUrl>
-        <LineString>
-          <tessellate>1</tessellate>
-          <coordinates>
-            72.769574,21.1528857,0
-            72.7694613,21.153431,0
-          </coordinates>
-        </LineString>
-      </Placemark>
-      <Placemark>
         <name>Point 142</name>
         <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
         <Point>
@@ -8730,17 +8825,6 @@
             72.9881618,21.4595357,0
           </coordinates>
         </Point>
-      </Placemark>
-      <Placemark>
-        <name>Line 146</name>
-        <styleUrl>#line-000000-1200-nodesc</styleUrl>
-        <LineString>
-          <tessellate>1</tessellate>
-          <coordinates>
-            72.7607664,21.1341654,0
-            72.7611312,21.134378,0
-          </coordinates>
-        </LineString>
       </Placemark>
       <Placemark>
         <name>piplod</name>
@@ -8817,6 +8901,118 @@
         <Point>
           <coordinates>
             72.9520524,21.0511646,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Vesu</name>
+        <description><![CDATA[770 sqyd<br>VIP road touch<br><br>RC Rakesh Jariwala]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.759529,21.137131,0
+                72.7598629,21.1371973,0
+                72.7598267,21.1373999,0
+                72.7594941,21.1373499,0
+                72.759529,21.137131,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>piplod</name>
+        <description><![CDATA[22 x 48..148 sqyd<br><br>RC deepak chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7753016,21.1627962,0
+                72.775315,21.1627364,0
+                72.7754834,21.162767,0
+                72.775467,21.1628295,0
+                72.7753016,21.1627962,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ghod dod rd</name>
+        <description><![CDATA[300 sqyd...<br>subhash nagar<br><br>Rc deepak chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.8103095,21.1725528,0
+                72.8103244,21.1723722,0
+                72.8104317,21.1723861,0
+                72.8104168,21.1725653,0
+                72.8103095,21.1725528,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygon 144</name>
+        <styleUrl>#poly-FFEA00-1200-77-nodesc</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7741684,21.1569202,0
+                72.7741858,21.1566976,0
+                72.7744514,21.1567188,0
+                72.7744366,21.1569389,0
+                72.7741684,21.1569202,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 147</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7596436,21.1372811,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Vesu Rent</name>
+        <description><![CDATA[4200 sqyd on rent<br><br>nitin chug]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7844371,21.1383035,0
+                72.7839155,21.1382229,0
+                72.783999,21.1376503,0
+                72.7845265,21.1377587,0
+                72.7844371,21.1383035,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 148</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7841808,21.1381896,0
           </coordinates>
         </Point>
       </Placemark>
@@ -8971,19 +9167,19 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Vesu</name>
-        <description><![CDATA[770 sqyd<br>VIP road touch<br><br>RC Rakesh Jariwala]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <name>Piplod</name>
+        <description><![CDATA[22 x 60 ...148 sqyd<br><br>RC deepak chhipa]]></description>
+        <styleUrl>#poly-000000-1200-77</styleUrl>
         <Polygon>
           <outerBoundaryIs>
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.759529,21.137131,0
-                72.7598629,21.1371973,0
-                72.7598267,21.1373999,0
-                72.7594941,21.1373499,0
-                72.759529,21.137131,0
+                72.7754716,21.1628943,0
+                72.7754895,21.1628276,0
+                72.7756444,21.1628582,0
+                72.7756266,21.162936,0
+                72.7754716,21.1628943,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -9016,18 +9212,425 @@
           </coordinates>
         </Point>
       </Placemark>
-    </Folder>
-    <Folder>
-      <name>Pin</name>
       <Placemark>
-        <name>Point 47</name>
-        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <name>ubhrat</name>
+        <description><![CDATA[2.35 wingha...2 no.<br>Moje mangrola<br>NA land<br><br>RC deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.815517,21.014608,0
+                72.8156064,21.0142241,0
+                72.8164469,21.0139737,0
+                72.8163813,21.0148027,0
+                72.815517,21.014608,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[2 wingha.. 175 no.<br>Moje mangrol<br>NA land<br><br>RC Deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.8116189,21.0142374,0
+                72.8108321,21.0137589,0
+                72.8109036,21.0134584,0
+                72.8111659,21.0135419,0
+                72.8113566,21.0133138,0
+                72.8117679,21.0136754,0
+                72.8116189,21.0142374,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[4 wingha...2 no.<br>NA <br>moje Mangrol<br><br>RC deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <MultiGeometry>
+          <Polygon>
+            <outerBoundaryIs>
+              <LinearRing>
+                <tessellate>1</tessellate>
+                <coordinates>
+                  72.7912513,21.0124084,0
+                  72.7912686,21.0124101,0
+                  72.7912507,21.0124129,0
+                  72.7912513,21.0124084,0
+                </coordinates>
+              </LinearRing>
+            </outerBoundaryIs>
+          </Polygon>
+          <Polygon>
+            <outerBoundaryIs>
+              <LinearRing>
+                <tessellate>1</tessellate>
+                <coordinates>
+                  72.7912513,21.0124084,0
+                  72.7903149,21.0123183,0
+                  72.7902911,21.0115337,0
+                  72.7913521,21.0116339,0
+                  72.7912513,21.0124084,0
+                </coordinates>
+              </LinearRing>
+            </outerBoundaryIs>
+          </Polygon>
+        </MultiGeometry>
+      </Placemark>
+      <Placemark>
+        <name>ubhrat</name>
+        <description><![CDATA[2.5 wingha...1 no.<br>NA LAND<br>Moje mangrol<br><br>RC Deepak chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7945943,21.009157,0
+                72.7947194,21.008595,0
+                72.795241,21.0088537,0
+                72.7951128,21.0092822,0
+                72.7945943,21.009157,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ubhrat</name>
+        <description><![CDATA[10 wingha...175 no.<br>NA<br>moje mangrol<br><br>RC deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.8025404,21.0137166,0
+                72.8027251,21.012715,0
+                72.8041378,21.012843,0
+                72.8039053,21.0139002,0
+                72.8025404,21.0137166,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Polygon 18</name>
+        <description><![CDATA[5 wingha...150 no.<br>NA<br>moje deepla<br><br>RC deepak chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7515357,21.0087785,0
+                72.7522957,21.0087785,0
+                72.7523344,21.0081469,0
+                72.7532195,21.0082638,0
+                72.7530825,21.0094378,0
+                72.7515625,21.0093822,0
+                72.7515357,21.0087785,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[4 wingha...150 no.<br>NA<br>Moje Vansi<br><br>Rc  deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7568408,20.9508742,0
+                72.7574667,20.9502702,0
+                72.7577557,20.9507016,0
+                72.7574071,20.9513306,0
+                72.7568408,20.9508742,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[5 wingha... <br>150 no.<br>Moje Vansi<br>NA <br><br>RC Deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7578282,20.9507052,0
+                72.7569103,20.9493303,0
+                72.757703,20.9485566,0
+                72.7584659,20.94859,0
+                72.7584719,20.9500929,0
+                72.7583944,20.950349,0
+                72.7578282,20.9507052,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ubhrat</name>
+        <description><![CDATA[40 wingha..125 no.<br>NA plan Pass<br>Moje mangrola<br><br>RC deepak ]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7970833,21.0059615,0
+                72.7974052,21.0039917,0
+                72.8013987,21.0052715,0
+                72.8011483,21.0061173,0
+                72.8028292,21.0061173,0
+                72.8023285,21.0074861,0
+                72.7995986,21.0068407,0
+                72.7996701,21.006351,0
+                72.7970833,21.0059615,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>ubhrat</name>
+        <description><![CDATA[2.65 wingha..125 no.<br>NA Plan pass<br>Moje karakhat<br><br>Rc deepak Chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.8221482,21.0262156,0
+                72.8221959,21.0257455,0
+                72.8227353,21.0257009,0
+                72.8231049,21.0257927,0
+                72.8232211,21.0258289,0
+                72.8231436,21.0263241,0
+                72.8221482,21.0262156,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 23</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
         <Point>
           <coordinates>
-            72.7623334,21.1345863,0
+            72.7579284,20.9496611,0
           </coordinates>
         </Point>
       </Placemark>
+      <Placemark>
+        <name>Point 24</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.8159154,21.0144439,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 25</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.8195012,21.0299371,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 26</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7470135,20.9683273,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[Moje : DALKI<br>Block No. 49.111<br>2.08 Vinga....<br>Road touch. <br>N.A PLAN PASS<br><br>Bld jignesh amin]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.8576637,21.0121573,0
+                72.8582478,21.0122046,0
+                72.858072,21.0127833,0
+                72.8579855,21.0127666,0
+                72.8578931,21.0128278,0
+                72.8578008,21.0128862,0
+                72.8576965,21.0129252,0
+                72.8575802,21.0128834,0
+                72.8576637,21.0121573,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 28</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.8578037,21.0125384,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[Moje : MAGOB/PARSHOLI<br>Block No. 279/281/486<br>6.20 Vinga....<br>NA Plan pass<br><br>Bld jignesh Amin]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7904135,21.0315518,0
+                72.7894479,21.0315629,0
+                72.7893823,21.0311623,0
+                72.7895492,21.0311679,0
+                72.7895671,21.0298772,0
+                72.7893346,21.0298661,0
+                72.7893585,21.029549,0
+                72.7904135,21.0296268,0
+                72.7903896,21.0299662,0
+                72.7901035,21.029944,0
+                72.7900856,21.0311735,0
+                72.7903837,21.0311957,0
+                72.7904135,21.0315518,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 30</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7899068,21.0306728,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[Block no - 231 <br>Moje : DATI<br>7.40 Vinga...<br>NA Plan pass<br>Road touch. <br>200 Mtr From UBHRAT MAIN ROAD<br><br>Bld jigesh Amin]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7659021,21.0153263,0
+                72.7656995,21.0143526,0
+                72.7656637,21.0137628,0
+                72.7656578,21.0131508,0
+                72.7686142,21.013518,0
+                72.7687155,21.0149869,0
+                72.7659021,21.0153263,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 32</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.766069,21.0148088,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ubhrat</name>
+        <description><![CDATA[4 wingha...<br>moje karakhat<br>N.A. Plan pass<br><br>Bld jignesh Amin]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.8240698,21.024135,0
+                72.8246659,21.0241266,0
+                72.8246629,21.0244354,0
+                72.8250205,21.0245022,0
+                72.824797,21.025423,0
+                72.8247404,21.0253006,0
+                72.824642,21.0252338,0
+                72.824502,21.0251782,0
+                72.8243738,21.025142,0
+                72.8242993,21.0250669,0
+                72.824198,21.0249501,0
+                72.8240579,21.0249278,0
+                72.8239149,21.0248916,0
+                72.8238851,21.024811,0
+                72.8240698,21.024135,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 34</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.8244275,21.0246763,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 35</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.8225032,21.0260424,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 36</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.6221875,21.0891686,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 37</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.6183251,21.0887015,0
+          </coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Pin</name>
       <Placemark>
         <name>Point 49</name>
         <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
@@ -9213,12 +9816,12 @@
             <LinearRing>
               <tessellate>1</tessellate>
               <coordinates>
-                72.7835226,21.1701543,0
-                72.7833804,21.1704657,0
-                72.7831914,21.1703969,0
-                72.7831001,21.1703619,0
-                72.7833456,21.1700842,0
-                72.7835226,21.1701543,0
+                72.7835682,21.1701768,0
+                72.783426,21.1704882,0
+                72.783237,21.1704194,0
+                72.7831457,21.1703844,0
+                72.7833912,21.1701067,0
+                72.7835682,21.1701768,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -9246,6 +9849,25 @@
       </Placemark>
       <Placemark>
         <name>Rundh</name>
+        <description><![CDATA[825 sqyd...<br><br>freehold<br>beside Raju India<br><br>CL Rajiv Agarwal]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.7681834,21.1529173,0
+                72.7682116,21.1526985,0
+                72.7684879,21.1527322,0
+                72.7684584,21.1529524,0
+                72.7681834,21.1529173,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Rundh</name>
         <description><![CDATA[Plot no. 12/13/14, <br>1685 sqyd<br>Gymkhana road	<br>Rundh<br><br>RC Haresh Himmat]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
@@ -9258,25 +9880,6 @@
                 72.7706622,21.1602801,0
                 72.7705496,21.1604402,0
                 72.7702733,21.1602738,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Umra</name>
-        <description><![CDATA[2000 sqyd	<br>VrindavanBungalow	<br>Umra<br>Gr+3 construction, raw bungalow,<br>HH]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7832449,21.1744487,0
-                72.7833468,21.1741473,0
-                72.7837062,21.1742324,0
-                72.7835989,21.1746388,0
-                72.7832449,21.1744487,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -9384,25 +9987,6 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Rundh</name>
-        <description><![CDATA[825 sqyd...<br><br>freehold<br>beside Raju India<br><br>CL Rajiv Agarwal]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.7681834,21.1529173,0
-                72.7682116,21.1526985,0
-                72.7684879,21.1527322,0
-                72.7684584,21.1529524,0
-                72.7681834,21.1529173,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
         <name>Point 18</name>
         <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
         <Point>
@@ -9410,6 +9994,39 @@
             72.768225,21.1528273,0
           </coordinates>
         </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 17</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7693594,21.1590122,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Italva</name>
+        <description><![CDATA[13 wingha...<br>Moje italva<br><br>Chetlabhai (KB) / Karan sns]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9713442,21.0762359,0
+                72.971591,21.077252,0
+                72.9710545,21.077227,0
+                72.9707702,21.0776775,0
+                72.9702284,21.0775123,0
+                72.9698315,21.0777025,0
+                72.9687103,21.0779578,0
+                72.9684099,21.0774923,0
+                72.9706039,21.0765012,0
+                72.9713442,21.0762359,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
       </Placemark>
     </Folder>
     <Folder>
@@ -9719,6 +10336,192 @@
     <Folder>
       <name>Other</name>
       <Placemark>
+        <name>Vesma</name>
+        <description><![CDATA[4.5 wingha...150 no.<br>moje Vesma<br><br>BNI rahul jain]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9684861,21.0269384,0
+                72.9697974,21.0270246,0
+                72.9698064,21.0277367,0
+                72.9684891,21.02767,0
+                72.9684861,21.0269384,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Mahuva</name>
+        <description><![CDATA[Block no. <br>124 <br>125<br>126<br>127<br>161<br>162<br>total 25-30 wingha<br><br>RC Bharat Goyal]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.164571,21.0482148,0
+                73.161642,21.0480395,0
+                73.1616313,21.0471984,0
+                73.1614811,21.0471734,0
+                73.1613953,21.0456064,0
+                73.1623501,21.0455413,0
+                73.1623169,21.0440273,0
+                73.1626012,21.0435917,0
+                73.1638511,21.0435016,0
+                73.1641086,21.0447332,0
+                73.1642695,21.0462402,0
+                73.1636312,21.0466157,0
+                73.1637706,21.0473867,0
+                73.1643715,21.0473767,0
+                73.1643607,21.0474868,0
+                73.164571,21.0482148,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Dhola pipla</name>
+        <description><![CDATA[4.30 vingha..550 no.<br>moje: Telada<br>Agriculture land <br>Complit develop farm house <br><br>3500 sq ft house <br>Swimming pool<br>Storeroom <br>Gazibo<br>Servent room<br>Solar penal <br>TATA sky <br>Ro filter ect<br><br>RC Bharat gohil]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9876488,20.9919463,0
+                72.9877757,20.9917381,0
+                72.9883581,20.9920242,0
+                72.9882538,20.9922468,0
+                72.9876488,20.9919463,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Vesma</name>
+        <description>3.75 wingha</description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.973482,21.0375358,0
+                72.9737771,21.0368549,0
+                72.974276,21.0368248,0
+                72.9742062,21.0381016,0
+                72.973482,21.0375358,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Vyara</name>
+        <description><![CDATA[43 wingha...<br>Moje Ghariyavav<br><br>RC Ravi Songhadh]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.3264512,21.0103602,0
+                73.326655,21.0100898,0
+                73.3269823,21.0099846,0
+                73.32739,21.0097543,0
+                73.3276796,21.0097768,0
+                73.3278137,21.0099083,0
+                73.3278593,21.0100673,0
+                73.3278298,21.0105856,0
+                73.3279317,21.0107308,0
+                73.3281678,21.0112316,0
+                73.3282885,21.0114619,0
+                73.3282885,21.0120103,0
+                73.3280283,21.0120052,0
+                73.3278835,21.0130293,0
+                73.3276367,21.0130293,0
+                73.3263922,21.0129743,0
+                73.3263117,21.0126688,0
+                73.3260382,21.0125837,0
+                73.3263117,21.0122131,0
+                73.3262849,21.0118976,0
+                73.3265209,21.0116472,0
+                73.3264298,21.011487,0
+                73.3269394,21.0109762,0
+                73.3264512,21.0103602,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Vyara</name>
+        <description><![CDATA[27 wingha..<br>Moje Gheriyavav<br><br>RC Ravi songhadh]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.3273564,21.0096016,0
+                73.327217,21.009748,0
+                73.3269615,21.009927,0
+                73.3267922,21.0099852,0
+                73.3266443,21.0099783,0
+                73.3265618,21.0099383,0
+                73.3265196,21.0098594,0
+                73.326478,21.0097054,0
+                73.3264444,21.0095377,0
+                73.3262379,21.0091045,0
+                73.3264579,21.008759,0
+                73.3267368,21.0087139,0
+                73.3276863,21.0074119,0
+                73.3285393,21.0078676,0
+                73.3285339,21.008759,0
+                73.3279492,21.0091196,0
+                73.3275602,21.0094113,0
+                73.3273564,21.0096016,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 213</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9697592,20.9950711,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kuched</name>
+        <description><![CDATA[1.4 wingha,<br>moje kuched<br><br> Rc Shailesh Jain]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0046732,21.0294932,0
+                73.0039854,21.0294827,0
+                73.003883,21.0294051,0
+                73.0039527,21.0290955,0
+                73.0046849,21.0291392,0
+                73.0046732,21.0294932,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
         <name>Arak Sisodra</name>
         <description><![CDATA[9 wingha<br>Amba Wadi<br>Moje: Arak Sisodra<br><br>Arc Bherubhai]]></description>
         <styleUrl>#poly-FFEA00-1200-207</styleUrl>
@@ -9734,6 +10537,45 @@
                 73.0018094,21.057544,0
                 73.0019596,21.0584902,0
                 73.0003288,21.0584902,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Dhola Pipla</name>
+        <description><![CDATA[3 + 2.5 wingha... 250 & 300 no.<br><br>NH 48 road touch<br><br>RC Bharat Gohil (Prakash)]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9696758,20.9954244,0
+                72.9693808,20.994381,0
+                72.9707487,20.9942809,0
+                72.970549,20.99479,0
+                72.9708262,20.9954439,0
+                72.9696758,20.9954244,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Bajipura</name>
+        <description><![CDATA[18 wingha<br><br>Saurabh Ahuja/ mihal bhai]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.2590876,21.1013429,0
+                73.2593987,21.0995412,0
+                73.2610831,21.0996413,0
+                73.2608203,21.101478,0
+                73.2590876,21.1013429,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -9771,6 +10613,27 @@
             73.0008706,21.0572687,0
           </coordinates>
         </Point>
+      </Placemark>
+      <Placemark>
+        <name>italva</name>
+        <description><![CDATA[3 wingha..150 no.<br>industrial NA<br>Moje italva<br><br>RC deepak chhipa]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9644422,21.0777755,0
+                72.9638789,21.0777199,0
+                72.9632293,21.0774919,0
+                72.9641025,21.0768912,0
+                72.9653452,21.0771999,0
+                72.9653601,21.0772806,0
+                72.9644422,21.0777755,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
       </Placemark>
       <Placemark>
         <name>Italva</name>
@@ -10232,29 +11095,6 @@
                 73.0481121,21.0996797,0
                 73.0478224,21.0996822,0
                 73.0479405,21.0987963,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Vanesha</name>
-        <description><![CDATA[3.5 wingha.<br>Moje: Vanesa<br><br>B Naman Shah]]></description>
-        <styleUrl>#poly-1A237E-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.0627163,21.1026809,0
-                73.062609,21.1023656,0
-                73.06277,21.1022856,0
-                73.0631401,21.1021454,0
-                73.0635961,21.1019903,0
-                73.0641111,21.1018852,0
-                73.0645027,21.1018352,0
-                73.0645241,21.1023256,0
-                73.0627163,21.1026809,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -11748,7 +12588,7 @@
       </Placemark>
       <Placemark>
         <name>Aarak Sisodra</name>
-        <description><![CDATA[10 wingha<br>Moje:  Aarak<br>Freehold<br>best for Warehouse<br>Canal road, Nr. Reliance warehouse<br><br>RC Divyesh parmar(LALA)]]></description>
+        <description><![CDATA[10 wingha<br>Moje:  Aarak<br>Freehold<br>best for Warehouse<br>Canal road, Nr. Reliance warehouse<br><br>RC Divyesh parmar(LALA)/ bharat gohil]]></description>
         <styleUrl>#poly-FFEA00-1200-110</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -13261,6 +14101,37 @@
         </Polygon>
       </Placemark>
       <Placemark>
+        <name>Vyara</name>
+        <description><![CDATA[10 wingha...<br>Moje ghariyavav<br><br>RC Ravi Songhadh]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.3260918,21.0107083,0
+                73.3259067,21.0105906,0
+                73.3257538,21.0106031,0
+                73.3255285,21.0105755,0
+                73.3254588,21.0103527,0
+                73.325267,21.0100986,0
+                73.3255835,21.0098995,0
+                73.3257699,21.0096491,0
+                73.3258128,21.009574,0
+                73.3261186,21.0093887,0
+                73.326183,21.0092285,0
+                73.3262554,21.0093174,0
+                73.3263037,21.0094263,0
+                73.3263801,21.0096992,0
+                73.3264807,21.009952,0
+                73.3265639,21.0100597,0
+                73.3260918,21.0107083,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
         <name>channai</name>
         <styleUrl>#poly-FBC02D-1200-168-nodesc</styleUrl>
         <Polygon>
@@ -13404,27 +14275,6 @@
                 73.0478481,21.1008003,0
                 73.0468342,21.1010055,0
                 73.0467216,21.1003824,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Bajipura</name>
-        <description>RC Naman shah</description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.2794699,21.081035,0
-                73.2787994,21.0790178,0
-                73.2794592,21.0788326,0
-                73.2843677,21.0771658,0
-                73.2851742,21.0794727,0
-                73.2804446,21.0808986,0
-                73.2794699,21.081035,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -13625,7 +14475,7 @@
       </Placemark>
       <Placemark>
         <name>Makhinga</name>
-        <description><![CDATA[57 wingha<br>Moje Makhinga<br>Freehold<br>industrial N.A. Plan Pass<br><br>RC Bharat Gohil / Vyomeshbhai]]></description>
+        <description><![CDATA[57 wingha<br>Moje Makhinga<br>Freehold<br>industrial N.A. Plan Pass<br><br>RC Bharat Gohil / bharat savani ]]></description>
         <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
           <outerBoundaryIs>
@@ -13648,8 +14498,9 @@
         </Polygon>
       </Placemark>
       <Placemark>
-        <name>Polygon 216</name>
-        <styleUrl>#poly-FFEA00-1200-77-nodesc</styleUrl>
+        <name>Vesu Rent</name>
+        <description><![CDATA[2200 sqyd on rent<br><br>Nitin chug]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
         <Polygon>
           <outerBoundaryIs>
             <LinearRing>
@@ -13733,25 +14584,6 @@
             73.0189084,21.037644,0
           </coordinates>
         </Point>
-      </Placemark>
-      <Placemark>
-        <name>Vesma</name>
-        <description><![CDATA[4 wingha..<br>2.75<br>Vesma<br><br>RC Hemant Jetha]]></description>
-        <styleUrl>#poly-FBC02D-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                72.9730909,21.0398599,0
-                72.9730963,21.0391439,0
-                72.9744803,21.039229,0
-                72.9744213,21.0398949,0
-                72.9730909,21.0398599,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
       </Placemark>
       <Placemark>
         <name>Vanesha</name>
@@ -14274,6 +15106,524 @@
           </outerBoundaryIs>
         </Polygon>
       </Placemark>
+      <Placemark>
+        <name>Point 249</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0611476,21.1023652,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Vesma</name>
+        <description><![CDATA[3.40 wingha.... 240 no.<br>moje Arak Sisodra<br><br>RC BNI Rahul jain]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9774451,21.0464065,0
+                72.9775971,21.0456778,0
+                72.9786909,21.0462674,0
+                72.9786432,21.0466541,0
+                72.9774451,21.0464065,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 251</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9693824,20.9930564,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 253</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9689615,21.0021318,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 254</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.969231,21.0274177,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 255</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9740613,21.0377487,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 256</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9780381,21.0463358,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 257</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9783719,21.0491617,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 258</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9774421,21.0477086,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 259</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.964393,21.0775242,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 260</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0740364,21.1027899,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 261</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.2644472,21.0818218,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Kanav</name>
+        <description><![CDATA[37 wingha...120 no.<br>Moje kanav<br>freehold<br><br>Vyomeshbhai]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0040797,21.0842632,0
+                73.0054447,21.0842966,0
+                73.0055162,21.0848639,0
+                73.0060645,21.0861096,0
+                73.0048725,21.0866657,0
+                73.0038055,21.0865545,0
+                73.0036684,21.0861319,0
+                73.0015406,21.0862598,0
+                73.0017015,21.0846637,0
+                73.0040499,21.0846692,0
+                73.0040797,21.0842632,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 263</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7997234,21.0058873,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 264</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7908065,21.0120747,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 265</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.8033473,21.0134411,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 266</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.811454,21.0138127,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 267</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.79495,21.008978,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 268</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7527114,21.0091493,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 269</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.7572727,20.95083,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 270</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9772614,21.1009023,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 271</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.972092,21.1280211,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Pera</name>
+        <description><![CDATA[2.5 wingha...350 no. <br>Moje Sarona<br>Dhola pipla to sarbhon road<br><br><br>RC Bharat Gohil/ chako]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0128704,21.0018157,0
+                73.0129837,21.0014513,0
+                73.0137317,21.0016599,0
+                73.0136274,21.00203,0
+                73.0128704,21.0018157,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 273</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0130344,21.0017083,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 273</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.773822,21.1388191,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 274</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9786435,21.0401896,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Vesma</name>
+        <description><![CDATA[7.5 wingha,<br>NH 8, 2 road corner<br><br>Rc Bharat gohil(Prakash)]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9769229,21.0442834,0
+                72.9768276,21.0429205,0
+                72.9780316,21.0428481,0
+                72.9781329,21.04425,0
+                72.9769229,21.0442834,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 276</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9774594,21.044161,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Polygon 277</name>
+        <description><![CDATA[45 wingha... 150 no.<br>Vesma.<br>Agricuture land<br><br>RC bharat Gohil (Abhijit)]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9624013,21.0334975,0
+                72.9627607,21.0329189,0
+                72.9642567,21.0330914,0
+                72.9642866,21.032791,0
+                72.9644475,21.0323292,0
+                72.9647276,21.0322513,0
+                72.9653177,21.0321067,0
+                72.9655859,21.0318396,0
+                72.9660568,21.0318619,0
+                72.9663012,21.0321345,0
+                72.9669807,21.0322958,0
+                72.9664842,21.0345712,0
+                72.9649881,21.034905,0
+                72.9645649,21.0348828,0
+                72.9641238,21.0347993,0
+                72.963653,21.0349607,0
+                72.9627589,21.0349273,0
+                72.9627768,21.0344043,0
+                72.9623059,21.0344043,0
+                72.9618291,21.0343376,0
+                72.9621688,21.0338814,0
+                72.9626754,21.0338536,0
+                72.9627231,21.0334975,0
+                72.9624013,21.0334975,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 278</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.962865,21.0331042,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Polygon 279</name>
+        <description><![CDATA[14 wingha...59 no.<br>Moje Ambada<br><br>RC Bharat Gohil (D N)]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0408658,20.943147,0
+                73.0404843,20.9426571,0
+                73.0399836,20.9418555,0
+                73.0399479,20.9409092,0
+                73.0432142,20.9406865,0
+                73.0432142,20.9427239,0
+                73.0408658,20.943147,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 280</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0405201,20.9424122,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Ambada</name>
+        <description><![CDATA[22 wingha... 55 no.<br>moje Ambada<br><br>RC Bharat Gohil (D N)]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0472059,20.9332644,0
+                73.0487735,20.9333479,0
+                73.0490477,20.9335762,0
+                73.0501325,20.9335873,0
+                73.0501146,20.9340383,0
+                73.0494232,20.9340104,0
+                73.0493457,20.9347341,0
+                73.0495842,20.9358308,0
+                73.0483027,20.9357251,0
+                73.0482848,20.935391,0
+                73.0475695,20.9353465,0
+                73.0477007,20.9338156,0
+                73.0471702,20.9337877,0
+                73.0472059,20.9332644,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 282</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0487557,20.9337543,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sadlav</name>
+        <description><![CDATA[14 wingha...50 no.<br>Moje: Sadlav<br><br>RC Bharat gohil (D N)]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0394367,20.930439,0
+                73.0409745,20.9301133,0
+                73.0411444,20.9308426,0
+                73.0411891,20.9310625,0
+                73.0411235,20.9312768,0
+                73.0412487,20.9317389,0
+                73.0406941,20.9320354,0
+                73.0400268,20.9320763,0
+                73.039693,20.9319204,0
+                73.0394606,20.9316281,0
+                73.0393056,20.9313804,0
+                73.0391894,20.9310547,0
+                73.039097,20.9307597,0
+                73.0392967,20.9308543,0
+                73.0394904,20.9308348,0
+                73.0394367,20.930439,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 284</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0398599,20.9318182,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Sadlav</name>
+        <description><![CDATA[18 wingha...40 no.<br><br>Moje: Sadlav<br><br>BNI Malhar desai]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.03806,20.935661,0
+                73.037905,20.9348148,0
+                73.0381494,20.9348315,0
+                73.0383997,20.9349429,0
+                73.0388527,20.9347202,0
+                73.0388885,20.9346256,0
+                73.0392521,20.9344307,0
+                73.0390613,20.9338573,0
+                73.0395084,20.9338183,0
+                73.0397885,20.9337794,0
+                73.040313,20.9337515,0
+                73.0402356,20.9338851,0
+                73.0402594,20.9341635,0
+                73.0404084,20.9344641,0
+                73.0406349,20.9346033,0
+                73.0407228,20.9346511,0
+                73.0407897,20.9349069,0
+                73.040693,20.9355534,0
+                73.0402367,20.9355989,0
+                73.0399762,20.9355943,0
+                73.0398219,20.9354768,0
+                73.0397587,20.9353493,0
+                73.039419,20.935288,0
+                73.0394547,20.9355608,0
+                73.0383163,20.935533,0
+                73.03806,20.935661,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 286</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0381673,20.9352602,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 296</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.3270057,21.0091224,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 297</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.3271726,21.0106359,0
+          </coordinates>
+        </Point>
+      </Placemark>
     </Folder>
     <Folder>
       <name>Navasri to Vapi</name>
@@ -14639,39 +15989,6 @@
                 73.0088251,20.9214305,0
                 73.00853,20.9214005,0
                 73.0082189,20.9212802,0
-              </coordinates>
-            </LinearRing>
-          </outerBoundaryIs>
-        </Polygon>
-      </Placemark>
-      <Placemark>
-        <name>Khadsupa</name>
-        <description><![CDATA[11 wingha<br>Moje: Khadsupa<br><br><br>B bharat Gohil & B digesh Navsari]]></description>
-        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
-        <Polygon>
-          <outerBoundaryIs>
-            <LinearRing>
-              <tessellate>1</tessellate>
-              <coordinates>
-                73.0163388,20.9080394,0
-                73.0154805,20.9080344,0
-                73.015502,20.9086407,0
-                73.0157487,20.9086858,0
-                73.0158292,20.9089715,0
-                73.0150836,20.9090717,0
-                73.0148743,20.9086207,0
-                73.0148797,20.9082699,0
-                73.0149173,20.907854,0
-                73.0149387,20.9076435,0
-                73.014928,20.9073078,0
-                73.0154376,20.9073128,0
-                73.0154322,20.9071825,0
-                73.0156683,20.9072777,0
-                73.0158453,20.9073829,0
-                73.0160331,20.9075232,0
-                73.0161833,20.9076936,0
-                73.0162691,20.9079191,0
-                73.0163388,20.9080394,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -16261,9 +17578,126 @@
           </outerBoundaryIs>
         </Polygon>
       </Placemark>
+      <Placemark>
+        <name>Point 88</name>
+        <styleUrl>#icon-1899-0288D1-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0303044,20.9701169,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Navsari</name>
+        <description><![CDATA[139 wingha<br>moje: Sisodra &7 Munsad<br>Nasari<br><br>RC Karik/ Malhar]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9894041,20.9409986,0
+                72.993996,20.9407581,0
+                72.9951976,20.9410888,0
+                72.9943071,20.9421108,0
+                72.9933308,20.9434836,0
+                72.9929768,20.943714,0
+                72.9929963,20.9466989,0
+                72.9909578,20.946759,0
+                72.9899707,20.9466788,0
+                72.9899707,20.9471297,0
+                72.9893806,20.9471297,0
+                72.9894665,20.9460075,0
+                72.9896918,20.9451758,0
+                72.9881361,20.9451959,0
+                72.9880395,20.9445546,0
+                72.9885974,20.9445546,0
+                72.9886511,20.9439935,0
+                72.990196,20.9440436,0
+                72.9904964,20.9426909,0
+                72.9897025,20.9425807,0
+                72.9892948,20.9423201,0
+                72.9894041,20.9409986,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Point 89</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.1330638,21.0484375,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 90</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.1359904,21.0392576,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 91</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9151422,21.0097484,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 92</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            72.9930264,20.9422983,0
+          </coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>Point 93</name>
+        <styleUrl>#icon-1899-E65100-nodesc</styleUrl>
+        <Point>
+          <coordinates>
+            73.0544748,20.8743783,0
+          </coordinates>
+        </Point>
+      </Placemark>
     </Folder>
     <Folder>
       <name>Kim Kosamba Bharuch</name>
+      <Placemark>
+        <name>Karanj</name>
+        <description><![CDATA[4.25 wingha<br>N.A.<br><br>vinodji bajariya]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0099256,21.3761693,0
+                73.0100731,21.3755798,0
+                73.0102769,21.3756198,0
+                73.0103655,21.3753475,0
+                73.010572,21.3753975,0
+                73.0104969,21.3757372,0
+                73.0108483,21.3758121,0
+                73.0109448,21.3755224,0
+                73.0111862,21.3755548,0
+                73.0113337,21.3756622,0
+                73.011146,21.3764065,0
+                73.0104701,21.3763016,0
+                73.0099256,21.3761693,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
       <Placemark>
         <name>Kosamba</name>
         <description><![CDATA[22 wingha<br>NH 8 Touch,<br>N.A. Plan Pass<br>All title clear<br><br>B Vilash Mota Varachha]]></description>
@@ -16284,6 +17718,29 @@
                 73.0003678,21.4699703,0
                 73.0015265,21.4704196,0
                 73.0008184,21.4720969,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Kosamba</name>
+        <description><![CDATA[23 wingha..<br>moje: kathwada<br><br>Vinodji Bajari]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                73.0029512,21.4601023,0
+                73.0022163,21.4592735,0
+                73.0019374,21.4588691,0
+                73.0020339,21.4575211,0
+                73.0031175,21.4575761,0
+                73.0029781,21.4583948,0
+                73.0037505,21.4584997,0
+                73.0037184,21.4601173,0
+                73.0029512,21.4601023,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>
@@ -16886,6 +18343,77 @@
                 73.0056249,21.4933568,0
                 73.00511,21.4942103,0
                 73.003624,21.4930074,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>Panoli</name>
+        <description><![CDATA[moje nana borasara<br>32 acres<br>block no.:124,125,128,129,134,135,136<br>116,118,119,120<br>Vyomeshbhai]]></description>
+        <styleUrl>#poly-FFEA00-1200-61</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9866188,21.5353796,0
+                72.986608,21.5347609,0
+                72.9865866,21.5332539,0
+                72.9867261,21.531707,0
+                72.9866402,21.5283386,0
+                72.9877078,21.5282239,0
+                72.9877104,21.5287329,0
+                72.9883132,21.5288252,0
+                72.988385,21.5283686,0
+                72.9890777,21.5284085,0
+                72.9890539,21.5287329,0
+                72.9894807,21.5287828,0
+                72.9893653,21.5296611,0
+                72.9891615,21.5312778,0
+                72.9889791,21.5319365,0
+                72.9878633,21.5317369,0
+                72.9877775,21.5327349,0
+                72.9889684,21.5329345,0
+                72.9889416,21.5334086,0
+                72.9900305,21.5335483,0
+                72.989832,21.5341771,0
+                72.9892902,21.5340074,0
+                72.988727,21.5338327,0
+                72.9881584,21.5336331,0
+                72.9877453,21.5336331,0
+                72.9875683,21.5336481,0
+                72.9874165,21.5356253,0
+                72.9866188,21.5353796,0
+              </coordinates>
+            </LinearRing>
+          </outerBoundaryIs>
+        </Polygon>
+      </Placemark>
+      <Placemark>
+        <name>panoli</name>
+        <description><![CDATA[moje: nana borasara<br>block no. 121,123,124<br>21 wingha<br><br>Vyomeshbhai]]></description>
+        <styleUrl>#poly-FFEA00-1200-77</styleUrl>
+        <Polygon>
+          <outerBoundaryIs>
+            <LinearRing>
+              <tessellate>1</tessellate>
+              <coordinates>
+                72.9914322,21.5293376,0
+                72.9912551,21.5305203,0
+                72.9912659,21.5310292,0
+                72.9877039,21.5305801,0
+                72.9876717,21.5312588,0
+                72.9867168,21.5312588,0
+                72.9867168,21.5293825,0
+                72.98752,21.5293217,0
+                72.987897,21.5295023,0
+                72.9893239,21.529632,0
+                72.9894044,21.529113,0
+                72.9896351,21.5290781,0
+                72.9910727,21.5292827,0
+                72.9912444,21.5293376,0
+                72.9914322,21.5293376,0
               </coordinates>
             </LinearRing>
           </outerBoundaryIs>

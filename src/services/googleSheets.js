@@ -1,5 +1,6 @@
 import { determineParentLocation, getPropertyTypeColor, CATEGORY_MAP } from '../config/categories.js';
 import { useMapStore } from '../store/useMapStore.js';
+import { calculatePolygonCenter } from './googleMaps.js';
 
 let tokenClient = null;
 let accessToken = null;
@@ -87,73 +88,71 @@ export const isGoogleAuthenticated = () => {
   return !!accessToken;
 };
 
-export const sheetsFetch = async (url, options = {}) => {
-  if (!accessToken) throw new Error('Not authenticated');
-  const headers = {
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-  const response = await fetch(url, { ...options, headers });
+// --- Backend-proxied Sheets access -----------------------------------------
+// All reads/writes now go through our own server, which talks to Google
+// Sheets using a service account. This removes the dependency on a browser
+// OAuth session (which requires per-origin setup and expires hourly), and
+// closes off the destructive fallback path that used to fire when that
+// session was missing.
+const BACKEND_URL = 'http://localhost:5050';
+
+const adminAuthHeaders = () => {
+  const jwt = localStorage.getItem('karmaAdminJWT');
+  return jwt ? { 'Authorization': `Bearer ${jwt}` } : {};
+};
+
+const backendFetch = async (path, options = {}) => {
+  const response = await fetch(`${BACKEND_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.method && options.method !== 'GET' ? adminAuthHeaders() : {}),
+      ...options.headers,
+    },
+  });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || 'Google Sheets API error');
+    throw new Error(err.error || 'Sheets backend error');
   }
   return response.json();
 };
 
-export const fetchSheetData = async (spreadsheetId, range = 'Polygons') => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`;
-  return sheetsFetch(url);
+export const sheetsFetch = backendFetch;
+
+export const fetchSheetData = async (_spreadsheetId, range = 'Polygons') => {
+  return backendFetch(`/api/sheets/values?range=${encodeURIComponent(range)}`);
 };
 
-export const updateSheetRow = async (spreadsheetId, range, values) => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
-  return sheetsFetch(url, {
+export const updateSheetRow = async (_spreadsheetId, range, values) => {
+  return backendFetch('/api/sheets/values', {
     method: 'PUT',
-    body: JSON.stringify({
-      range,
-      majorDimension: 'ROWS',
-      values: [values],
-    }),
+    body: JSON.stringify({ range, values }),
   });
 };
 
-export const appendSheetRow = async (spreadsheetId, range, values) => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
-  return sheetsFetch(url, {
+export const appendSheetRow = async (_spreadsheetId, range, values) => {
+  return backendFetch('/api/sheets/values/append', {
     method: 'POST',
-    body: JSON.stringify({
-      range,
-      majorDimension: 'ROWS',
-      values: [values],
-    }),
+    body: JSON.stringify({ range, values: [values] }),
   });
 };
 
-export const appendSheetRows = async (spreadsheetId, range, multipleValues) => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED`;
-  return sheetsFetch(url, {
+export const appendSheetRows = async (_spreadsheetId, range, multipleValues) => {
+  return backendFetch('/api/sheets/values/append', {
     method: 'POST',
-    body: JSON.stringify({
-      range,
-      majorDimension: 'ROWS',
-      values: multipleValues,
-    }),
+    body: JSON.stringify({ range, values: multipleValues }),
   });
 };
 
-export const clearSheetData = async (spreadsheetId, range = 'Polygons') => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:clear`;
-  return sheetsFetch(url, {
+export const clearSheetData = async (_spreadsheetId, range = 'Polygons') => {
+  return backendFetch('/api/sheets/values/clear', {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify({ range }),
   });
 };
 
-export const deleteSheetRowByIndex = async (spreadsheetId, sheetId = 0, rowIndex) => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`;
-  return sheetsFetch(url, {
+export const deleteSheetRowByIndex = async (_spreadsheetId, sheetId = 0, rowIndex) => {
+  return backendFetch('/api/sheets/batchUpdate', {
     method: 'POST',
     body: JSON.stringify({
       requests: [
@@ -172,11 +171,9 @@ export const deleteSheetRowByIndex = async (spreadsheetId, sheetId = 0, rowIndex
   });
 };
 
-export const getSheetIdByName = async (spreadsheetId, sheetName) => {
-  if (!accessToken || !spreadsheetId || spreadsheetId === 'default') return null;
+export const getSheetIdByName = async (_spreadsheetId, sheetName) => {
   try {
-    const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties(title,sheetId)`;
-    const meta = await sheetsFetch(metaUrl);
+    const meta = await backendFetch('/api/sheets/metadata');
     const sheet = (meta.sheets || []).find(s => s.properties?.title === sheetName);
     return sheet?.properties?.sheetId ?? null;
   } catch (err) {
@@ -185,147 +182,91 @@ export const getSheetIdByName = async (spreadsheetId, sheetName) => {
   }
 };
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz-uODChErEEwzVQOeQUefR-Q0yhsOWFHxolbpxmSTu4SyVl_0Hpec-mG2kgIZH7-A/exec';
-
 export const syncLandmarkToSheet = async (landmarkFeature, spreadsheetId = null, action = 'create') => {
   if (!landmarkFeature) return;
+
+  if (!spreadsheetId || spreadsheetId === 'default') {
+    throw new Error('No Google Sheet is configured.');
+  }
 
   try {
     const d = landmarkFeature.data || {};
     const title = d.landmark || d.name || 'Landmark';
-    const loc = d.location || 'Surat';
-    const parentLoc = d.parentLocation || d.parent_location || determineParentLocation(loc);
     const lat = landmarkFeature.position?.lat || landmarkFeature.center?.lat || '';
     const lng = landmarkFeature.position?.lng || landmarkFeature.center?.lng || '';
     const remarksVal = d.remarks || (lat && lng ? `Lat: ${lat}, Lng: ${lng}` : '');
 
-    // Format row for Landmarks: id, Landmark Name, Location, Parent Location, Latitude, Longitude, Remarks
+    // Format row for Landmarks: id, Landmark Name, Latitude, Longitude, Remarks
     const landmarkSheetRow = [
       landmarkFeature.id || `landmark-${Date.now()}`,
       title,
-      loc,
-      parentLoc,
       lat ? String(lat) : '',
       lng ? String(lng) : '',
       remarksVal
     ];
 
-    // 1. Direct Google Sheets API update/append if connected
-    let directApiSuccess = false;
-    if (accessToken && spreadsheetId && spreadsheetId !== 'default') {
-      try {
-        await ensureSheetTabExists(spreadsheetId, 'Landmarks', ['id', 'Landmark Name', 'Location', 'Parent Location', 'Latitude', 'Longitude', 'Remarks']);
-        const sheetData = await fetchSheetData(spreadsheetId, 'Landmarks');
-        const rows = sheetData.values || [];
-        let targetRowIndex = -1;
+    await ensureSheetTabExists(spreadsheetId, 'Landmarks', ['id', 'Landmark Name', 'Latitude', 'Longitude', 'Remarks']);
+    const sheetData = await fetchSheetData(spreadsheetId, 'Landmarks');
+    const rows = sheetData.values || [];
+    let targetRowIndex = -1;
 
-        if (rows.length > 0) {
-          const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
-          const idIdx = headers.indexOf('id');
-          const landmarkIdx = headers.indexOf('landmark name');
-          const locIdx = headers.indexOf('location');
+    if (rows.length > 0) {
+      const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+      const idIdx = headers.indexOf('id');
+      const landmarkIdx = headers.indexOf('landmark name');
 
-          const cleanStr = val => String(val || '').toLowerCase().trim();
-          const fIdNorm = cleanStr(landmarkFeature.id);
-          const fTitleNorm = cleanStr(title);
-          const fLocNorm = cleanStr(loc);
+      const cleanStr = val => String(val || '').toLowerCase().trim();
+      const fIdNorm = cleanStr(landmarkFeature.id);
+      const fTitleNorm = cleanStr(title);
 
-          for (let i = 1; i < rows.length; i++) {
-            const r = rows[i];
-            const rIdNorm = idIdx >= 0 ? cleanStr(r[idIdx]) : '';
-            const rLandmarkNorm = landmarkIdx >= 0 ? cleanStr(r[landmarkIdx]) : '';
-            const rLocNorm = locIdx >= 0 ? cleanStr(r[locIdx]) : '';
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        const rIdNorm = idIdx >= 0 ? cleanStr(r[idIdx]) : '';
+        const rLandmarkNorm = landmarkIdx >= 0 ? cleanStr(r[landmarkIdx]) : '';
 
-            if (fIdNorm && rIdNorm && rIdNorm === fIdNorm) {
-              targetRowIndex = i + 1;
-              break;
-            }
-            if (fTitleNorm && rLandmarkNorm && rLandmarkNorm === fTitleNorm && (rLocNorm === fLocNorm || !fLocNorm)) {
-              targetRowIndex = i + 1;
-              break;
-            }
-          }
-
-          if (action === 'delete') {
-            if (targetRowIndex > 1) {
-              const sId = await getSheetIdByName(spreadsheetId, 'Landmarks');
-              if (sId !== null) {
-                await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
-              }
-            }
-          } else if (action === 'update' || action === 'edit') {
-            if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `Landmarks!A${targetRowIndex}:G${targetRowIndex}`, [landmarkSheetRow]);
-            } else {
-              await appendSheetRow(spreadsheetId, 'Landmarks!A:G', landmarkSheetRow);
-            }
-          } else {
-            // Action is 'create' / 'add'
-            if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `Landmarks!A${targetRowIndex}:G${targetRowIndex}`, [landmarkSheetRow]);
-            } else {
-              await appendSheetRow(spreadsheetId, 'Landmarks!A:G', landmarkSheetRow);
-            }
-          }
-        } else {
-          await appendSheetRow(spreadsheetId, 'Landmarks!A:G', landmarkSheetRow);
+        if (fIdNorm && rIdNorm && rIdNorm === fIdNorm) {
+          targetRowIndex = i + 1;
+          break;
         }
-        directApiSuccess = true;
-      } catch (err) {
-        console.warn('Direct Google Sheets API sync for landmark failed:', err);
+        if (fTitleNorm && rLandmarkNorm && rLandmarkNorm === fTitleNorm) {
+          targetRowIndex = i + 1;
+          break;
+        }
       }
-    }
 
-    if (!directApiSuccess) {
-      // 2. Apps Script backup sync
-      const landmarkRow = [
-        landmarkFeature.id || `landmark-${Date.now()}`,
-        title,
-        loc,
-        parentLoc,
-        lat ? String(lat) : '',
-        lng ? String(lng) : '',
-        d.remarks || ''
-      ];
-
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: action === 'delete' ? 'deleteLandmark' : 'saveLandmark',
-          sheetName: 'landmarks',
-          tabName: 'landmarks',
-          row: landmarkRow,
-          landmarkRow,
-          landmark: {
-            id: landmarkFeature.id,
-            name: title,
-            location: loc,
-            parentLocation: parentLoc,
-            lat,
-            lng,
-            remarks: d.remarks || ''
+      if (action === 'delete') {
+        if (targetRowIndex > 1) {
+          const sId = await getSheetIdByName(spreadsheetId, 'Landmarks');
+          if (sId !== null) {
+            await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
           }
-        })
-      });
+        }
+      } else {
+        // 'update' / 'edit' / 'create' / 'add'
+        if (targetRowIndex > 1) {
+          await updateSheetRow(spreadsheetId, `Landmarks!A${targetRowIndex}:E${targetRowIndex}`, [landmarkSheetRow]);
+        } else {
+          await appendSheetRow(spreadsheetId, 'Landmarks!A:E', landmarkSheetRow);
+        }
+      }
+    } else {
+      await appendSheetRow(spreadsheetId, 'Landmarks!A:E', landmarkSheetRow);
     }
   } catch (err) {
     console.error('Failed to sync landmark to Google Sheets:', err);
+    throw err;
   }
 };
 
 export const ensureSheetTabExists = async (spreadsheetId, title = 'Areas', headers = ['Parent Location', 'Secondary Location']) => {
-  if (!accessToken || !spreadsheetId || spreadsheetId === 'default') return;
+  if (!spreadsheetId || spreadsheetId === 'default') return;
 
   try {
-    const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`;
-    const meta = await sheetsFetch(metaUrl);
+    const meta = await backendFetch('/api/sheets/metadata');
     const existingTitles = (meta.sheets || []).map(s => s.properties?.title);
 
     if (!existingTitles.includes(title)) {
-      const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`;
-      await sheetsFetch(batchUrl, {
+      await backendFetch('/api/sheets/batchUpdate', {
         method: 'POST',
         body: JSON.stringify({
           requests: [
@@ -363,36 +304,18 @@ export const syncAreaToSheet = async (parentLocation, subLocationsInput = [], sp
     ? subs.map(sub => [parent, sub])
     : [[parent, '']];
 
-  // 1. Direct Google Sheets REST API sync to 'Areas' sheet tab (2 columns: Parent Location, Secondary Location)
-  if (accessToken && spreadsheetId && spreadsheetId !== 'default') {
-    try {
-      await ensureSheetTabExists(spreadsheetId, 'Areas', ['Parent Location', 'Secondary Location']);
-      await appendSheetRows(spreadsheetId, 'Areas!A:B', rowsToAppend);
-    } catch (err) {
-      console.warn('Direct Google Sheets API sync for Area failed:', err);
-    }
-  }
+  if (!spreadsheetId || spreadsheetId === 'default') return;
 
-  // 2. Apps Script backup sync
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: 'saveArea',
-        parentLocation: parent,
-        subLocations: subs,
-        rows: rowsToAppend
-      })
-    });
+    await ensureSheetTabExists(spreadsheetId, 'Areas', ['Parent Location', 'Secondary Location']);
+    await appendSheetRows(spreadsheetId, 'Areas!A:B', rowsToAppend);
   } catch (err) {
-    console.error('Apps Script area sync error:', err);
+    console.warn('Sync for Area failed:', err);
   }
 };
 
 export const fetchAreasFromSheet = async (spreadsheetId) => {
-  if (!accessToken || !spreadsheetId || spreadsheetId === 'default') return [];
+  if (!spreadsheetId || spreadsheetId === 'default') return [];
 
   try {
     const sheetData = await fetchSheetData(spreadsheetId, 'Areas!A:B');
@@ -442,7 +365,7 @@ export const fetchAreasFromSheet = async (spreadsheetId) => {
 };
 
 export const repairSheet1Headers = async (spreadsheetId, sheetName = 'Polygons') => {
-  if (!accessToken || !spreadsheetId || spreadsheetId === 'default') return;
+  if (!spreadsheetId || spreadsheetId === 'default') return;
 
   const correctHeaders = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks'];
   try {
@@ -470,6 +393,10 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
     return syncLandmarkToSheet(feature, spreadsheetId, action);
   }
 
+  if (!spreadsheetId || spreadsheetId === 'default') {
+    throw new Error('No Google Sheet is configured.');
+  }
+
   try {
     const d = feature.data || {};
     const loc = d.location || feature.location || '';
@@ -490,6 +417,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
     const cleanPartyPhone = partyPhoneVal.includes('[{"lat":') ? '' : partyPhoneVal;
     const cleanBrokerName = brokerNameVal.includes('[{"lat":') ? '' : brokerNameVal;
     const cleanBrokerPhone = brokerPhoneVal.includes('[{"lat":') ? '' : brokerPhoneVal;
+    const center = feature.center || calculatePolygonCenter(feature.coordinates);
 
     const cleanRow = [
       feature.id || '',
@@ -506,108 +434,87 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       cleanPartyPhone,
       cleanBrokerName,
       cleanBrokerPhone,
-      feature.coordinates && feature.coordinates.length > 0 ? JSON.stringify(feature.coordinates) : ''
+      feature.coordinates && feature.coordinates.length > 0 ? JSON.stringify(feature.coordinates) : '',
+      center ? `${center.lat}, ${center.lng}` : '',
+      d.reference || feature.reference || '',
+      d.areaUnit || feature.areaUnit || ''
     ];
 
     let targetRowIndex = -1;
 
-    if (accessToken && spreadsheetId && spreadsheetId !== 'default') {
-      try {
-        await repairSheet1Headers(spreadsheetId, 'Polygons');
-        const sheetData = await fetchSheetData(spreadsheetId, 'Polygons');
-        const rows = sheetData.values || [];
-        if (rows.length > 0) {
-          const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
-          const idIdx = headers.indexOf('id') >= 0 ? headers.indexOf('id') : 0;
-          const tpIdx = headers.indexOf('tp') >= 0 ? headers.indexOf('tp') : 1;
-          const opIdx = headers.indexOf('op') >= 0 ? headers.indexOf('op') : 2;
-          const fpIdx = headers.indexOf('fp') >= 0 ? headers.indexOf('fp') : 3;
+    await repairSheet1Headers(spreadsheetId, 'Polygons');
+    const sheetData = await fetchSheetData(spreadsheetId, 'Polygons');
+    const rows = sheetData.values || [];
+    if (rows.length > 0) {
+      const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+      const idIdx = headers.indexOf('id') >= 0 ? headers.indexOf('id') : 0;
+      const tpIdx = headers.indexOf('tp') >= 0 ? headers.indexOf('tp') : 1;
+      const opIdx = headers.indexOf('op') >= 0 ? headers.indexOf('op') : 2;
+      const fpIdx = headers.indexOf('fp') >= 0 ? headers.indexOf('fp') : 3;
 
-          const cleanStr = val => String(val || '').toLowerCase().replace(/^(tp|op|fp)[:\s]*/i, '').replace(/[^a-z0-9]/gi, '');
+      const cleanStr = val => String(val || '').toLowerCase().replace(/^(tp|op|fp)[:\s]*/i, '').replace(/[^a-z0-9]/gi, '');
 
-          const fIdNorm = cleanStr(feature.id);
-          const fTpNorm = cleanStr(tpVal);
-          const fOpNorm = cleanStr(opVal);
-          const fFpNorm = cleanStr(fpVal);
+      const fIdNorm = cleanStr(feature.id);
+      const fTpNorm = cleanStr(tpVal);
+      const fOpNorm = cleanStr(opVal);
+      const fFpNorm = cleanStr(fpVal);
 
-          // Find exact row matching THIS specific polygon
-          for (let i = 1; i < rows.length; i++) {
-            const r = rows[i];
-            const rIdNorm = idIdx >= 0 ? cleanStr(r[idIdx]) : '';
-            const rTpNorm = tpIdx >= 0 ? cleanStr(r[tpIdx]) : '';
-            const rOpNorm = opIdx >= 0 ? cleanStr(r[opIdx]) : '';
-            const rFpNorm = fpIdx >= 0 ? cleanStr(r[fpIdx]) : '';
+      // Find exact row matching THIS specific polygon
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        const rIdNorm = idIdx >= 0 ? cleanStr(r[idIdx]) : '';
+        const rTpNorm = tpIdx >= 0 ? cleanStr(r[tpIdx]) : '';
+        const rOpNorm = opIdx >= 0 ? cleanStr(r[opIdx]) : '';
+        const rFpNorm = fpIdx >= 0 ? cleanStr(r[fpIdx]) : '';
 
-            // Priority 1: Match by unique ID
-            if (fIdNorm && rIdNorm && rIdNorm === fIdNorm) {
-              targetRowIndex = i + 1;
-              break;
-            }
-            // Priority 2: Match by TP + OP + FP
-            if (fTpNorm && fOpNorm && fFpNorm && rTpNorm === fTpNorm && rOpNorm === fOpNorm && rFpNorm === fFpNorm) {
-              targetRowIndex = i + 1;
-              break;
-            }
-            // Priority 3: Match by TP + FP
-            if (fTpNorm && fFpNorm && rTpNorm === fTpNorm && rFpNorm === fFpNorm) {
-              targetRowIndex = i + 1;
-              break;
-            }
-          }
+        // Priority 1: Match by unique ID
+        if (fIdNorm && rIdNorm && rIdNorm === fIdNorm) {
+          targetRowIndex = i + 1;
+          break;
+        }
+        // Priority 2: Match by TP + OP + FP
+        if (fTpNorm && fOpNorm && fFpNorm && rTpNorm === fTpNorm && rOpNorm === fOpNorm && rFpNorm === fFpNorm) {
+          targetRowIndex = i + 1;
+          break;
+        }
+        // Priority 3: Match by TP + FP
+        if (fTpNorm && fFpNorm && rTpNorm === fTpNorm && rFpNorm === fFpNorm) {
+          targetRowIndex = i + 1;
+          break;
+        }
+      }
 
-          // Strictly execute action: ONLY touch the targeted row if updating
-          if (action === 'delete') {
-            if (targetRowIndex > 1) {
-              const sId = await getSheetIdByName(spreadsheetId, 'Polygons');
-              if (sId !== null) {
-                await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
-              }
-            }
-          } else if (action === 'update' || action === 'edit' || action === 'save') {
-            if (targetRowIndex > 1) {
-              // Update ONLY the specific matched row
-              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:O${targetRowIndex}`, [cleanRow]);
-            } else {
-              console.warn(`[syncFeatureToSheet] No matching row found in Google Sheet for polygon id="${feature.id}" (TP: ${tpVal}, FP: ${fpVal}). Skipping update to avoid creating new rows or overwriting unrelated polygons.`);
-            }
-          } else if (action === 'create' || action === 'add') {
-            if (targetRowIndex > 1) {
-              await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:O${targetRowIndex}`, [cleanRow]);
-            } else {
-              await appendSheetRow(spreadsheetId, 'Polygons!A:O', cleanRow);
-            }
+      // Strictly execute action: ONLY touch the targeted row if updating
+      if (action === 'delete') {
+        if (targetRowIndex > 1) {
+          const sId = await getSheetIdByName(spreadsheetId, 'Polygons');
+          if (sId !== null) {
+            await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
           }
         }
-      } catch (err) {
-        console.error('[syncFeatureToSheet] FAILED:', err);
-        throw err; // Re-throw so callers can handle it
+      } else if (action === 'update' || action === 'edit' || action === 'save') {
+        if (targetRowIndex > 1) {
+          // Update ONLY the specific matched row
+          await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:R${targetRowIndex}`, [cleanRow]);
+        } else {
+          console.warn(`[syncFeatureToSheet] No matching row found in Google Sheet for polygon id="${feature.id}" (TP: ${tpVal}, FP: ${fpVal}). Skipping update to avoid creating new rows or overwriting unrelated polygons.`);
+        }
+      } else if (action === 'create' || action === 'add') {
+        if (targetRowIndex > 1) {
+          await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:R${targetRowIndex}`, [cleanRow]);
+        } else {
+          await appendSheetRow(spreadsheetId, 'Polygons!A:R', cleanRow);
+        }
       }
-    } else {
-      console.warn('[syncFeatureToSheet] Skipped — accessToken:', !!accessToken, 'spreadsheetId:', spreadsheetId);
     }
-
-    // Backup Apps Script call with targetRowIndex
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        action: action || 'update',
-        id: feature.id,
-        tp: tpVal,
-        op: opVal,
-        fp: fpVal,
-        targetRowIndex: targetRowIndex > 1 ? targetRowIndex : -1,
-        row: cleanRow
-      })
-    });
   } catch (err) {
-    console.error('Apps Script sync error:', err);
+    console.error('[syncFeatureToSheet] FAILED:', err);
+    throw err; // Re-throw so callers can handle it
   }
 };
 
 export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], range = 'Polygons') => {
-  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'Landmark Remarks', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates'];
+  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates', 'center pin lat long', 'reference', 'area unit'];
   
   const polygonFeatures = features.filter(f => !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark'));
 
@@ -616,6 +523,7 @@ export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], r
     ...polygonFeatures.map(f => {
       const d = f.data || {};
       const parentLoc = d.parentLocation || d.parent_location || determineParentLocation(d.location);
+      const center = f.center || calculatePolygonCenter(f.coordinates);
       return [
         f.id || '',
         d.tp != null ? String(d.tp) : '',
@@ -631,58 +539,44 @@ export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], r
         d.partyPhone || '',
         d.brokerName || '',
         d.brokerPhone || '',
-        f.coordinates && f.coordinates.length > 0 ? JSON.stringify(f.coordinates) : ''
+        f.coordinates && f.coordinates.length > 0 ? JSON.stringify(f.coordinates) : '',
+        center ? `${center.lat}, ${center.lng}` : '',
+        d.reference || '',
+        d.areaUnit || ''
       ];
     })
   ];
 
   await clearSheetData(spreadsheetId, range);
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
-  return sheetsFetch(url, {
-    method: 'PUT',
-    body: JSON.stringify({
-      range,
-      majorDimension: 'ROWS',
-      values: rows,
-    }),
-  });
+  return updateSheetRow(spreadsheetId, range, rows);
 };
 
 export const overwriteAreasSheet = async (spreadsheetId, areaRows = []) => {
-  if (!accessToken || !spreadsheetId || spreadsheetId === 'default' || areaRows.length === 0) return;
+  if (!spreadsheetId || spreadsheetId === 'default' || areaRows.length === 0) return;
 
   try {
     await ensureSheetTabExists(spreadsheetId, 'Areas', ['Parent Location', 'Secondary Location', 'Polygon IDs']);
     await clearSheetData(spreadsheetId, 'Areas!A:Z');
     await updateSheetRow(spreadsheetId, `Areas!A1:C${areaRows.length}`, areaRows);
   } catch (err) {
-    console.warn('Direct Google Sheets API overwrite for Areas failed:', err);
+    console.warn('Overwrite for Areas failed:', err);
   }
 };
 
 export const overwriteLandmarksSheet = async (spreadsheetId, landmarkRows = []) => {
-  if (!accessToken || !spreadsheetId || spreadsheetId === 'default' || landmarkRows.length === 0) return;
+  if (!spreadsheetId || spreadsheetId === 'default' || landmarkRows.length === 0) return;
 
-  const headers = ['id', 'Landmark Name', 'Location', 'Parent Location', 'Latitude', 'Longitude', 'Remarks'];
+  const headers = ['id', 'Landmark Name', 'Latitude', 'Longitude', 'Remarks'];
   const rows = [headers, ...landmarkRows];
   const range = 'Landmarks';
 
   try {
     await ensureSheetTabExists(spreadsheetId, 'Landmarks', headers);
     await clearSheetData(spreadsheetId, 'Landmarks!A:Z');
-
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
-    await sheetsFetch(url, {
-      method: 'PUT',
-      body: JSON.stringify({
-        range,
-        majorDimension: 'ROWS',
-        values: rows,
-      }),
-    });
+    await updateSheetRow(spreadsheetId, range, rows);
   } catch (err) {
-    console.warn('Direct Google Sheets API overwrite for Landmarks failed:', err);
+    console.warn('Overwrite for Landmarks failed:', err);
   }
 };
 
@@ -692,33 +586,17 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     let areasData = [];
     let landmarksData = [];
 
-    if (spreadsheetId && accessToken) {
-      // 1. Direct API Fetch
-      try {
-        const pUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Polygons`;
-        const pRes = await sheetsFetch(pUrl);
-        if (pRes && pRes.values) polygonsData = pRes.values;
-        
-        const aUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Areas`;
-        const aRes = await sheetsFetch(aUrl);
-        if (aRes && aRes.values) areasData = aRes.values;
-        
-        const lUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/landmarks`;
-        const lRes = await sheetsFetch(lUrl);
-        if (lRes && lRes.values) landmarksData = lRes.values;
-      } catch (err) {
-        console.warn('Failed to fetch via Direct API, falling back to Apps Script webhook:', err);
-      }
-    }
+    try {
+      const pRes = await fetchSheetData(spreadsheetId, 'Polygons');
+      if (pRes && pRes.values) polygonsData = pRes.values;
 
-    if (polygonsData.length === 0) {
-      // 2. Fallback to Webhook
-      const res = await fetch(APPS_SCRIPT_URL);
-      if (!res.ok) return 0;
-      const result = await res.json();
-      polygonsData = result.data || result.values || result.rows || [];
-      areasData = result.areas || [];
-      landmarksData = result.landmarks || [];
+      const aRes = await fetchSheetData(spreadsheetId, 'Areas');
+      if (aRes && aRes.values) areasData = aRes.values;
+
+      const lRes = await fetchSheetData(spreadsheetId, 'Landmarks');
+      if (lRes && lRes.values) landmarksData = lRes.values;
+    } catch (err) {
+      console.warn('Failed to fetch sheet data:', err);
     }
 
     if (!polygonsData || polygonsData.length < 2) return 0;
@@ -808,6 +686,8 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     const brokerNameIdx = !isCorruptedHeaders && rawHeaders.indexOf('broker name') >= 0 ? rawHeaders.indexOf('broker name') : 12;
     const brokerPhoneIdx = !isCorruptedHeaders && rawHeaders.indexOf('broker phone') >= 0 ? rawHeaders.indexOf('broker phone') : 13;
     const coordsIdx = !isCorruptedHeaders && rawHeaders.indexOf('coordinates') >= 0 ? rawHeaders.indexOf('coordinates') : 14;
+    const referenceIdx = !isCorruptedHeaders && rawHeaders.indexOf('reference') >= 0 ? rawHeaders.indexOf('reference') : 16;
+    const areaUnitIdx = !isCorruptedHeaders && rawHeaders.indexOf('area unit') >= 0 ? rawHeaders.indexOf('area unit') : 17;
 
     const sheetMap = new Map();
     for (let i = 1; i < polygonsData.length; i++) {
@@ -853,23 +733,23 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         partyPhone: rawPartyPhone.includes('[{"lat":') ? '' : rawPartyPhone,
         brokerName: rawBrokerName.includes('[{"lat":') ? '' : rawBrokerName,
         brokerPhone: rawBrokerPhone.includes('[{"lat":') ? '' : rawBrokerPhone,
-        coordinates: coordsIdx >= 0 ? String(row[coordsIdx] || '').trim() : ''
+        coordinates: coordsIdx >= 0 ? String(row[coordsIdx] || '').trim() : '',
+        reference: referenceIdx >= 0 ? String(row[referenceIdx] || '').trim() : '',
+        areaUnit: areaUnitIdx >= 0 ? String(row[areaUnitIdx] || '').trim() : ''
       };
 
       if (id) sheetMap.set(`id:${id}`, rowData);
       if (tp || fp) sheetMap.set(`tpfp:${tp}_${fp}`, rowData);
     }
 
-    // Process Landmarks (7 columns)
+    // Process Landmarks (5 columns: id, Landmark Name, Latitude, Longitude, Remarks)
     if (landmarksData && landmarksData.length > 1) {
       const lHeaders = landmarksData[0].map(h => String(h || '').trim().toLowerCase());
       const lIdIdx = lHeaders.indexOf('id') >= 0 ? lHeaders.indexOf('id') : 0;
       const lNameIdx = lHeaders.indexOf('landmark name') >= 0 ? lHeaders.indexOf('landmark name') : 1;
-      const lLocIdx = lHeaders.indexOf('location') >= 0 ? lHeaders.indexOf('location') : 2;
-      const lParentLocIdx = lHeaders.indexOf('parent location') >= 0 ? lHeaders.indexOf('parent location') : 3;
-      const lLatIdx = lHeaders.indexOf('latitude') >= 0 ? lHeaders.indexOf('latitude') : 4;
-      const lLngIdx = lHeaders.indexOf('longitude') >= 0 ? lHeaders.indexOf('longitude') : 5;
-      const lRemarksIdx = lHeaders.indexOf('remarks') >= 0 ? lHeaders.indexOf('remarks') : 6;
+      const lLatIdx = lHeaders.indexOf('latitude') >= 0 ? lHeaders.indexOf('latitude') : 2;
+      const lLngIdx = lHeaders.indexOf('longitude') >= 0 ? lHeaders.indexOf('longitude') : 3;
+      const lRemarksIdx = lHeaders.indexOf('remarks') >= 0 ? lHeaders.indexOf('remarks') : 4;
 
       for (let i = 1; i < landmarksData.length; i++) {
         const row = landmarksData[i];
@@ -877,35 +757,15 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const id = lIdIdx >= 0 ? String(row[lIdIdx] || '').trim() : '';
         if (id) {
           const lName = lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '';
-          
-          let loc = lLocIdx >= 0 ? String(row[lLocIdx] || '').trim() : '';
-          let pLoc = lParentLocIdx >= 0 ? String(row[lParentLocIdx] || '').trim() : '';
-          
-          const customAreas = useMapStore.getState().customAreas || [];
-          const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
-
-          const lowerAllParentLocs = allParentLocations.map(l => l.toLowerCase());
-          if (pLoc && !lowerAllParentLocs.includes(pLoc.toLowerCase())) {
-             if (!loc || loc.toLowerCase() === pLoc.toLowerCase()) loc = pLoc;
-             else loc = `${pLoc}, ${loc}`;
-             pLoc = 'Surat';
-          } else if (!pLoc) {
-             pLoc = determineParentLocation(loc);
-          }
 
           if (sheetMap.has(`id:${id}`)) {
              sheetMap.get(`id:${id}`).landmark = lName;
-             // Ensure parent location is corrected in the existing polygon data too
-             sheetMap.get(`id:${id}`).location = loc;
-             sheetMap.get(`id:${id}`).parentLocation = pLoc;
              continue;
           }
           sheetMap.set(`id:${id}`, {
             id,
             name: lName,
             landmark: lName,
-            location: loc,
-            parentLocation: pLoc,
             lat: lLatIdx >= 0 ? String(row[lLatIdx] || '').trim() : '',
             lng: lLngIdx >= 0 ? String(row[lLngIdx] || '').trim() : '',
             remarks: lRemarksIdx >= 0 ? String(row[lRemarksIdx] || '').trim() : '',
@@ -951,14 +811,12 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
 
       if (isLandmarkType) {
         const localName = String(d.name || d.landmark || '').trim();
-        const localLoc = String(d.location || '').trim();
         const localRemarks = String(d.remarks || '').trim();
-        
+
         const nameChanged = sheetMatch.name && sheetMatch.name !== localName;
-        const locChanged = sheetMatch.location && sheetMatch.location !== localLoc;
         const remarksChanged = sheetMatch.remarks && sheetMatch.remarks !== localRemarks;
-        
-        if (nameChanged || locChanged || remarksChanged) {
+
+        if (nameChanged || remarksChanged) {
           updateCount++;
           return {
             ...f,
@@ -967,8 +825,6 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
               ...d,
               name: sheetMatch.name || localName,
               landmark: sheetMatch.name || localName,
-              location: sheetMatch.location || localLoc,
-              parentLocation: sheetMatch.parentLocation || determineParentLocation(sheetMatch.location || localLoc),
               remarks: sheetMatch.remarks || localRemarks
             }
           };
@@ -1022,7 +878,9 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
               partyName: sheetMatch.partyName || localPartyName,
               partyPhone: sheetMatch.partyPhone || localPartyPhone,
               brokerName: sheetMatch.brokerName || localBrokerName,
-              brokerPhone: sheetMatch.brokerPhone || localBrokerPhone
+              brokerPhone: sheetMatch.brokerPhone || localBrokerPhone,
+              reference: sheetMatch.reference || d.reference || '',
+              areaUnit: sheetMatch.areaUnit || d.areaUnit || ''
             },
             style: {
               ...f.style,
@@ -1073,7 +931,9 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
                 parentLocation: sheetMatch.parentLocation,
                 landmark: sheetMatch.landmark,
                 type: sheetMatch.type || 'Freehold',
-                remarks: sheetMatch.remarks
+                remarks: sheetMatch.remarks,
+                reference: sheetMatch.reference || '',
+                areaUnit: sheetMatch.areaUnit || ''
               },
               style: {
                 fillColor: newColor,
@@ -1101,8 +961,6 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
             data: {
               name: sheetMatch.name || sheetMatch.landmark || '',
               landmark: sheetMatch.landmark || sheetMatch.name || '',
-              location: sheetMatch.location || '',
-              parentLocation: sheetMatch.parentLocation || '',
               type: 'Landmark',
               remarks: sheetMatch.remarks || ''
             },

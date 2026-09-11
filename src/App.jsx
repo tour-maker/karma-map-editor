@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
-import { initGoogleIdentity, setAccessToken, startAutoRefresh } from './services/googleSheets'
+import { initGoogleIdentity, setAccessToken, startAutoRefresh, requestLogin } from './services/googleSheets'
 
 function App() {
   useEffect(() => {
@@ -32,6 +32,28 @@ function App() {
         .catch(() => {
           // If server unreachable, don't grant access
           useMapStore.getState().setIsAdminAuthenticated(false);
+        });
+    }
+
+    // Verify viewer account JWT with backend on every page load
+    const storedUserJWT = localStorage.getItem('karmaUserJWT');
+    if (storedUserJWT) {
+      fetch('http://localhost:5050/api/auth/user-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: storedUserJWT })
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.valid) {
+            useMapStore.getState().setViewerUsername(data.username);
+          } else {
+            localStorage.removeItem('karmaUserJWT');
+            useMapStore.getState().setViewerUsername(null);
+          }
+        })
+        .catch(() => {
+          // If server unreachable, keep the cached username but don't trust it for API calls
         });
     }
 
@@ -87,39 +109,58 @@ function App() {
 
   const appMode = useMapStore(state => state.appMode);
   const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
+  const googleSheetsConnected = useMapStore(state => state.googleSheetsConnected);
 
   return (
     <GoogleMapProvider>
       {appMode === 'edit' && !isAdminAuthenticated && <AdminAuthOverlay />}
       {appMode === 'edit' && isAdminAuthenticated && (
-        <button
-          onClick={() => {
-            localStorage.removeItem('karmaAdminJWT');
-            useMapStore.getState().setIsAdminAuthenticated(false);
-          }}
-          style={{
-            position: 'fixed',
-            top: 14,
-            right: 16,
-            zIndex: 1000,
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.5)',
-            color: '#ef4444',
-            borderRadius: 8,
-            padding: '6px 14px',
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: 'pointer',
-            letterSpacing: '0.5px',
-            backdropFilter: 'blur(8px)',
-            transition: 'all 0.2s',
-            fontFamily: 'Inter, system-ui, sans-serif'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-        >
-          Logout
-        </button>
+        <div style={{ position: 'fixed', top: 14, right: 16, zIndex: 1000, display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => requestLogin()}
+            title={googleSheetsConnected ? 'Re-authenticate with Google Sheets' : 'Connect to Google Sheets'}
+            style={{
+              background: googleSheetsConnected ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              border: googleSheetsConnected ? '1px solid rgba(34, 197, 94, 0.5)' : '1px solid rgba(245, 158, 11, 0.5)',
+              color: googleSheetsConnected ? '#22c55e' : '#f59e0b',
+              borderRadius: 8,
+              padding: '6px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.2s',
+              fontFamily: 'Inter, system-ui, sans-serif'
+            }}
+          >
+            {googleSheetsConnected ? 'Google Sheets Connected' : 'Connect Google Sheets'}
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem('karmaAdminJWT');
+              useMapStore.getState().setIsAdminAuthenticated(false);
+            }}
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.5)',
+              color: '#ef4444',
+              borderRadius: 8,
+              padding: '6px 14px',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              letterSpacing: '0.5px',
+              backdropFilter: 'blur(8px)',
+              transition: 'all 0.2s',
+              fontFamily: 'Inter, system-ui, sans-serif'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
+          >
+            Logout
+          </button>
+        </div>
       )}
       <Toaster position="top-center" />
       <GoogleSheetsConnect />

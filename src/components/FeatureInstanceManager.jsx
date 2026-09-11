@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { createImportedMarker, createImportedPolygon, highlightPolygon, zoomToProperty, getCategoryPinIcon, calculatePolygonCenter } from '../services/googleMaps';
-import { getPropertyTypeColor, DEFAULT_PROPERTY_COLOR, CATEGORY_MAP } from '../config/categories';
+import { getPropertyTypeColor, DEFAULT_PROPERTY_COLOR, buildDynamicLocationMap } from '../config/categories';
 
 // Inject Keyframes for Selected Pin Glow Effect
 if (typeof document !== 'undefined' && !document.getElementById('selected-pin-glow-keyframes')) {
@@ -103,20 +103,9 @@ function createSelectedGlowOverlay(map, position, color = '#3b82f6') {
   return overlay;
 }
 
-// A KML polygon that absorbed Excel data via "Map Pins" gets this color
-// if no category is assigned, so matched vs. unmatched polygons are distinguishable.
-const MATCHED_KML_COLOR = '#16a34a';
-
-function isMatchedKmlPolygon(feature) {
-  return feature.source === 'kml' && feature.type === 'polygon' && Boolean(feature.data?.matchTier);
-}
-
 function getFeatureColor(feature) {
   if (feature.data?.type) {
     return getPropertyTypeColor(feature.data.type);
-  }
-  if (isMatchedKmlPolygon(feature)) {
-    return MATCHED_KML_COLOR;
   }
   return feature.style?.fillColor || feature.style?.strokeColor || DEFAULT_PROPERTY_COLOR;
 }
@@ -145,11 +134,6 @@ export default function FeatureInstanceManager() {
     features.forEach(feature => {
       // Ignore landmark features — LandmarkManager renders them as slate gray landmark tags
       if (feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark') {
-        return;
-      }
-
-      // Ignore unmapped KML polygons/markers
-      if (feature.source === 'kml' && !feature.data?.matchTier) {
         return;
       }
 
@@ -292,23 +276,18 @@ export default function FeatureInstanceManager() {
   }, [features]);
 
 
-  // Handle Visibility (KML Layers & Filters)
-  const kmlLayers = useMapStore(state => state.kmlLayers);
+  // Handle Visibility (Filters)
   const filterPrimary = useMapStore(state => state.filterPrimary);
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
 
   useEffect(() => {
-    const visibleLayerIds = new Set(kmlLayers.filter(l => l.visible).map(l => l.id));
+    const dynamicLocationMap = buildDynamicLocationMap(features);
 
     features.forEach(feature => {
       if (!feature.instances) return;
 
-      // Determine base visibility from KML layers
       let isVisible = true;
-      if (feature.source === 'kml' && feature.layerId) {
-        isVisible = visibleLayerIds.has(feature.layerId);
-      }
 
       // Apply Primary & Secondary Location Filter
       if (isVisible && (filterPrimary || filterSecondary)) {
@@ -321,7 +300,7 @@ export default function FeatureInstanceManager() {
           }
         } else if (filterPrimary) {
           // If only primary is selected (e.g. Surat), it must be the primary city itself OR one of its sub-locations
-          const validLocations = [filterPrimary, ...(CATEGORY_MAP[filterPrimary] || [])];
+          const validLocations = [filterPrimary, ...(dynamicLocationMap[filterPrimary] || [])];
           if (!validLocations.includes(loc)) {
             isVisible = false;
           }
@@ -346,7 +325,7 @@ export default function FeatureInstanceManager() {
         feature.instances.marker.setVisible(finalVisible);
       }
     });
-  }, [kmlLayers, features, filterPrimary, filterSecondary, filterType]);
+  }, [features, filterPrimary, filterSecondary, filterType]);
 
   // Handle Highlighting & Glowing Bouncing Pin
   const previousSelectedIdRef = useRef(null);

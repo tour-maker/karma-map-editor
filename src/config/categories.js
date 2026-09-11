@@ -1,11 +1,8 @@
 export const CATEGORY_MAP = {
   'Surat': [
-    'Adajan', 'Vesu', 'Pal', 'Nanpura', 'Dumas', 'Gavier', 'Bhimrad',
-    'Magdalla', 'Piplod', 'Althan', 'Bhatar', 'Rander', 'Jahangirpura',
-    'Katargam', 'Varachha', 'Sarthana', 'Udhna', 'Pandesara', 'Sachin',
-    'Hazira', 'Ichchhapor', 'Bhesan', 'Palsana', 'Kamrej', 'Barbodhan',
-    'Tarsadi', 'Kudsad', 'Hathuran', 'Kharach', 'Lunsikui', 'Jamalpore',
-    'Vejalpore', 'Chhapra', 'Other'
+    'Adajan', 'Vesu', 'Dumas', 'Gavier', 'Bhimrad', 'Magdalla', 'Piplod',
+    'Bhatar', 'Althan', 'New Althan', 'Rundh', 'Umra', 'Parle Point', 'Athwalines',
+    'Ghod Dod Road', 'City Light', 'New City light', 'Saroli', 'Sarsana', 'Abhva'
   ],
   'Sandalpore': [],
   'NH 48 , Palsana': [],
@@ -15,7 +12,10 @@ export const CATEGORY_MAP = {
   'Kosamba': [],
   'Kachholi': [],
   'Surat Vyara Highway': [],
-  'Jhagadia GIDC': []
+  'Jhagadia GIDC': [],
+  'Bilimora': [],
+  'Panoli': [],
+  'Delvada': []
 };
 
 export const PROPERTY_TYPES = [
@@ -67,33 +67,57 @@ export function getPropertyTypeColor(rawType) {
   return customPalette[Math.abs(hash) % customPalette.length];
 }
 
+// Normalizes casing so variants like "kuched", "KUCHED", "kUcHeD" collapse to "Kuched".
+export function normalizeLocationCase(str) {
+  if (!str) return '';
+  return String(str).trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export function determineParentLocation(location) {
   if (!location) return 'Surat';
-  const locStr = String(location).trim();
+  const locStr = normalizeLocationCase(location);
   const locLower = locStr.toLowerCase();
 
-  // 1. Exact match with any top-level key first
-  for (const parent of Object.keys(CATEGORY_MAP)) {
-    if (locLower === parent.toLowerCase()) return parent;
-  }
-  
-  // 2. Exact match with any sub-location
-  for (const [parent, subs] of Object.entries(CATEGORY_MAP)) {
-    if (Array.isArray(subs) && subs.some(sub => sub.toLowerCase() === locLower)) {
-      return parent;
-    }
+  // Only the known Surat sub-locations map to parent "Surat".
+  if (locLower === 'surat') return 'Surat';
+  if (CATEGORY_MAP['Surat'].some(sub => sub.toLowerCase() === locLower)) {
+    return 'Surat';
   }
 
-  // 3. Substring match for Primary Locations (ignore Surat fallback for now)
-  for (const parent of Object.keys(CATEGORY_MAP)) {
-    if (parent === 'Surat') continue;
-    if (locLower.includes(parent.toLowerCase())) {
-      return parent;
-    }
-  }
+  // Everything else: parent location is the location itself.
+  return locStr;
+}
 
-  // 4. Fallback: Anything unknown falls under Surat
-  return 'Surat';
+// Builds a live { parent: [subs...] } map from actual feature data, instead of
+// the static CATEGORY_MAP. A location only appears as a "sub" of a parent when
+// it's textually different from the parent (self-mapped parents have no subs).
+export function buildDynamicLocationMap(features = []) {
+  const categoryMap = {};
+
+  features.forEach(f => {
+    if (f.id?.startsWith('landmark-') || f.data?.type === 'Landmark') return;
+
+    const loc = f.data?.location;
+    if (!loc) return;
+
+    const parent = f.data?.parentLocation || f.data?.parent_location || determineParentLocation(loc);
+    if (!categoryMap[parent]) categoryMap[parent] = new Set();
+    if (loc.toLowerCase() !== parent.toLowerCase()) {
+      categoryMap[parent].add(loc);
+    }
+  });
+
+  const finalMap = {};
+  const sortedKeys = Object.keys(categoryMap).sort((a, b) => {
+    if (a.toLowerCase() === 'surat') return -1;
+    if (b.toLowerCase() === 'surat') return 1;
+    return a.localeCompare(b);
+  });
+  sortedKeys.forEach(parent => {
+    finalMap[parent] = Array.from(categoryMap[parent]).sort();
+  });
+
+  return finalMap;
 }
 
 

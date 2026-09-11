@@ -11,18 +11,17 @@ export const useMapStore = create(
         selectedAreaName: null,
         appMode: 'viewer',
         isAdminAuthenticated: false,
-        kmlLayers: [],
+        viewerUsername: null,
         isInfoPanelOpen: false,
         theme: 'dark',
         uiHidden: false,
         showLabels: false,
         showLandmarks: true,
-        unresolvedExcelRows: [],
 
         filterPrimary: null,
         filterSecondary: null,
         filterType: null,
-        globalAreaUnit: 'yards',
+        globalAreaUnit: null,
         customAreas: [],
         syncedAreas: [],
         previewSubmission: null,
@@ -89,6 +88,7 @@ export const useMapStore = create(
         setTheme: (theme) => set({ theme }),
         setAppMode: (mode) => set({ appMode: mode }),
         setIsAdminAuthenticated: (auth) => set({ isAdminAuthenticated: auth }),
+        setViewerUsername: (username) => set({ viewerUsername: username }),
         setIsInfoPanelOpen: (isOpen) => set({ isInfoPanelOpen: isOpen }),
         setUiHidden: (hidden) => set({ uiHidden: Boolean(hidden) }),
         toggleUiHidden: () => set((state) => ({ uiHidden: !state.uiHidden })),
@@ -120,8 +120,6 @@ export const useMapStore = create(
           });
           return { features };
         }),
-
-        setUnresolvedExcelRows: (unresolvedExcelRows) => set({ unresolvedExcelRows }),
 
         addFeatures: (newFeatures) => set((state) => ({
           features: [...state.features, ...newFeatures]
@@ -189,13 +187,6 @@ export const useMapStore = create(
           features: state.features.map(f =>
             f.id === id ? { ...f, instances: { polygon: polygonInstance, marker: markerInstance } } : f
           )
-        })),
-
-        setKmlLayers: (layers) => set({ kmlLayers: layers }),
-        toggleKmlLayer: (layerId) => set((state) => ({
-          kmlLayers: state.kmlLayers.map(l =>
-            l.id === layerId ? { ...l, visible: !l.visible } : l
-          )
         }))
       }),
       {
@@ -222,6 +213,7 @@ export const useMapStore = create(
           customAreas: state.customAreas,
           syncedAreas: state.syncedAreas,
           isAdminAuthenticated: state.isAdminAuthenticated,
+          viewerUsername: state.viewerUsername,
           googleAccessToken: state.googleAccessToken,
         };
       }
