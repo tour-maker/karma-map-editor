@@ -29,9 +29,10 @@ router.post('/:polygonId', upload.array('pdfs', 10), async (req, res) => {
     const savedDocs = [];
     
     for (const file of req.files) {
-      // Basic validation to ensure it's a PDF
-      if (file.mimetype !== 'application/pdf') {
-        continue; // Skip non-PDFs if any snuck past frontend validation
+      // Basic validation to ensure it's a PDF or image
+      const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        continue; // Skip unsupported files if any snuck past frontend validation
       }
       
       const newDoc = new PolygonDocument({
@@ -46,18 +47,26 @@ router.post('/:polygonId', upload.array('pdfs', 10), async (req, res) => {
 
       // --- Tiling Process ---
       try {
-        console.log(`[Tiling] Starting rasterization for document ${newDoc._id}...`);
-        // Convert PDF to image buffer (returns an array of pages, we take the first page)
-        // Using a massive scale (16) to generate extremely high resolution tiles 
-        // to prevent blurriness when zooming in deeply on the independent viewer.
-        const images = await convert(file.buffer, { scale: 16 });
-        if (images && images.length > 0) {
-          const imgBuffer = images[0].data; // extract the raw buffer from the object
+        let imgBufferToTile = null;
 
+        if (file.mimetype === 'application/pdf') {
+          console.log(`[Tiling] Starting rasterization for document ${newDoc._id}...`);
+          // Using a massive scale (16) to generate extremely high resolution tiles 
+          // to prevent blurriness when zooming in deeply on the independent viewer.
+          const images = await convert(file.buffer, { scale: 16 });
+          if (images && images.length > 0) {
+            imgBufferToTile = images[0].data;
+          }
+        } else {
+          console.log(`[Tiling] Using original image buffer for document ${newDoc._id}...`);
+          imgBufferToTile = file.buffer;
+        }
+
+        if (imgBufferToTile) {
           console.log(`[Tiling] Generating tiles for document ${newDoc._id}...`);
           const zipPath = path.join(os.tmpdir(), `tiles_${newDoc._id}.zip`);
           
-          await sharp(imgBuffer)
+          await sharp(imgBufferToTile)
             .png()
             .tile({ layout: 'google', size: 256 })
             .toFile(zipPath);

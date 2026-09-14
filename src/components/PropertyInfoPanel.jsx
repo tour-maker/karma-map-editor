@@ -100,8 +100,8 @@ function PolygonDocuments({ polygonId }) {
           background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)',
           padding: '4px 8px', borderRadius: 6, fontSize: 11, cursor: uploading ? 'wait' : 'pointer', fontWeight: 600
         }}>
-          {uploading ? 'Uploading...' : '+ Upload PDF'}
-          <input type="file" multiple accept=".pdf" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
+          {uploading ? 'Uploading...' : '+ Upload File'}
+          <input type="file" multiple accept=".pdf, .png, .jpg, .jpeg" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
         </label>
       </div>
 
