@@ -19,3 +19,7 @@ jobs:
             npm install
             npm run build
             # static site — nginx serves the dist folder directly, no restart needed
+
+            cd server
+            npm install
+            pm2 restart karmalandtour-backend
