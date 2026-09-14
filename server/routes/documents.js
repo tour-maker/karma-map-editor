@@ -48,9 +48,9 @@ router.post('/:polygonId', upload.array('pdfs', 10), async (req, res) => {
       try {
         console.log(`[Tiling] Starting rasterization for document ${newDoc._id}...`);
         // Convert PDF to image buffer (returns an array of pages, we take the first page)
-        // Using a high scale (e.g., 8 or 10) ensures the base image is massive, 
-        // allowing sharp to generate deep zoom tiles so it stays crisp when zooming in.
-        const images = await convert(file.buffer, { scale: 8 });
+        // Using a massive scale (16) to generate extremely high resolution tiles 
+        // to prevent blurriness when zooming in deeply on the independent viewer.
+        const images = await convert(file.buffer, { scale: 16 });
         if (images && images.length > 0) {
           const imgBuffer = images[0].data; // extract the raw buffer from the object
 

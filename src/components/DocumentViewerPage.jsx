@@ -58,7 +58,7 @@ export default function DocumentViewerPage() {
           center={[mapHeight / 2, mapWidth / 2]} // Center precisely on the document
           zoom={1} 
           minZoom={0}
-          maxZoom={7}
+          maxZoom={meta.maxZoom} // Restrict max zoom to the native resolution to prevent blurriness
           crs={ImageCRS}
           style={{ height: '100%', width: '100%', background: '#cbd5e1' }}
           attributionControl={false}
