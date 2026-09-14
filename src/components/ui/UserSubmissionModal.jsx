@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { determineParentLocation, buildDynamicLocationMap } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
+import { API_BASE_URL } from '../../config/api';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
   const viewerUsername = useMapStore(state => state.viewerUsername);
@@ -50,7 +51,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://localhost:5050/api/submissions', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

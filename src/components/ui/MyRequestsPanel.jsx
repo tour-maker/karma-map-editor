@@ -3,6 +3,7 @@ import { FiX, FiClock, FiCheckCircle, FiXCircle, FiLogOut, FiUser } from 'react-
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { useGoogleMap } from '../../context/GoogleMapContext';
+import { API_BASE_URL } from '../../config/api';
 
 const STATUS_META = {
   pending: { label: 'Pending Review', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', Icon: FiClock },
@@ -34,7 +35,7 @@ export default function MyRequestsPanel({ onClose }) {
     setLoading(true);
     try {
       const jwt = localStorage.getItem('karmaUserJWT');
-      const res = await fetch('http://localhost:5050/api/submissions/mine', {
+      const res = await fetch(`${API_BASE_URL}/api/submissions/mine`, {
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
       if (res.ok) {

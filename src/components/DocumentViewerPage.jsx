@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { API_BASE_URL } from '../config/api';
 
 // L.CRS.Simple has Y increasing upwards (normal Cartesian).
 // Standard XYZ tiles expect Y to increase downwards.
@@ -35,7 +36,7 @@ export default function DocumentViewerPage() {
           attributionControl={false}
         >
           <TileLayer
-            url={`http://localhost:5050/api/documents/tiles/${documentId}/{z}/{x}/{y}`}
+            url={`${API_BASE_URL}/api/documents/tiles/${documentId}/{z}/{x}/{y}`}
             noWrap={true}
           />
         </MapContainer>

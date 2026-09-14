@@ -7,6 +7,7 @@ import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { initGoogleIdentity, setAccessToken, startAutoRefresh, requestLogin } from './services/googleSheets'
+import { API_BASE_URL } from './config/api'
 
 function App() {
   useEffect(() => {
@@ -15,7 +16,7 @@ function App() {
     // Verify admin JWT with backend on every page load
     const storedJWT = localStorage.getItem('karmaAdminJWT');
     if (storedJWT) {
-      fetch('http://localhost:5050/api/auth/verify', {
+      fetch(`${API_BASE_URL}/api/auth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: storedJWT })
@@ -38,7 +39,7 @@ function App() {
     // Verify viewer account JWT with backend on every page load
     const storedUserJWT = localStorage.getItem('karmaUserJWT');
     if (storedUserJWT) {
-      fetch('http://localhost:5050/api/auth/user-verify', {
+      fetch(`${API_BASE_URL}/api/auth/user-verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: storedUserJWT })

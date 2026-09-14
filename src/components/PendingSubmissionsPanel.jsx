@@ -3,6 +3,7 @@ import { FiCheck, FiX, FiClock, FiArrowLeft, FiList, FiCheckCircle, FiXCircle } 
 import toast from 'react-hot-toast';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
+import { API_BASE_URL } from '../config/api';
 
 export default function PendingSubmissionsPanel() {
   const [currentView, setCurrentView] = useState('summary'); // 'summary', 'pending', 'approved', 'rejected'
@@ -31,7 +32,7 @@ export default function PendingSubmissionsPanel() {
     setLoading(true);
     try {
       const jwt = localStorage.getItem('karmaAdminJWT');
-      const response = await fetch('http://localhost:5050/api/submissions/stats', {
+      const response = await fetch(`${API_BASE_URL}/api/submissions/stats`, {
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
       if (response.ok) {
@@ -49,7 +50,7 @@ export default function PendingSubmissionsPanel() {
     setLoading(true);
     try {
       const jwt = localStorage.getItem('karmaAdminJWT');
-      const response = await fetch(`http://localhost:5050/api/submissions?status=${status}`, {
+      const response = await fetch(`${API_BASE_URL}/api/submissions?status=${status}`, {
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
       if (response.ok) {
@@ -67,7 +68,7 @@ export default function PendingSubmissionsPanel() {
     setProcessingId(sub._id);
     try {
       const jwt = localStorage.getItem('karmaAdminJWT');
-      const res = await fetch(`http://localhost:5050/api/submissions/${sub._id}/approve`, {
+      const res = await fetch(`${API_BASE_URL}/api/submissions/${sub._id}/approve`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
@@ -109,7 +110,7 @@ export default function PendingSubmissionsPanel() {
     setProcessingId(subId);
     try {
       const jwt = localStorage.getItem('karmaAdminJWT');
-      const res = await fetch(`http://localhost:5050/api/submissions/${subId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/submissions/${subId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${jwt}` }
       });

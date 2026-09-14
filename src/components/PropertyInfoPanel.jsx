@@ -5,7 +5,8 @@ import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropert
 import SearchableSelect from './ui/SearchableSelect';
 
 import toast from 'react-hot-toast';
-import { requestLogin, syncFeatureToSheet } from '../services/googleSheets';
+import { requestLogin, syncFeatureToSheet } from '../services/googleSheets'
+import { API_BASE_URL } from '../config/api';
 
 const MATCH_TIER_BADGES = {
   'exact-tp-fp': { label: 'Matched by TP/FP', background: '#dcfce7', color: '#15803d' },
@@ -39,7 +40,7 @@ function PolygonDocuments({ polygonId }) {
   const fetchDocs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5050/api/documents/${polygonId}`);
+      const res = await fetch(`${API_BASE_URL}/api/documents/${polygonId}`);
       if (res.ok) setDocs(await res.json());
     } catch (e) {
       console.error(e);
@@ -57,7 +58,7 @@ function PolygonDocuments({ polygonId }) {
       formData.append('pdfs', files[i]);
     }
     try {
-      const res = await fetch(`http://localhost:5050/api/documents/${polygonId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/documents/${polygonId}`, {
         method: 'POST',
         body: formData
       });
@@ -79,7 +80,7 @@ function PolygonDocuments({ polygonId }) {
   const handleDelete = async (docId) => {
     if (!window.confirm('Delete this document permanently?')) return;
     try {
-      const res = await fetch(`http://localhost:5050/api/documents/${docId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/documents/${docId}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('Document deleted');
         setDocs(docs.filter(d => d._id !== docId));

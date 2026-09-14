@@ -1,6 +1,7 @@
 import { determineParentLocation, getPropertyTypeColor, CATEGORY_MAP } from '../config/categories.js';
 import { useMapStore } from '../store/useMapStore.js';
 import { calculatePolygonCenter } from './googleMaps.js';
+import { API_BASE_URL } from '../config/api.js';
 
 let tokenClient = null;
 let accessToken = null;
@@ -94,7 +95,7 @@ export const isGoogleAuthenticated = () => {
 // OAuth session (which requires per-origin setup and expires hourly), and
 // closes off the destructive fallback path that used to fire when that
 // session was missing.
-const BACKEND_URL = 'http://localhost:5050';
+const BACKEND_URL = API_BASE_URL;
 
 const adminAuthHeaders = () => {
   const jwt = localStorage.getItem('karmaAdminJWT');

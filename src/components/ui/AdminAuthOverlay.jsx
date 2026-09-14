@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMapStore } from '../../store/useMapStore';
+import { API_BASE_URL } from '../../config/api';
 import { FiLock, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -14,7 +15,7 @@ export default function AdminAuthOverlay() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5050/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })

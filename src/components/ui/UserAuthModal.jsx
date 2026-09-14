@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FiX, FiUser, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
+import { API_BASE_URL } from '../../config/api';
 
 export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', subtitle = 'Sign in to submit and track your property requests.' }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -22,7 +23,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
     setLoading(true);
     try {
       const endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/user-login';
-      const res = await fetch(`http://localhost:5050${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password })
