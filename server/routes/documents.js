@@ -196,4 +196,32 @@ router.get('/tiles/:documentId/:z/:x/:y', async (req, res) => {
   }
 });
 
+// Get document tile metadata (max zoom and bounds)
+router.get('/meta/:documentId', async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    
+    // Find the max zoom level
+    const maxZoomTile = await Tile.findOne({ documentId }).sort({ z: -1 });
+    if (!maxZoomTile) {
+      return res.json({ maxZoom: 4, maxX: 15, maxY: 15 }); // safe fallback
+    }
+    
+    const maxZ = maxZoomTile.z;
+    
+    // Find max X and max Y at this zoom level
+    const maxXTile = await Tile.findOne({ documentId, z: maxZ }).sort({ x: -1 });
+    const maxYTile = await Tile.findOne({ documentId, z: maxZ }).sort({ y: -1 });
+    
+    res.json({
+      maxZoom: maxZ,
+      maxX: maxXTile ? maxXTile.x : 0,
+      maxY: maxYTile ? maxYTile.y : 0
+    });
+  } catch (error) {
+    console.error('Meta Fetch Error:', error);
+    res.status(500).json({ error: 'Failed to fetch metadata' });
+  }
+});
+
 export default router;
