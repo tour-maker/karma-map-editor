@@ -34,10 +34,13 @@ export default function DocumentViewerPage() {
           crs={ImageCRS}
           style={{ height: '100%', width: '100%', background: '#cbd5e1' }}
           attributionControl={false}
+          maxBounds={[[0, 0], [256, 256]]}
+          maxBoundsViscosity={1.0}
         >
           <TileLayer
             url={`${API_BASE_URL}/api/documents/tiles/${documentId}/{z}/{x}/{y}`}
             noWrap={true}
+            bounds={[[0, 0], [256, 256]]}
           />
         </MapContainer>
       </div>
