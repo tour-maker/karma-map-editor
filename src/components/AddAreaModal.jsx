@@ -3,6 +3,7 @@ import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP } from '../config/categories';
 import { FiGlobe, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { syncAreaToSheet } from '../services/googleSheets';
 
 export default function AddAreaModal({ onClose, onSaved }) {
   const [areaName, setAreaName] = useState('');
@@ -11,8 +12,9 @@ export default function AddAreaModal({ onClose, onSaved }) {
 
   const addCustomArea = useMapStore(state => state.addCustomArea);
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
+  const spreadsheetId = useMapStore(state => state.spreadsheetId);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const name = areaName.trim();
     if (!name) {
@@ -26,8 +28,8 @@ export default function AddAreaModal({ onClose, onSaved }) {
     addCustomArea(name);
 
     // Add sub-locations to CATEGORY_MAP in runtime memory if provided
-    if (subLocations.trim()) {
-      const subs = subLocations.split(',').map(s => s.trim()).filter(Boolean);
+    const subs = subLocations.trim() ? subLocations.split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (subs.length > 0) {
       if (!CATEGORY_MAP[name]) {
         CATEGORY_MAP[name] = subs;
       } else {
@@ -40,16 +42,20 @@ export default function AddAreaModal({ onClose, onSaved }) {
     // Set filter to this new area
     setFilterPrimary(name);
 
-    toast.success(`Parent Location "${name}" added successfully! 📍`, {
-      style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
-    });
+    // Sync only this new area to the "Areas" tab — never touch the Polygons sheet here.
+    try {
+      await syncAreaToSheet(name, subs, spreadsheetId);
+      toast.success(`Parent Location "${name}" added successfully! 📍`, {
+        style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
+      });
+    } catch (err) {
+      console.error('Failed to sync new area to Google Sheets:', err);
+      toast.error('Area added locally, but sync to Google Sheets failed.');
+    }
 
     setIsSaving(false);
     if (onSaved) onSaved(name);
     if (onClose) onClose();
-
-    // Trigger Map -> Sheet sync
-    window.dispatchEvent(new Event('trigger-update-sheet'));
   };
 
   return (
