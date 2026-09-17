@@ -649,7 +649,8 @@ export default function FilterBar() {
             style={{
               position: 'absolute',
               top: -40,
-              left: 175,
+              left: '50%',
+              transform: 'translateX(-50%)',
               ...glassPanelStyle,
               borderRadius: GLASS_RADIUS.control,
               padding: '5px 14px',
