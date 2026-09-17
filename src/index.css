@@ -80,6 +80,71 @@ body.hide-ui-for-screenshot nav {
   color: #94a3b8 !important;
 }
 
+.karma-auth-input::placeholder {
+  color: rgba(241, 245, 249, 0.4) !important;
+  opacity: 1 !important;
+}
+
+/* type="tel" inputs (Mobile Number) render their default UA placeholder color
+   through a different native styling path in some Chromium builds, so the
+   plain class rule above was losing to it. This attribute-qualified selector
+   has strictly higher specificity and pins the color for tel fields too. */
+.karma-auth-input[type="tel"]::placeholder {
+  color: rgba(241, 245, 249, 0.4) !important;
+  opacity: 1 !important;
+}
+
+/* Browsers force a white/yellow background on inputs they recognize as a saved
+   username/password (via the UA's -webkit-autofill styles), which overrides even
+   our inline styles. This is why Sign In's fields looked like plain browser
+   inputs while Sign Up's (never autofilled) looked right.
+   The inset box-shadow must be a SOLID opaque color (not our real 6%-white
+   translucent bg) — a low-alpha shadow lets the browser's actual white
+   background-color show through underneath it, which is why the previous
+   attempt still looked white. 1000px spread guarantees full coverage regardless
+   of input size. background-color/-webkit-text-fill-color also get !important
+   as a second line of defense, since some Chromium builds still honor them. */
+.karma-auth-input:-webkit-autofill,
+.karma-auth-input:-webkit-autofill:hover,
+.karma-auth-input:-webkit-autofill:focus,
+.karma-auth-input:-webkit-autofill:active,
+.karma-glass-input:-webkit-autofill,
+.karma-glass-input:-webkit-autofill:hover,
+.karma-glass-input:-webkit-autofill:focus,
+.karma-glass-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgb(30, 41, 59) inset !important;
+  box-shadow: 0 0 0 1000px rgb(30, 41, 59) inset !important;
+  background-color: rgb(30, 41, 59) !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  caret-color: #f1f5f9 !important;
+  border-color: rgba(253, 183, 19, 0.25) !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+}
+
+/* Shared premium glass-input treatment: translucent surface, gold-tinted border,
+   gold glow on focus. Used across all panels/modals so form fields read as
+   "designed" rather than default browser inputs. Callers keep their own
+   sizing/padding via inline style; this class only owns surface + focus state. */
+.karma-glass-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(253, 183, 19, 0.25) !important;
+  color: #f1f5f9 !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.karma-glass-input::placeholder {
+  color: rgba(241, 245, 249, 0.4) !important;
+}
+.karma-glass-input:focus {
+  outline: none;
+  border-color: #FDB713 !important;
+  box-shadow: 0 0 0 3px rgba(253, 183, 19, 0.18);
+}
+.karma-glass-input:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #94a3b8 !important;
+  cursor: default;
+}
+
 /* Desktop Default Styles for Mobile-Specific Elements */
 .mobile-filter-dock-bar,
 .mobile-only-whatsapp-btn {

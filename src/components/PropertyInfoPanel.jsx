@@ -4,6 +4,7 @@ import { useMapStore } from '../store/useMapStore';
 import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
 import { getFeatureAreaUnit } from '../utils/unitFilter';
+import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
 import { requestLogin, syncFeatureToSheet } from '../services/googleSheets'
@@ -99,7 +100,7 @@ function PolygonDocuments({ polygonId }) {
         <h3 style={{ color: '#f8fafc', fontSize: 13, margin: 0 }}>Admin Documents</h3>
         <label style={{
           background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)',
-          padding: '4px 8px', borderRadius: 6, fontSize: 11, cursor: uploading ? 'wait' : 'pointer', fontWeight: 600
+          padding: '4px 8px', borderRadius: GLASS_RADIUS.control, fontSize: 11, cursor: uploading ? 'wait' : 'pointer', fontWeight: 600
         }}>
           {uploading ? 'Uploading...' : '+ Upload File'}
           <input type="file" multiple accept=".pdf, .png, .jpg, .jpeg" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
@@ -113,7 +114,7 @@ function PolygonDocuments({ polygonId }) {
           {docs.map(doc => (
             <div key={doc._id} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)'
+              background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, border: '1px solid rgba(255,255,255,0.05)'
             }}>
               <a href={`/viewer/${doc._id}?name=${encodeURIComponent(doc.originalName)}`} target="_blank" rel="noreferrer"
                  style={{ color: '#cbd5e1', fontSize: 12, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden' }}>
@@ -137,11 +138,8 @@ const panelStyle = {
   right: 20,
   zIndex: 1100,
   width: 340,
-  background: 'rgba(15, 23, 42, 0.92)',
-  borderRadius: 16,
-  boxShadow: '0 20px 48px rgba(0, 0, 0, 0.5)',
+  ...glassPanelStyle,
   boxSizing: 'border-box',
-  backdropFilter: 'blur(12px)',
   transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease',
   display: 'flex',
   flexDirection: 'column',
@@ -501,12 +499,10 @@ export default function PropertyInfoPanel() {
         className={`responsive-info-panel ${isOpen ? 'is-open' : ''}`}
         style={{
           ...panelStyle,
-          background: 'rgba(15, 23, 42, 0.92)',
           border: `2px solid ${themeColor}`,
-          borderRadius: 16,
           padding: '20px 16px 16px 16px',
           color: '#e2e8f0',
-          boxShadow: `0 20px 48px rgba(0, 0, 0, 0.5), 0 0 16px ${themeColor}40`,
+          boxShadow: `${GLASS_SHADOW}, 0 0 16px ${themeColor}40`,
           transform: isOpen ? 'translateX(0)' : 'translateX(120%)',
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
@@ -646,7 +642,7 @@ export default function PropertyInfoPanel() {
       style={{
         ...panelStyle,
         border: `2px solid ${themeColor}`,
-        boxShadow: `0 20px 48px rgba(0, 0, 0, 0.5), 0 0 16px ${themeColor}40`,
+        boxShadow: `${GLASS_SHADOW}, 0 0 16px ${themeColor}40`,
         transform: isOpen ? 'translateX(0)' : 'translateX(120%)',
         opacity: isOpen ? 1 : 0,
         pointerEvents: isOpen ? 'auto' : 'none',
@@ -654,7 +650,7 @@ export default function PropertyInfoPanel() {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#e2e8f0' }}>
+          <h3 style={{ margin: 0, fontSize: 18, color: '#e2e8f0', ...GLASS_FONT.serif }}>
             {isMarker ? 'Landmark info' : 'Polygon info'}
           </h3>
         </div>
@@ -677,7 +673,7 @@ export default function PropertyInfoPanel() {
 
           {matchBadge && (
             <div style={{
-              padding: '6px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+              padding: '6px 10px', borderRadius: GLASS_RADIUS.control, fontSize: 11, fontWeight: 600,
               background: matchBadge.background, color: matchBadge.color
             }}>
               {matchBadge.label}
@@ -693,10 +689,10 @@ export default function PropertyInfoPanel() {
                   value={formData.name || formData.landmark || ''}
                   onChange={(e) => { handleChange('name', e.target.value); handleChange('landmark', e.target.value); }}
                   disabled={!isEdit}
+                  className="karma-glass-input"
                   style={{
-                    width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                    fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                    outline: 'none', boxSizing: 'border-box'
+                    width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                    fontSize: 13, outline: 'none', boxSizing: 'border-box'
                   }}
                 />
               </div>
@@ -708,10 +704,10 @@ export default function PropertyInfoPanel() {
                   onChange={(e) => handleChange('remarks', e.target.value)}
                   disabled={!isEdit}
                   rows={3}
+                  className="karma-glass-input"
                   style={{
-                    width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                    fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                    outline: 'none', boxSizing: 'border-box', resize: 'vertical'
+                    width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                    fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical'
                   }}
                 />
               </div>
@@ -726,10 +722,10 @@ export default function PropertyInfoPanel() {
                 value={formData.tp}
                 onChange={(e) => handleChange('tp', e.target.value)}
                 disabled={!isEdit}
+                className="karma-glass-input"
                 style={{
-                  width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                  fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                  outline: 'none', boxSizing: 'border-box'
+                  width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                  fontSize: 13, outline: 'none', boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -740,10 +736,10 @@ export default function PropertyInfoPanel() {
                 value={formData.op}
                 onChange={(e) => handleChange('op', e.target.value)}
                 disabled={!isEdit}
+                className="karma-glass-input"
                 style={{
-                  width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                  fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                  outline: 'none', boxSizing: 'border-box'
+                  width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                  fontSize: 13, outline: 'none', boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -754,10 +750,10 @@ export default function PropertyInfoPanel() {
                 value={formData.fp}
                 onChange={(e) => handleChange('fp', e.target.value)}
                 disabled={!isEdit}
+                className="karma-glass-input"
                 style={{
-                  width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                  fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                  outline: 'none', boxSizing: 'border-box'
+                  width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                  fontSize: 13, outline: 'none', boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -802,10 +798,10 @@ export default function PropertyInfoPanel() {
                 }
               }}
               disabled={!isEdit}
+              className="karma-glass-input"
               style={{
-                width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                outline: 'none', boxSizing: 'border-box'
+                width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                fontSize: 13, outline: 'none', boxSizing: 'border-box'
               }}
             />
           </div>
@@ -818,10 +814,10 @@ export default function PropertyInfoPanel() {
                 onClick={() => handleChange('areaUnit', 'Sq Yard')}
                 disabled={!isEdit}
                 style={{
-                  flex: 1, padding: '8px 0', borderRadius: 8,
-                  border: formData.areaUnit === 'Sq Yard' ? '1px solid #f59e0b' : '1px solid rgba(99,102,241,0.35)',
-                  background: formData.areaUnit === 'Sq Yard' ? 'rgba(245, 158, 11, 0.15)' : (isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)'),
-                  color: formData.areaUnit === 'Sq Yard' ? '#f59e0b' : '#94a3b8',
+                  flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
+                  background: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
+                  boxShadow: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: formData.areaUnit === 'Sq Yard' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
                 }}
               >
@@ -832,10 +828,10 @@ export default function PropertyInfoPanel() {
                 onClick={() => handleChange('areaUnit', 'Wingha')}
                 disabled={!isEdit}
                 style={{
-                  flex: 1, padding: '8px 0', borderRadius: 8,
-                  border: formData.areaUnit === 'Wingha' ? '1px solid #f59e0b' : '1px solid rgba(99,102,241,0.35)',
-                  background: formData.areaUnit === 'Wingha' ? 'rgba(245, 158, 11, 0.15)' : (isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)'),
-                  color: formData.areaUnit === 'Wingha' ? '#f59e0b' : '#94a3b8',
+                  flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
+                  background: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
+                  boxShadow: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: formData.areaUnit === 'Wingha' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
                 }}
               >
@@ -872,10 +868,10 @@ export default function PropertyInfoPanel() {
               onChange={(e) => handleChange('landmark', e.target.value)}
               disabled={!isEdit}
               placeholder={isEdit ? "Enter nearby landmark" : "-"}
+              className="karma-glass-input"
               style={{
-                width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                outline: 'none', boxSizing: 'border-box'
+                width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                fontSize: 13, outline: 'none', boxSizing: 'border-box'
               }}
             />
           </div>
@@ -923,14 +919,14 @@ export default function PropertyInfoPanel() {
               onChange={(e) => handleChange('remarks', e.target.value)}
               disabled={!isEdit}
               rows={3}
+              className="karma-glass-input"
               style={{
-                width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(99,102,241,0.35)',
-                fontSize: 13, color: '#e2e8f0', background: isEdit ? 'rgba(30, 41, 59, 0.8)' : 'rgba(30, 41, 59, 0.4)',
-                outline: 'none', boxSizing: 'border-box', resize: 'vertical'
+                width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control,
+                fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical'
               }}
             />
           </div>
-          
+
           {isEdit && (
             <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
               <button 
@@ -949,8 +945,8 @@ export default function PropertyInfoPanel() {
               
               {showPartyDetails && (
                 <div style={{ 
-                  marginTop: 4, padding: 12, borderRadius: 12, background: 'rgba(15, 23, 42, 0.6)', 
-                  border: '1px solid rgba(245, 158, 11, 0.2)', width: '100%', boxSizing: 'border-box',
+                  marginTop: 4, padding: 12, borderRadius: GLASS_RADIUS.control, background: 'rgba(15, 23, 42, 0.6)',
+                  border: `1px solid ${GLASS_COLORS.border}`, width: '100%', boxSizing: 'border-box',
                   display: 'flex', flexDirection: 'column', gap: 10 
                 }}>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -961,7 +957,8 @@ export default function PropertyInfoPanel() {
                         value={formData.partyName}
                         onChange={(e) => handleChange('partyName', e.target.value)}
                         placeholder="Name"
-                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                        className="karma-glass-input"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: GLASS_RADIUS.control, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
                       />
                     </div>
                     <div style={{ flex: 1 }}>
@@ -971,7 +968,8 @@ export default function PropertyInfoPanel() {
                         value={formData.partyPhone}
                         onChange={(e) => handleChange('partyPhone', e.target.value)}
                         placeholder="Phone No"
-                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                        className="karma-glass-input"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: GLASS_RADIUS.control, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
                       />
                     </div>
                   </div>
@@ -983,7 +981,8 @@ export default function PropertyInfoPanel() {
                         value={formData.brokerName}
                         onChange={(e) => handleChange('brokerName', e.target.value)}
                         placeholder="Broker"
-                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                        className="karma-glass-input"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: GLASS_RADIUS.control, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
                       />
                     </div>
                     <div style={{ flex: 1 }}>
@@ -993,7 +992,8 @@ export default function PropertyInfoPanel() {
                         value={formData.brokerPhone}
                         onChange={(e) => handleChange('brokerPhone', e.target.value)}
                         placeholder="Phone No"
-                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 12, color: '#fff', background: 'rgba(15, 23, 42, 0.5)', outline: 'none', boxSizing: 'border-box' }}
+                        className="karma-glass-input"
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: GLASS_RADIUS.control, fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
                       />
                     </div>
                   </div>
@@ -1018,7 +1018,7 @@ export default function PropertyInfoPanel() {
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               padding: '10px 0', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)',
-              borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+              borderRadius: GLASS_RADIUS.control, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
             }}
           >
             <FiTrash2 size={16} /> Delete
@@ -1030,7 +1030,7 @@ export default function PropertyInfoPanel() {
             style={{
               flex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '10px 0', background: '#3b82f6', color: '#fff', border: 'none',
-              borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
+              borderRadius: GLASS_RADIUS.control, fontSize: 14, fontWeight: 600, cursor: isSaving ? 'not-allowed' : 'pointer', transition: 'background 0.2s',
               opacity: isSaving ? 0.7 : 1
             }}
           >

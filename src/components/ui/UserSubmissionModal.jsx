@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { FiX, FiCheck } from 'react-icons/fi';
+import { FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { determineParentLocation, buildDynamicLocationMap } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
 import { API_BASE_URL } from '../../config/api';
+import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
   const viewerUsername = useMapStore(state => state.viewerUsername);
@@ -85,12 +86,12 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
       background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)'
     }}>
       <div style={{
-        background: '#1e293b', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 12,
-        padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+        ...glassPanelStyle,
+        padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto',
         color: '#f8fafc'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 18, color: '#f59e0b' }}>Submit New Polygon</h2>
+          <h2 style={{ margin: 0, fontSize: 20, color: '#FDB713', ...GLASS_FONT.serif }}>Submit New Polygon</h2>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
             <FiX size={24} />
           </button>
@@ -99,7 +100,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{
             fontSize: 12.5, color: '#94a3b8', background: 'rgba(245, 158, 11, 0.08)',
-            border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 8, padding: '8px 12px'
+            border: `1px solid ${GLASS_COLORS.border}`, borderRadius: GLASS_RADIUS.control, padding: '8px 12px'
           }}>
             Submitting as <strong style={{ color: '#f59e0b' }}>{viewerUsername}</strong> — track this request anytime from "My Requests".
           </div>
@@ -137,10 +138,10 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, areaUnit: 'Sq Yard' }))}
                 style={{
-                  flex: 1, padding: '8px 0', borderRadius: 6,
-                  border: formData.areaUnit === 'Sq Yard' ? '1px solid #f59e0b' : '1px solid #334155',
-                  background: formData.areaUnit === 'Sq Yard' ? 'rgba(245, 158, 11, 0.15)' : '#0f172a',
-                  color: formData.areaUnit === 'Sq Yard' ? '#f59e0b' : '#94a3b8',
+                  flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
+                  background: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT : 'rgba(255,255,255,0.06)',
+                  boxShadow: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: formData.areaUnit === 'Sq Yard' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer'
                 }}
               >
@@ -150,10 +151,10 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, areaUnit: 'Wingha' }))}
                 style={{
-                  flex: 1, padding: '8px 0', borderRadius: 6,
-                  border: formData.areaUnit === 'Wingha' ? '1px solid #f59e0b' : '1px solid #334155',
-                  background: formData.areaUnit === 'Wingha' ? 'rgba(245, 158, 11, 0.15)' : '#0f172a',
-                  color: formData.areaUnit === 'Wingha' ? '#f59e0b' : '#94a3b8',
+                  flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
+                  background: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT : 'rgba(255,255,255,0.06)',
+                  boxShadow: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: formData.areaUnit === 'Wingha' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer'
                 }}
               >
@@ -165,31 +166,31 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>T.P.</label>
-              <input type="text" name="tp" value={formData.tp} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <input type="text" name="tp" value={formData.tp} onChange={handleChange} className="karma-glass-input"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>O.P.</label>
-              <input type="text" name="op" value={formData.op} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <input type="text" name="op" value={formData.op} onChange={handleChange} className="karma-glass-input"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>F.P.</label>
-              <input type="text" name="fp" value={formData.fp} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <input type="text" name="fp" value={formData.fp} onChange={handleChange} className="karma-glass-input"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Landmark Remarks</label>
-              <input type="text" name="landmark" value={formData.landmark} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }} />
+              <input type="text" name="landmark" value={formData.landmark} onChange={handleChange} className="karma-glass-input"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }} />
             </div>
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Category Type</label>
-              <select name="type" value={formData.type} onChange={handleChange}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box' }}>
+              <select name="type" value={formData.type} onChange={handleChange} className="karma-glass-input"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }}>
                 <option value="Residential">Residential</option>
                 <option value="Commercial">Commercial</option>
                 <option value="Freehold">Freehold</option>
@@ -202,15 +203,15 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
 
           <div>
             <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Remarks</label>
-            <textarea name="remarks" value={formData.remarks} onChange={handleChange} rows={2}
-              style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#0f172a', color: 'white', boxSizing: 'border-box', resize: 'vertical' }} />
+            <textarea name="remarks" value={formData.remarks} onChange={handleChange} rows={2} className="karma-glass-input"
+              style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box', resize: 'vertical' }} />
           </div>
 
           <button type="submit" disabled={isSubmitting}
             style={{
-              background: '#f59e0b', color: '#000', padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 'bold',
+              background: GOLD_GRADIENT, color: '#1c1406', padding: '12px', borderRadius: GLASS_RADIUS.control, fontSize: 14, fontWeight: 700,
               border: 'none', cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: 12,
-              opacity: isSubmitting ? 0.7 : 1
+              boxShadow: GOLD_GRADIENT_SHADOW, opacity: isSubmitting ? 0.7 : 1
             }}
           >
             {isSubmitting ? 'Submitting...' : 'Submit Polygon'}

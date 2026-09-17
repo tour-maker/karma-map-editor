@@ -260,12 +260,8 @@ export default function FeatureInstanceManager() {
     features.forEach(feature => {
       const colors = getPolygonColors(feature);
       if (feature.instances?.polygon) {
-        feature.instances.polygon.setOptions({
-          fillColor: colors.fillColor,
-          strokeColor: colors.strokeColor,
-          fillOpacity: 0.55,
-          strokeWeight: 2
-        });
+        // Never overwrite the selected polygon's highlight border with the default unselected style
+        highlightPolygon(feature.instances.polygon, feature.id === selectedFeatureId, colors.strokeColor);
       }
       if (feature.instances?.marker) {
         const pinColor = getFeatureColor(feature);
@@ -274,7 +270,7 @@ export default function FeatureInstanceManager() {
         }
       }
     });
-  }, [features]);
+  }, [features, selectedFeatureId]);
 
 
   // Handle Visibility (Filters)

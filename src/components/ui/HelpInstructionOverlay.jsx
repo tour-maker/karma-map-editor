@@ -1,4 +1,5 @@
 import React from 'react';
+import { GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW } from '../../styles/glass';
 export default function HelpInstructionOverlay({ onClose }) {
   const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' && window.innerWidth <= 768);
   const [isMobileLandscape, setIsMobileLandscape] = React.useState(
@@ -53,19 +54,20 @@ export default function HelpInstructionOverlay({ onClose }) {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          background: 'rgba(15, 23, 42, 0.70)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          borderRadius: '14px 14px 22px 22px',
+          background: GLASS_COLORS.panelBg,
+          border: `1px solid ${GLASS_COLORS.border}`,
+          borderRadius: `${GLASS_RADIUS.panel}px ${GLASS_RADIUS.panel}px 22px 22px`,
           padding: '12px 24px',
           color: '#f8fafc',
-          fontWeight: 700,
+          fontWeight: 600,
           fontSize: 16,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.2)',
-          backdropFilter: 'blur(16px)',
+          boxShadow: `${GLASS_SHADOW}, 0 0 24px rgba(245, 158, 11, 0.2)`,
+          backdropFilter: 'blur(16px) saturate(150%)',
+          WebkitBackdropFilter: 'blur(16px) saturate(150%)',
           zIndex: 100000,
         }}
         onMouseEnter={(e) => e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.05)'}
@@ -89,7 +91,7 @@ export default function HelpInstructionOverlay({ onClose }) {
           }}>
             <div style={{ fontSize: 20, color: '#ffffff' }}>←</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>Sidebar Tabs</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>Sidebar Tabs</span>
               <span style={{ fontSize: 10, color: '#cbd5e1', maxWidth: 130, lineHeight: 1.35 }}>
                 Browse <b style={{ color: '#f59e0b' }}>Projects</b>, <b style={{ color: '#f59e0b' }}>Landmarks</b>, and <b style={{ color: '#f59e0b' }}>Areas</b>
               </span>
@@ -113,7 +115,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             position: 'absolute', top: '35%', right: 48,
             textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
           }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>Tools</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>Tools</span>
             <span style={{ fontSize: 10, color: '#cbd5e1', maxWidth: 120, lineHeight: 1.35, textAlign: 'right' }}>
               Share & Settings
             </span>
@@ -126,7 +128,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'right', display: 'flex', alignItems: 'center', gap: 6
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>Contact</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>Contact</span>
             </div>
             <div style={{ fontSize: 18, color: '#ffffff' }}>↘</div>
           </div>
@@ -137,7 +139,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             transform: 'translateX(-50%)',
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
           }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff' }}>Filters</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>Filters</span>
             <span style={{ fontSize: 10, color: '#cbd5e1', maxWidth: 200, lineHeight: 1.35, margin: '2px 0 4px 0' }}>
               Filter by Location & Category
             </span>
@@ -151,9 +153,9 @@ export default function HelpInstructionOverlay({ onClose }) {
             position: 'absolute', top: 18, left: 24,
             textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4
           }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff' }}>Add Your Property</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff' }}>Add Your Property</span>
             <span style={{ fontSize: 11, color: '#cbd5e1' }}>Submit a new property listing</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>Sign In</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff', marginTop: 4 }}>Sign In</span>
             <span style={{ fontSize: 11, color: '#cbd5e1' }}>Track your submitted requests</span>
           </div>
 
@@ -163,7 +165,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4
           }}>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↑</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Search</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Search</span>
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>Search for a place or property...</span>
           </div>
 
@@ -173,7 +175,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
           }}>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↑</div>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Options</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Options</span>
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>Help & tools</span>
           </div>
 
@@ -182,7 +184,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             position: 'absolute', bottom: 140, right: 24,
             textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
           }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Contact Us</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Contact Us</span>
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>on WhatsApp</span>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
           </div>
@@ -192,7 +194,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             position: 'absolute', bottom: 76, left: '40%', transform: 'translateX(-50%)',
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
           }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Filters</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Filters</span>
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>Find by category</span>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
           </div>
@@ -206,9 +208,9 @@ export default function HelpInstructionOverlay({ onClose }) {
           }}>
             <div style={{ fontSize: 18, color: '#ffffff' }}>↑</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff' }}>Add Your Property</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: '#ffffff' }}>Add Your Property</span>
               <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>Submit a new property listing for review</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', marginTop: 6 }}>Sign In</span>
+              <span style={{ fontSize: 15, fontWeight: 600, color: '#ffffff', marginTop: 6 }}>Sign In</span>
               <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>Create an account or sign in to track your requests</span>
             </div>
           </div>
@@ -219,7 +221,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
           }}>
             <div style={{ fontSize: 18, color: '#ffffff' }}>↑</div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff' }}>Search</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#ffffff' }}>Search</span>
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>Search for a place or property...</span>
           </div>
 
@@ -232,7 +234,7 @@ export default function HelpInstructionOverlay({ onClose }) {
               }}>
                 <div style={{ fontSize: 22, color: '#ffffff' }}>←</div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Sidebar Tabs</span>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Sidebar Tabs</span>
                   <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>
                     <b style={{ color: '#f59e0b' }}>Projects</b> — all drawn polygons<br />
                     <b style={{ color: '#f59e0b' }}>Landmarks</b> — named pins on the map<br />
@@ -261,7 +263,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Share</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Share</span>
               <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 210, lineHeight: 1.35, textAlign: 'right' }}>
                 Share via WhatsApp, copy link, etc.
               </span>
@@ -275,7 +277,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Settings</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Settings</span>
               <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 190, lineHeight: 1.35, textAlign: 'right' }}>
                 Help, Volume on/off, Screenshot, Fullscreen
               </span>
@@ -289,7 +291,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Contact Us</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Contact Us</span>
               <span style={{ fontSize: 12, color: '#cbd5e1' }}>on WhatsApp</span>
             </div>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↘</div>
@@ -300,7 +302,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             position: 'absolute', bottom: 7, left: 'calc(50% - 415px)',
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
           }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: '#ffffff' }}>Toggle Landmarks</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Toggle Landmarks</span>
             <span style={{ fontSize: 12, color: '#cbd5e1', marginBottom: 4, whiteSpace: 'nowrap' }}>Show/hide landmark pins on the map</span>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
             <div className="instruction-box-pulse" style={{
@@ -317,7 +319,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             transform: 'translateX(-50%)',
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
           }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Filters</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Filters</span>
             <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 340, lineHeight: 1.35, margin: '2px 0 6px 0' }}>
               Filter properties by Location, Area unit (Sq. Yard / Wingha), and Category
             </span>
@@ -335,7 +337,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             position: 'absolute', bottom: 72, left: 'calc(50% + 230px)',
             textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
           }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#f59e0b' }}>Properties Found</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#f59e0b' }}>Properties Found</span>
             <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 160, lineHeight: 1.35 }}>
               Live count of polygons matching your current filters
             </span>

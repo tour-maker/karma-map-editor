@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiX, FiUser, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiX, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { API_BASE_URL } from '../../config/api';
+import { glassPanelStyle, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 const USER_TYPES = ['Broker', 'Owner', 'Buyer', 'Investor'];
 const OTP_LENGTH = 6;
@@ -24,12 +25,32 @@ function verifyOtp(mobileNumber, code) {
 // -----------------------------------------------------------------------------
 
 const inputStyle = {
-  width: '100%', padding: '11px 14px', borderRadius: 10,
-  border: '1px solid rgba(255, 255, 255, 0.15)', background: 'rgba(30, 41, 59, 0.6)',
-  color: '#fff', fontSize: 13.5, outline: 'none', boxSizing: 'border-box'
+  width: '100%', padding: '11px 14px', borderRadius: GLASS_RADIUS.control,
+  border: '1px solid rgba(253,183,19,0.25)', background: 'rgba(255,255,255,0.06)',
+  color: '#f1f5f9', fontSize: 13.5, fontWeight: 400, outline: 'none', boxSizing: 'border-box',
+  transition: 'border-color 0.15s, box-shadow 0.15s'
 };
 
 const labelStyle = { display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 6 };
+
+const goldButtonStyle = {
+  width: '100%', padding: '13px', borderRadius: 10, border: 'none',
+  background: GOLD_GRADIENT, color: '#1c1406',
+  fontSize: 14, fontWeight: 700, letterSpacing: 0.2,
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  boxShadow: GOLD_GRADIENT_SHADOW
+};
+
+// Focus/blur handlers giving inputs the gold glow described in the design brief,
+// since these are inline styles rather than a stylesheet with :focus support.
+const handleInputFocus = (e) => {
+  e.target.style.borderColor = '#FDB713';
+  e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)';
+};
+const handleInputBlur = (e) => {
+  e.target.style.borderColor = 'rgba(253,183,19,0.25)';
+  e.target.style.boxShadow = 'none';
+};
 
 export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', subtitle = 'Sign in to submit and track your property requests.' }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -56,6 +77,10 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const [otpBusy, setOtpBusy] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const otpInputRefs = useRef([]);
+  // Randomized field names as a fallback against Chrome's autofill heuristics,
+  // which key off name="username"/"password" even when autoComplete is "off"/"new-password".
+  // Lazy useState initializer (not useRef+Math.random inline) keeps this pure per React's render rules.
+  const [fieldSuffix] = useState(() => Math.random().toString(36).slice(2, 8));
 
   const setViewerUsername = useMapStore(state => state.setViewerUsername);
 
@@ -230,10 +255,9 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
     }}>
       <div style={{
+        ...glassPanelStyle,
         width: '100%', maxWidth: 380,
-        background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 17, 30, 0.96) 100%)',
-        border: '1px solid rgba(245, 158, 11, 0.3)',
-        borderRadius: 20, padding: 28, boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+        padding: 28,
         color: '#f8fafc', position: 'relative'
       }}>
         <button
@@ -247,18 +271,26 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
           <FiX size={18} />
         </button>
 
-        <div style={{
-          width: 56, height: 56, borderRadius: '50%',
-          background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
-        }}>
-          <FiUser size={24} color="#f59e0b" />
+        <div style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%', boxSizing: 'border-box',
+            background: GOLD_GRADIENT,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto',
+            padding: 2
+          }}>
+            <div style={{
+              width: '100%', height: '100%', borderRadius: '50%', background: '#111827',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <FiUser size={18} color="#FDB713" />
+            </div>
+          </div>
         </div>
 
         {isOtpStep ? (
           <>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#f8fafc' }}>Verify Your Mobile Number</h2>
-            <p style={{ margin: '6px 0 20px 0', fontSize: 13, color: '#94a3b8' }}>
+            <h2 style={{ margin: 0, fontSize: 20, color: '#f8fafc', textAlign: 'center', ...GLASS_FONT.serif }}>Verify Your Mobile Number</h2>
+            <p style={{ margin: '6px 0 20px 0', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
               Enter the {OTP_LENGTH}-digit code sent to {mobile.trim()}
             </p>
 
@@ -275,10 +307,14 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                     onChange={(e) => handleOtpDigitChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     autoFocus={i === 0}
+                    className="karma-auth-input"
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     style={{
                       width: 42, height: 48, textAlign: 'center', fontSize: 18, fontWeight: 700,
-                      borderRadius: 10, border: '1px solid rgba(255, 255, 255, 0.15)',
-                      background: 'rgba(30, 41, 59, 0.6)', color: '#fff', outline: 'none'
+                      borderRadius: GLASS_RADIUS.control, border: '1px solid rgba(253,183,19,0.25)',
+                      background: 'rgba(255,255,255,0.06)', color: '#f1f5f9', outline: 'none',
+                      transition: 'border-color 0.15s, box-shadow 0.15s'
                     }}
                   />
                 ))}
@@ -288,14 +324,11 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                 type="submit"
                 disabled={otpBusy}
                 style={{
-                  width: '100%', padding: '13px', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#000',
-                  fontSize: 14, fontWeight: 700, cursor: otpBusy ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', opacity: otpBusy ? 0.7 : 1
+                  ...goldButtonStyle,
+                  cursor: otpBusy ? 'not-allowed' : 'pointer', opacity: otpBusy ? 0.7 : 1
                 }}
               >
-                {otpBusy ? 'Verifying...' : 'Verify'} <FiArrowRight size={16} />
+                {otpBusy ? 'Verifying...' : 'Verify'}
               </button>
             </form>
 
@@ -324,8 +357,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
           </>
         ) : (
           <>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#f8fafc' }}>{mode === 'signup' ? 'Create Account' : title}</h2>
-            <p style={{ margin: '6px 0 20px 0', fontSize: 13, color: '#94a3b8' }}>
+            <h2 style={{ margin: 0, fontSize: 20, color: '#f8fafc', textAlign: 'center', ...GLASS_FONT.serif }}>{mode === 'signup' ? 'Create Account' : title}</h2>
+            <p style={{ margin: '6px 0 20px 0', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
               {mode === 'signup' ? 'Register to submit and track your property requests.' : subtitle}
             </p>
 
@@ -334,9 +367,10 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                 type="button"
                 onClick={() => switchMode('login')}
                 style={{
-                  flex: 1, padding: '8px 0', border: 'none', borderRadius: 8,
-                  background: mode === 'login' ? '#f59e0b' : 'transparent',
-                  color: mode === 'login' ? '#000' : '#94a3b8',
+                  flex: 1, padding: '8px 0', border: 'none', borderRadius: GLASS_RADIUS.control,
+                  background: mode === 'login' ? GOLD_GRADIENT : 'transparent',
+                  boxShadow: mode === 'login' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: mode === 'login' ? '#1c1406' : '#94a3b8',
                   fontSize: 12.5, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
                 }}
               >
@@ -346,9 +380,10 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                 type="button"
                 onClick={() => switchMode('signup')}
                 style={{
-                  flex: 1, padding: '8px 0', border: 'none', borderRadius: 8,
-                  background: mode === 'signup' ? '#f59e0b' : 'transparent',
-                  color: mode === 'signup' ? '#000' : '#94a3b8',
+                  flex: 1, padding: '8px 0', border: 'none', borderRadius: GLASS_RADIUS.control,
+                  background: mode === 'signup' ? GOLD_GRADIENT : 'transparent',
+                  boxShadow: mode === 'signup' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: mode === 'signup' ? '#1c1406' : '#94a3b8',
                   fontSize: 12.5, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
                 }}
               >
@@ -357,15 +392,20 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
             </div>
 
             {mode === 'login' ? (
-              <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Username</label>
                   <input
                     type="text"
+                    name={`user-${fieldSuffix}`}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Your mobile number"
+                    placeholder="Username or mobile number"
                     autoFocus
+                    autoComplete="off"
+                    className="karma-auth-input"
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     style={inputStyle}
                   />
                   <span style={{ display: 'block', fontSize: 11, color: '#64748b', marginTop: 4 }}>
@@ -378,9 +418,14 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                   <div style={{ position: 'relative', width: '100%' }}>
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      name={`pwd-${fieldSuffix}`}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter Password"
+                      autoComplete="new-password"
+                      className="karma-auth-input"
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       style={{ ...inputStyle, padding: '11px 40px 11px 14px' }}
                     />
                     <button
@@ -401,23 +446,23 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                   type="submit"
                   disabled={loading}
                   style={{
-                    marginTop: 6, width: '100%', padding: '13px', borderRadius: 10, border: 'none',
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#000',
-                    fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', opacity: loading ? 0.7 : 1
+                    ...goldButtonStyle, marginTop: 6,
+                    cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
                   }}
                 >
-                  {loading ? 'Please wait...' : 'Sign In'} <FiArrowRight size={16} />
+                  {loading ? 'Please wait...' : 'Sign In'}
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleRegisterNow} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <form onSubmit={handleRegisterNow} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <label style={labelStyle}>User Type</label>
                   <select
                     value={userType}
                     onChange={(e) => setUserType(e.target.value)}
+                    className="karma-auth-input"
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     style={{ ...inputStyle, cursor: 'pointer' }}
                   >
                     {USER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -427,11 +472,11 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                 <div style={{ display: 'flex', gap: 10 }}>
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>First Name</label>
-                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" style={inputStyle} />
+                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="karma-auth-input" onFocus={handleInputFocus} onBlur={handleInputBlur} style={inputStyle} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={labelStyle}>Last Name</label>
-                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" style={inputStyle} />
+                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="karma-auth-input" onFocus={handleInputFocus} onBlur={handleInputBlur} style={inputStyle} />
                   </div>
                 </div>
 
@@ -439,12 +484,17 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                   <label style={labelStyle}>Mobile Number</label>
                   <input
                     type="tel"
+                    name={`mobile-${fieldSuffix}`}
                     inputMode="numeric"
                     pattern="[0-9]{10}"
                     maxLength={10}
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     placeholder="10-digit mobile number"
+                    autoComplete="off"
+                    className="karma-auth-input"
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     style={inputStyle}
                   />
                 </div>
@@ -454,9 +504,14 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                   <div style={{ position: 'relative', width: '100%' }}>
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      name={`new-pwd-${fieldSuffix}`}
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
                       placeholder="At least 6 characters"
+                      autoComplete="new-password"
+                      className="karma-auth-input"
+                      onFocus={handleInputFocus}
+                      onBlur={handleInputBlur}
                       style={{ ...inputStyle, padding: '11px 40px 11px 14px' }}
                     />
                     <button
@@ -475,7 +530,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
 
                 <div>
                   <label style={labelStyle}>Email Address (optional)</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="karma-auth-input" onFocus={handleInputFocus} onBlur={handleInputBlur} style={inputStyle} />
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: '#94a3b8', cursor: 'pointer' }}>
@@ -492,14 +547,11 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                   type="submit"
                   disabled={loading}
                   style={{
-                    marginTop: 6, width: '100%', padding: '13px', borderRadius: 10, border: 'none',
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#000',
-                    fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', opacity: loading ? 0.7 : 1
+                    ...goldButtonStyle, marginTop: 6,
+                    cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
                   }}
                 >
-                  {loading ? 'Sending OTP...' : 'Register Now'} <FiArrowRight size={16} />
+                  {loading ? 'Sending OTP...' : 'Register Now'}
                 </button>
 
                 <div style={{ textAlign: 'center', fontSize: 12.5, color: '#94a3b8' }}>

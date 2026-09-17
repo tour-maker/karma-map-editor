@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { API_BASE_URL } from '../../config/api';
+import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GOLD_GRADIENT, GLASS_FONT } from '../../styles/glass';
 
 const STATUS_META = {
   pending: { label: 'Pending Review', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', Icon: FiClock },
@@ -122,10 +123,8 @@ export default function MyRequestsPanel({ onClose }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
     }}>
       <div style={{
+        ...glassPanelStyle,
         width: '100%', maxWidth: 440, maxHeight: '85vh',
-        background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(11, 17, 30, 0.96) 100%)',
-        border: '1px solid rgba(245, 158, 11, 0.3)',
-        borderRadius: 20, boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
         color: '#f8fafc', display: 'flex', flexDirection: 'column', overflow: 'hidden'
       }}>
         <div style={{
@@ -134,14 +133,18 @@ export default function MyRequestsPanel({ onClose }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              width: 36, height: 36, borderRadius: GLASS_RADIUS.control, boxSizing: 'border-box',
+              background: GOLD_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 2
             }}>
-              <FiUser size={17} color="#f59e0b" />
+              <div style={{
+                width: '100%', height: '100%', borderRadius: GLASS_RADIUS.control - 2, background: '#111827',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <FiUser size={15} color="#FDB713" />
+              </div>
             </div>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>My Requests</div>
+              <div style={{ fontSize: 17, ...GLASS_FONT.serif }}>My Requests</div>
               <div style={{ fontSize: 12, color: '#94a3b8' }}>Signed in as {viewerUsername}</div>
             </div>
           </div>
@@ -202,8 +205,8 @@ export default function MyRequestsPanel({ onClose }) {
                   key={sub._id}
                   onClick={() => handleSubmissionClick(sub)}
                   style={{
-                    background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 14,
-                    border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'background 0.2s'
+                    background: 'rgba(255,255,255,0.04)', borderRadius: GLASS_RADIUS.control, padding: 14,
+                    border: `1px solid ${GLASS_COLORS.border}`, cursor: 'pointer', transition: 'background 0.2s'
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
@@ -224,7 +227,7 @@ export default function MyRequestsPanel({ onClose }) {
                           title="Delete this rejected request"
                           style={{
                             background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                            borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: 4,
+                            borderRadius: GLASS_RADIUS.control, color: '#f87171', cursor: 'pointer', padding: 4,
                             display: 'flex', alignItems: 'center', justifyContent: 'center'
                           }}
                         >

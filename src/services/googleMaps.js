@@ -281,11 +281,12 @@ export function highlightPolygon(polygonInstance, isHighlighted, baseColor = '#3
   }
 
   if (isHighlighted) {
+    // Selected-state border is always the same gold, regardless of category color or area unit
     polygonInstance.setOptions({
       fillColor: baseColor,
       fillOpacity: 0.75,
-      strokeColor: '#ffffff',
-      strokeWeight: 3.5,
+      strokeColor: '#f59e0b',
+      strokeWeight: 3,
       zIndex: 10
     })
   } else {

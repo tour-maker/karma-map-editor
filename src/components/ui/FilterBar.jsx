@@ -5,6 +5,7 @@ import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
 import { isFeatureMatchingUnit } from '../../utils/unitFilter';
+import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GLASS_BLUR, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 const PushPinIcon = ({ color }) => (
   <svg width="18" height="24" viewBox="0 0 16 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,37 +71,15 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
       </div>
 
       {isOpen && (
-        <div style={isInModal ? {
+        <div style={{
+          ...glassPanelStyle,
           position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          width: '100%',
-          marginTop: 6,
-          background: 'rgba(15, 23, 42, 0.98)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
+          ...(isInModal ? {
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : {
+            bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 190, zIndex: 1100
+          }),
           padding: 8,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8)',
-          zIndex: 3000,
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column'
-        } : {
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: 16,
-          background: 'rgba(15, 23, 42, 0.96)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
-          padding: 8,
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-          minWidth: 190,
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -110,17 +89,22 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            className="karma-auth-input"
+            onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
             style={{
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(253,183,19,0.25)',
+              borderRadius: GLASS_RADIUS.control,
               padding: '6px 10px',
-              color: '#e2e8f0',
+              color: '#f1f5f9',
               fontSize: 13,
+              fontWeight: 400,
               outline: 'none',
               marginBottom: 8,
               width: '100%',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s, box-shadow 0.15s'
             }}
           />
 
@@ -138,7 +122,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
               style={{
                 padding: '8px 12px',
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: GLASS_RADIUS.control,
                 fontSize: 13,
                 fontWeight: 600,
                 color: !value ? activeColor : '#94a3b8',
@@ -152,7 +136,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
             </div>
 
             {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, textAlign: 'center' }}>
+              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, fontWeight: 400, textAlign: 'center' }}>
                 No results
               </div>
             )}
@@ -166,7 +150,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
                   style={{
                     padding: '8px 12px',
                     cursor: 'pointer',
-                    borderRadius: 8,
+                    borderRadius: GLASS_RADIUS.control,
                     fontSize: 13,
                     fontWeight: 600,
                     color: isActive ? activeColor : '#e2e8f0',
@@ -241,37 +225,15 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
       </div>
 
       {isOpen && (
-        <div style={isInModal ? {
+        <div style={{
+          ...glassPanelStyle,
           position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          width: '100%',
-          marginTop: 6,
-          background: 'rgba(15, 23, 42, 0.98)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
+          ...(isInModal ? {
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : {
+            bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 180, zIndex: 1100
+          }),
           padding: 8,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8)',
-          zIndex: 3000,
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column'
-        } : {
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: 16,
-          background: 'rgba(15, 23, 42, 0.96)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
-          padding: 8,
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-          minWidth: 180,
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -281,17 +243,22 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            className="karma-auth-input"
+            onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
             style={{
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(253,183,19,0.25)',
+              borderRadius: GLASS_RADIUS.control,
               padding: '6px 10px',
-              color: '#e2e8f0',
+              color: '#f1f5f9',
               fontSize: 13,
+              fontWeight: 400,
               outline: 'none',
               marginBottom: 8,
               width: '100%',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s, box-shadow 0.15s'
             }}
           />
 
@@ -309,7 +276,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
               style={{
                 padding: '8px 12px',
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: GLASS_RADIUS.control,
                 fontSize: 13,
                 fontWeight: 600,
                 color: !value ? activeColor : '#94a3b8',
@@ -323,7 +290,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
             </div>
 
             {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, textAlign: 'center' }}>
+              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, fontWeight: 400, textAlign: 'center' }}>
                 No results
               </div>
             )}
@@ -337,7 +304,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
                   style={{
                     padding: '8px 12px',
                     cursor: 'pointer',
-                    borderRadius: 8,
+                    borderRadius: GLASS_RADIUS.control,
                     fontSize: 13,
                     fontWeight: 600,
                     color: isActive ? activeColor : '#e2e8f0',
@@ -414,38 +381,15 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
       </div>
 
       {isOpen && (
-        <div style={isInModal ? {
+        <div style={{
+          ...glassPanelStyle,
           position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          width: '100%',
-          marginTop: 6,
-          background: 'rgba(15, 23, 42, 0.98)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
+          ...(isInModal ? {
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : {
+            bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 200, zIndex: 1100
+          }),
           padding: 8,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8)',
-          zIndex: 3000,
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4
-        } : {
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: 16,
-          background: 'rgba(15, 23, 42, 0.96)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
-          padding: 8,
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-          minWidth: 200,
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column',
           gap: 4
@@ -461,7 +405,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
               fontWeight: 600,
               color: !value ? activeColor : '#94a3b8',
               padding: '8px 12px',
-              borderRadius: 8,
+              borderRadius: GLASS_RADIUS.control,
               background: !value ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
             }}
           >
@@ -483,7 +427,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
                   fontWeight: 600,
                   color: isActive ? activeColor : '#e2e8f0',
                   padding: '8px 12px',
-                  borderRadius: 8,
+                  borderRadius: GLASS_RADIUS.control,
                   background: isActive ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
                   transition: 'background 0.15s ease'
                 }}
@@ -676,14 +620,14 @@ export default function FilterBar() {
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          background: 'rgba(10, 14, 23, 0.70)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.22)',
+          background: GLASS_COLORS.panelBg,
+          backdropFilter: GLASS_BLUR,
+          WebkitBackdropFilter: GLASS_BLUR,
+          border: `1px solid ${GLASS_COLORS.border}`,
           borderBottom: 'none',
           borderRadius: '28px 28px 0 0',
           padding: '0 24px',
-          // boxShadow: '0 -12px 40px rgba(0, 0, 0, 0.75)'
+          boxShadow: GLASS_SHADOW
         }}
       >
         {/* Reset All Floating Button (Only appears when a filter is active) */}
@@ -706,10 +650,8 @@ export default function FilterBar() {
               position: 'absolute',
               top: -40,
               left: 175,
-              background: 'rgba(15, 23, 42, 0.95)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(245, 158, 11, 0.4)',
-              borderRadius: 8,
+              ...glassPanelStyle,
+              borderRadius: GLASS_RADIUS.control,
               padding: '5px 14px',
               color: '#f8fafc',
               fontSize: 12.5,
@@ -718,7 +660,6 @@ export default function FilterBar() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap'
             }}
@@ -735,9 +676,9 @@ export default function FilterBar() {
           style={{
             height: 38,
             boxSizing: 'border-box',
-            border: showLandmarks ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.35)',
+            border: showLandmarks ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
             background: showLandmarks ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
-            borderRadius: 10,
+            borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
             alignItems: 'center',
@@ -766,9 +707,9 @@ export default function FilterBar() {
           style={{
             height: 38,
             boxSizing: 'border-box',
-            border: showLabels ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.35)',
+            border: showLabels ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
             background: showLabels ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
-            borderRadius: 10,
+            borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
             alignItems: 'center',
@@ -791,7 +732,7 @@ export default function FilterBar() {
         {/* 2. Primary Location Dropdown */}
         <div className="filter-dropdown-container" style={{
           height: 38,
-          border: '1px solid rgba(255, 255, 255, 0.35)',
+          border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
           padding: '0 10px',
@@ -815,7 +756,7 @@ export default function FilterBar() {
           <>
             <div className="filter-dropdown-container" style={{
               height: 38,
-              border: '1px solid rgba(255, 255, 255, 0.35)',
+              border: `1px solid ${GLASS_COLORS.border}`,
               background: 'rgba(30, 41, 59, 0.5)',
               borderRadius: 10,
               padding: '0 10px',
@@ -839,7 +780,7 @@ export default function FilterBar() {
         {/* 3. Unit Toggle */}
         <div style={{
           height: 38,
-          border: '1px solid rgba(255, 255, 255, 0.35)',
+          border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
           padding: '2px',
@@ -855,11 +796,11 @@ export default function FilterBar() {
             className="btn-hover-effect"
             style={{
               height: '100%',
-              background: globalAreaUnit === 'yards' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-              color: globalAreaUnit === 'yards' ? '#000000' : '#f59e0b',
-              boxShadow: globalAreaUnit === 'yards' ? '0 2px 8px rgba(245, 158, 11, 0.4)' : 'none',
+              background: globalAreaUnit === 'yards' ? GOLD_GRADIENT : 'transparent',
+              color: globalAreaUnit === 'yards' ? '#1c1406' : '#f59e0b',
+              boxShadow: globalAreaUnit === 'yards' ? GOLD_GRADIENT_SHADOW : 'none',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: GLASS_RADIUS.control,
               padding: '0 10px',
               fontSize: 13,
               fontWeight: 700,
@@ -881,11 +822,11 @@ export default function FilterBar() {
             className="btn-hover-effect"
             style={{
               height: '100%',
-              background: globalAreaUnit === 'wingha' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-              color: globalAreaUnit === 'wingha' ? '#000000' : '#f59e0b',
-              boxShadow: globalAreaUnit === 'wingha' ? '0 2px 8px rgba(245, 158, 11, 0.4)' : 'none',
+              background: globalAreaUnit === 'wingha' ? GOLD_GRADIENT : 'transparent',
+              color: globalAreaUnit === 'wingha' ? '#1c1406' : '#f59e0b',
+              boxShadow: globalAreaUnit === 'wingha' ? GOLD_GRADIENT_SHADOW : 'none',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: GLASS_RADIUS.control,
               padding: '0 10px',
               fontSize: 13,
               fontWeight: 700,
@@ -907,7 +848,7 @@ export default function FilterBar() {
         {/* 4. Category Dropdown */}
         <div className="filter-dropdown-container" style={{
           height: 38,
-          border: '1px solid rgba(255, 255, 255, 0.35)',
+          border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
           padding: '0 10px',
@@ -973,10 +914,10 @@ export default function FilterBar() {
           width: 'calc(100vw - 32px)',
           maxWidth: 460,
           height: 60,
-          background: 'rgba(10, 14, 23, 0.70)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.22)',
+          background: GLASS_COLORS.panelBg,
+          backdropFilter: GLASS_BLUR,
+          WebkitBackdropFilter: GLASS_BLUR,
+          border: `1px solid ${GLASS_COLORS.border}`,
           borderBottom: 'none',
           borderRadius: '28px 28px 0 0',
           padding: '0 20px',
@@ -986,7 +927,7 @@ export default function FilterBar() {
           justifyContent: 'space-between',
           zIndex: 1000,
           cursor: 'pointer',
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.75)'
+          boxShadow: GLASS_SHADOW
         }}
       >
         {/* Left: Filter Icon & Subtitle Summary */}
@@ -1027,7 +968,7 @@ export default function FilterBar() {
         <div style={{
           border: '1px solid rgba(245, 158, 11, 0.35)',
           background: 'rgba(245, 158, 11, 0.10)',
-          borderRadius: 12,
+          borderRadius: GLASS_RADIUS.control,
           padding: '4px 12px',
           display: 'flex',
           alignItems: 'center',
@@ -1061,15 +1002,12 @@ export default function FilterBar() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
+              ...glassPanelStyle,
               width: '100%',
               maxWidth: 480,
-              background: 'rgba(15, 23, 42, 0.96)',
-              backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              borderRadius: '24px 24px 0 0',
+              borderRadius: `${GLASS_RADIUS.panel}px ${GLASS_RADIUS.panel}px 0 0`,
               padding: '20px 20px 32px 20px',
               boxSizing: 'border-box',
-              boxShadow: '0 -20px 50px rgba(0, 0, 0, 0.8)',
               display: 'flex',
               flexDirection: 'column',
               gap: 16,
@@ -1080,7 +1018,7 @@ export default function FilterBar() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <FiSliders size={20} color="#f59e0b" />
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Map Filters</span>
+                <span style={{ fontSize: 18, color: '#ffffff', ...GLASS_FONT.serif }}>Map Filters</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1098,9 +1036,9 @@ export default function FilterBar() {
                   title="Reset all applied filters"
                   style={{
                     background: isFilterActive ? 'rgba(245, 158, 11, 0.14)' : 'transparent',
-                    border: isFilterActive ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid rgba(255, 255, 255, 0.15)',
+                    border: isFilterActive ? `1px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
                     color: isFilterActive ? '#f59e0b' : '#94a3b8',
-                    borderRadius: 8,
+                    borderRadius: GLASS_RADIUS.control,
                     padding: '4px 10px',
                     fontSize: 12,
                     fontWeight: 600,
@@ -1130,8 +1068,8 @@ export default function FilterBar() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
                 <div style={{
-                  height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
+                  height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                  borderRadius: GLASS_RADIUS.control, padding: '0 14px', display: 'flex', alignItems: 'center'
                 }}>
                   <PrimaryLocationDropdown
                     primaryCategories={primaryCategories}
@@ -1149,8 +1087,8 @@ export default function FilterBar() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
                   <div style={{
-                    height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                    borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
+                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                    borderRadius: GLASS_RADIUS.control, padding: '0 14px', display: 'flex', alignItems: 'center'
                   }}>
                     <SubLocationDropdown
                       subLocations={subLocationsForPrimary}
@@ -1169,8 +1107,8 @@ export default function FilterBar() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Property Category</label>
                 <div style={{
-                  height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
+                  height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                  borderRadius: GLASS_RADIUS.control, padding: '0 14px', display: 'flex', alignItems: 'center'
                 }}>
                   <CategoryDropdown
                     options={categoryOptions}
@@ -1189,16 +1127,17 @@ export default function FilterBar() {
                 <div style={{ flex: 1.4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Area Unit</label>
                   <div style={{
-                    height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                    borderRadius: 12, padding: 3, display: 'flex', gap: 4
+                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                    borderRadius: GLASS_RADIUS.control, padding: 3, display: 'flex', gap: 4
                   }}>
                     <button
                       type="button"
                       onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'yards' ? null : 'yards' })}
                       style={{
                         flex: 1, border: 'none', borderRadius: 9,
-                        background: globalAreaUnit === 'yards' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-                        color: globalAreaUnit === 'yards' ? '#000000' : '#f59e0b',
+                        background: globalAreaUnit === 'yards' ? GOLD_GRADIENT : 'transparent',
+                        color: globalAreaUnit === 'yards' ? '#1c1406' : '#f59e0b',
+                        boxShadow: globalAreaUnit === 'yards' ? GOLD_GRADIENT_SHADOW : 'none',
                         fontWeight: 700, fontSize: 12.5, cursor: 'pointer'
                       }}
                     >
@@ -1209,8 +1148,9 @@ export default function FilterBar() {
                       onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'wingha' ? null : 'wingha' })}
                       style={{
                         flex: 1, border: 'none', borderRadius: 9,
-                        background: globalAreaUnit === 'wingha' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-                        color: globalAreaUnit === 'wingha' ? '#000000' : '#f59e0b',
+                        background: globalAreaUnit === 'wingha' ? GOLD_GRADIENT : 'transparent',
+                        color: globalAreaUnit === 'wingha' ? '#1c1406' : '#f59e0b',
+                        boxShadow: globalAreaUnit === 'wingha' ? GOLD_GRADIENT_SHADOW : 'none',
                         fontWeight: 700, fontSize: 12.5, cursor: 'pointer'
                       }}
                     >
@@ -1226,10 +1166,10 @@ export default function FilterBar() {
                     type="button"
                     onClick={toggleLandmarks}
                     style={{
-                      height: 42, border: showLandmarks ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+                      height: 42, border: showLandmarks ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
                       background: showLandmarks ? 'rgba(245, 158, 11, 0.2)' : 'rgba(30, 41, 59, 0.6)',
                       color: showLandmarks ? '#f59e0b' : '#94a3b8',
-                      borderRadius: 12, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
+                      borderRadius: GLASS_RADIUS.control, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                     }}
                   >
@@ -1245,10 +1185,10 @@ export default function FilterBar() {
                     type="button"
                     onClick={toggleLabels}
                     style={{
-                      height: 42, border: showLabels ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+                      height: 42, border: showLabels ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
                       background: showLabels ? 'rgba(245, 158, 11, 0.2)' : 'rgba(30, 41, 59, 0.6)',
                       color: showLabels ? '#f59e0b' : '#94a3b8',
-                      borderRadius: 12, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
+                      borderRadius: GLASS_RADIUS.control, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
                     }}
                   >
@@ -1265,9 +1205,9 @@ export default function FilterBar() {
                   onClick={() => setIsMobileSheetOpen(false)}
                   style={{
                     width: '100%', padding: '13px 0', border: 'none',
-                    background: '#f59e0b', color: '#000000', borderRadius: 12,
+                    background: GOLD_GRADIENT, color: '#1c1406', borderRadius: GLASS_RADIUS.control,
                     fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
+                    boxShadow: GOLD_GRADIENT_SHADOW
                   }}
                 >
                   Show {visibleCount} Properties

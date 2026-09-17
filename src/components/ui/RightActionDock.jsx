@@ -5,6 +5,7 @@ import { getPublicShareUrl } from '../../utils/shareUrl';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
+import { GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GLASS_BLUR } from '../../styles/glass';
 
 const loadHtml2Canvas = () => {
   return new Promise((resolve, reject) => {
@@ -301,13 +302,13 @@ ${getPublicShareUrl()}`;
         {/* Top Floating Glass Capsule (STATIONARY - NEVER MOVES ON CLICK!) */}
         <div
           style={{
-            background: 'rgba(10, 14, 23, 0.70)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
-            borderRadius: 20,
+            background: GLASS_COLORS.panelBg,
+            backdropFilter: GLASS_BLUR,
+            WebkitBackdropFilter: GLASS_BLUR,
+            border: `1px solid ${GLASS_COLORS.border}`,
+            borderRadius: GLASS_RADIUS.panel,
             padding: '12px 10px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.65)',
+            boxShadow: GLASS_SHADOW,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -384,14 +385,14 @@ ${getPublicShareUrl()}`;
           <div
             className="responsive-right-dock-popout"
             style={{
-              background: 'rgba(10, 14, 23, 0.70)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
+              background: GLASS_COLORS.panelBg,
+              backdropFilter: GLASS_BLUR,
+              WebkitBackdropFilter: GLASS_BLUR,
+              border: `1px solid ${GLASS_COLORS.border}`,
               borderRight: 'none',
-              borderRadius: '20px 0 0 20px',
+              borderRadius: `${GLASS_RADIUS.panel}px 0 0 ${GLASS_RADIUS.panel}px`,
               padding: '14px 10px',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.65)',
+              boxShadow: GLASS_SHADOW,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -410,7 +411,7 @@ ${getPublicShareUrl()}`;
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 22,
-                fontWeight: 800,
+                fontWeight: 600,
                 color: '#f59e0b',
                 display: 'flex',
                 alignItems: 'center',

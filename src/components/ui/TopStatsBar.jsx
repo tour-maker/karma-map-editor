@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { buildDynamicLocationMap } from '../../config/categories';
+import { GLASS_COLORS, GLASS_SHADOW, GLASS_BLUR } from '../../styles/glass';
 
 export default function TopStatsBar() {
   const uiHidden = useMapStore(state => state.uiHidden);
@@ -59,12 +60,13 @@ export default function TopStatsBar() {
       zIndex: 1000,
       display: 'flex',
       alignItems: 'center',
-      background: 'rgba(15, 23, 42, 0.92)',
-      backdropFilter: 'blur(12px)',
-      border: '1px solid rgba(99, 102, 241, 0.25)',
+      background: GLASS_COLORS.panelBg,
+      backdropFilter: GLASS_BLUR,
+      WebkitBackdropFilter: GLASS_BLUR,
+      border: `1px solid ${GLASS_COLORS.border}`,
       borderRadius: 999,
       padding: '8px 32px',
-      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+      boxShadow: GLASS_SHADOW,
       color: 'white',
       fontFamily: 'sans-serif',
       minWidth: '280px',
