@@ -130,4 +130,26 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/submissions/:id/mine
+// @desc    Permanently delete the signed-in viewer's own rejected submission
+router.delete('/:id/mine', requireUser, async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    if (String(submission.userId) !== String(req.userId)) {
+      return res.status(403).json({ error: 'You can only delete your own submissions' });
+    }
+    if (submission.status !== 'rejected') {
+      return res.status(400).json({ error: 'Only rejected submissions can be deleted' });
+    }
+
+    await submission.deleteOne();
+    res.json({ message: 'Submission deleted' });
+  } catch (error) {
+    console.error('Delete own submission error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 export default router;

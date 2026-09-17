@@ -23,9 +23,7 @@ export default function HelpInstructionOverlay({ onClose }) {
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        background: 'rgba(10, 14, 23, 0.45)',
-        backdropFilter: 'blur(3px)',
-        WebkitBackdropFilter: 'blur(3px)',
+        background: 'rgba(0, 0, 0, 0.65)',
         fontFamily: 'Inter, system-ui, sans-serif',
         userSelect: 'none',
         color: '#ffffff',
@@ -148,6 +146,17 @@ export default function HelpInstructionOverlay({ onClose }) {
         </>
       ) : isMobile ? (
         <>
+          {/* MOBILE: ADD PROPERTY / SIGN IN */}
+          <div style={{
+            position: 'absolute', top: 18, left: 24,
+            textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4
+          }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff' }}>Add Your Property</span>
+            <span style={{ fontSize: 11, color: '#cbd5e1' }}>Submit a new property listing</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginTop: 4 }}>Sign In</span>
+            <span style={{ fontSize: 11, color: '#cbd5e1' }}>Track your submitted requests</span>
+          </div>
+
           {/* MOBILE: SEARCH BAR */}
           <div style={{
             position: 'absolute', top: 70, left: 24,
@@ -155,7 +164,7 @@ export default function HelpInstructionOverlay({ onClose }) {
           }}>
             <div style={{ fontSize: 20, color: '#ffffff' }}>↑</div>
             <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Search</span>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Find locations quickly</span>
+            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Search for a place or property...</span>
           </div>
 
           {/* MOBILE: OPTIONS */}
@@ -190,6 +199,30 @@ export default function HelpInstructionOverlay({ onClose }) {
         </>
       ) : (
         <>
+          {/* TOP LEFT: ADD YOUR PROPERTY / SIGN IN */}
+          <div style={{
+            position: 'absolute', top: 68, left: 20,
+            textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 8
+          }}>
+            <div style={{ fontSize: 18, color: '#ffffff' }}>↑</div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff' }}>Add Your Property</span>
+              <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>Submit a new property listing for review</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', marginTop: 6 }}>Sign In</span>
+              <span style={{ fontSize: 12, color: '#cbd5e1', maxWidth: 220, lineHeight: 1.35 }}>Create an account or sign in to track your requests</span>
+            </div>
+          </div>
+
+          {/* TOP CENTER: MAIN SEARCH BAR */}
+          <div style={{
+            position: 'absolute', top: 68, left: '50%', transform: 'translateX(-50%)',
+            textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
+          }}>
+            <div style={{ fontSize: 18, color: '#ffffff' }}>↑</div>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#ffffff' }}>Search</span>
+            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Search for a place or property...</span>
+          </div>
+
           {isAdmin && (
             <>
               {/* LEFT SIDEBAR: TABS — Projects / Landmarks / Area */}

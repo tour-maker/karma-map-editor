@@ -1,4 +1,5 @@
 import { useMapStore } from '../../store/useMapStore';
+import { getPublicShareUrl } from '../../utils/shareUrl';
 import toast from 'react-hot-toast';
 
 const WhatsAppIcon = ({ color = "#f59e0b", size = 28 }) => (
@@ -26,7 +27,8 @@ export default function WhatsAppCTA() {
   if (uiHidden) return null;
 
   const handleWhatsAppClick = () => {
-    let text = "Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/";
+    const currentUrl = getPublicShareUrl();
+    let text = `Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\n${currentUrl}`;
 
     if (selectedFeatureId) {
       const feature = features.find(f => f.id === selectedFeatureId);
@@ -34,7 +36,7 @@ export default function WhatsAppCTA() {
         const name = feature.data.name || feature.data.project || '';
         const tpFp = feature.data.tpNo ? ` (TP ${feature.data.tpNo} / FP ${feature.data.fpNo})` : '';
         if (name) {
-          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/`;
+          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\n${currentUrl}`;
         }
       }
     }

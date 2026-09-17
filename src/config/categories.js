@@ -38,6 +38,20 @@ export const PROPERTY_TYPE_COLORS = {
 
 export const DEFAULT_PROPERTY_COLOR = '#38bdf8';
 
+// Category options that don't apply to a given area unit are hidden from the filter.
+const CATEGORIES_HIDDEN_FOR_YARDS = ['Industrial', 'Agriculture', 'Ready Farmhouse'];
+const CATEGORIES_HIDDEN_FOR_WINGHA = ['Commercial', 'Industrial'];
+
+export function getCategoryOptionsForUnit(areaUnit) {
+  if (areaUnit === 'yards') {
+    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_YARDS.includes(t));
+  }
+  if (areaUnit === 'wingha') {
+    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_WINGHA.includes(t));
+  }
+  return PROPERTY_TYPES;
+}
+
 export function normalizePropertyType(rawType) {
   if (!rawType) return '';
   const lower = String(rawType).trim().toLowerCase();

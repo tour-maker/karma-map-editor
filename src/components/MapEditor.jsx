@@ -36,6 +36,12 @@ const defaultCenter = {
   lng: 72.8311
 };
 
+const MY_REQUEST_STATUS_COLORS = {
+  pending: '#f59e0b',
+  approved: '#22c55e',
+  rejected: '#ef4444'
+};
+
 export default function MapEditor() {
   const apiKey = getGoogleMapsApiKey();
   const map = useGoogleMap();
@@ -57,6 +63,8 @@ export default function MapEditor() {
   //   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const previewSubmission = useMapStore(state => state.previewSubmission);
   const viewerUsername = useMapStore(state => state.viewerUsername);
+  const myRequestsSubmissions = useMapStore(state => state.myRequestsSubmissions);
+  const myRequestsStatusFilter = useMapStore(state => state.myRequestsStatusFilter);
 
   const isDark = theme === 'dark';
   const containerStyle = {
@@ -244,7 +252,7 @@ export default function MapEditor() {
       )}
 
       {appMode === 'viewer' && (
-        <div style={{
+        <div className="viewer-topbar" style={{
           position: 'absolute', top: 20, left: 20, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 16,
           background: 'rgba(15, 23, 42, 0.85)', padding: '8px 10px 8px 14px', borderRadius: 12,
           backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -382,7 +390,26 @@ export default function MapEditor() {
             />
           )}
 
-          {previewSubmission && previewSubmission.coordinates && (
+          {myRequestsSubmissions
+            .filter(sub => sub.coordinates && sub.coordinates.length > 0)
+            .filter(sub => !myRequestsStatusFilter || (sub.status || 'pending') === myRequestsStatusFilter)
+            .filter(sub => !previewSubmission || sub._id !== previewSubmission._id)
+            .map(sub => (
+              <Polygon
+                key={sub._id}
+                paths={sub.coordinates}
+                options={{
+                  fillColor: MY_REQUEST_STATUS_COLORS[sub.status] || MY_REQUEST_STATUS_COLORS.pending,
+                  fillOpacity: 0.35,
+                  strokeColor: MY_REQUEST_STATUS_COLORS[sub.status] || MY_REQUEST_STATUS_COLORS.pending,
+                  strokeWeight: 2,
+                  zIndex: 9998,
+                  clickable: false
+                }}
+              />
+            ))}
+
+          {previewSubmission && previewSubmission.coordinates && (!myRequestsStatusFilter || (previewSubmission.status || 'pending') === myRequestsStatusFilter) && (
             <Polygon
               paths={previewSubmission.coordinates}
               options={{

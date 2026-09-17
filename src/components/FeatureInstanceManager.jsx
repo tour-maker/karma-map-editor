@@ -3,6 +3,7 @@ import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { createImportedMarker, createImportedPolygon, highlightPolygon, zoomToProperty, getCategoryPinIcon, calculatePolygonCenter } from '../services/googleMaps';
 import { getPropertyTypeColor, DEFAULT_PROPERTY_COLOR, buildDynamicLocationMap } from '../config/categories';
+import { isFeatureMatchingUnit } from '../utils/unitFilter';
 
 // Inject Keyframes for Selected Pin Glow Effect
 if (typeof document !== 'undefined' && !document.getElementById('selected-pin-glow-keyframes')) {
@@ -280,6 +281,7 @@ export default function FeatureInstanceManager() {
   const filterPrimary = useMapStore(state => state.filterPrimary);
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
+  const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
 
   useEffect(() => {
     const dynamicLocationMap = buildDynamicLocationMap(features);
@@ -288,6 +290,11 @@ export default function FeatureInstanceManager() {
       if (!feature.instances) return;
 
       let isVisible = true;
+
+      // Apply Sq Yard / Wingha unit filter
+      if (isVisible && !isFeatureMatchingUnit(feature, globalAreaUnit)) {
+        isVisible = false;
+      }
 
       // Apply Primary & Secondary Location Filter
       if (isVisible && (filterPrimary || filterSecondary)) {
@@ -325,7 +332,7 @@ export default function FeatureInstanceManager() {
         feature.instances.marker.setVisible(finalVisible);
       }
     });
-  }, [features, filterPrimary, filterSecondary, filterType]);
+  }, [features, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
 
   // Handle Highlighting & Glowing Bouncing Pin
   const previousSelectedIdRef = useRef(null);

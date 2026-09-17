@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, buildDynamicLocationMap } from '../../config/categories';
+import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
-import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
 import { isFeatureMatchingUnit } from '../../utils/unitFilter';
 
 const PushPinIcon = ({ color }) => (
@@ -508,12 +508,14 @@ export default function FilterBar() {
   const filterType = useMapStore(state => state.filterType);
   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const showLandmarks = useMapStore(state => state.showLandmarks);
+  const showLabels = useMapStore(state => state.showLabels);
 
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
   const setFilterSecondary = useMapStore(state => state.setFilterSecondary);
   const setFilterType = useMapStore(state => state.setFilterType);
   const setGlobalAreaUnit = useMapStore(state => state.setGlobalAreaUnit);
   const toggleLandmarks = useMapStore(state => state.toggleLandmarks);
+  const toggleLabels = useMapStore(state => state.toggleLabels);
   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const map = useGoogleMap();
@@ -530,12 +532,17 @@ export default function FilterBar() {
   const handleFilterChange = (updates) => {
     const nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
     const nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
-    const nextType = updates.type !== undefined ? updates.type : filterType;
     const nextAreaUnit = updates.areaUnit !== undefined ? updates.areaUnit : globalAreaUnit;
+    let nextType = updates.type !== undefined ? updates.type : filterType;
+
+    // Clear the selected category if it doesn't apply to the newly selected area unit
+    if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit).includes(nextType)) {
+      nextType = null;
+    }
 
     if (updates.primary !== undefined) setFilterPrimary(updates.primary);
     if (updates.secondary !== undefined) setFilterSecondary(updates.secondary);
-    if (updates.type !== undefined) setFilterType(updates.type);
+    if (updates.type !== undefined || nextType !== filterType) setFilterType(nextType);
     if (updates.areaUnit !== undefined) setGlobalAreaUnit(updates.areaUnit);
 
     setSelectedFeatureId(null);
@@ -625,6 +632,8 @@ export default function FilterBar() {
   }, [dynamicCategoryMap, filterPrimary]);
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
+
+  const categoryOptions = useMemo(() => getCategoryOptionsForUnit(globalAreaUnit), [globalAreaUnit]);
   const isFilterActive = Boolean(filterPrimary || filterSecondary || filterType || globalAreaUnit);
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
@@ -747,6 +756,33 @@ export default function FilterBar() {
             <FiEyeOff size={16} color="#94a3b8" />
           )}
           <span className="desktop-only-text">Landmarks</span>
+        </div>
+
+        {/* 1b. Map Labels Toggle Button */}
+        <div
+          onClick={toggleLabels}
+          title={showLabels ? "Map Labels On (Click to turn off)" : "Map Labels Off (Click to turn on)"}
+          className="filter-labels-toggle"
+          style={{
+            height: 38,
+            boxSizing: 'border-box',
+            border: showLabels ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.35)',
+            background: showLabels ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
+            borderRadius: 10,
+            padding: '0 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            fontSize: 14,
+            fontWeight: 600,
+            color: showLabels ? '#f59e0b' : '#e2e8f0',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <FiType size={16} color={showLabels ? '#f59e0b' : '#94a3b8'} />
+          <span className="desktop-only-text">Labels</span>
         </div>
 
         {/* Vertical Divider */}
@@ -880,7 +916,7 @@ export default function FilterBar() {
           boxSizing: 'border-box'
         }}>
           <CategoryDropdown
-            options={PROPERTY_TYPES}
+            options={categoryOptions}
             value={filterType}
             onChange={(type) => handleFilterChange({ type })}
             placeholder="Category"
@@ -1137,7 +1173,7 @@ export default function FilterBar() {
                   borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
                 }}>
                   <CategoryDropdown
-                    options={PROPERTY_TYPES}
+                    options={categoryOptions}
                     value={filterType}
                     onChange={(type) => handleFilterChange({ type })}
                     placeholder="All Categories"
@@ -1150,7 +1186,7 @@ export default function FilterBar() {
               {/* Unit Toggle & Landmarks */}
               <div style={{ display: 'flex', gap: 10 }}>
                 {/* Unit Toggle */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ flex: 1.4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Area Unit</label>
                   <div style={{
                     height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
@@ -1198,7 +1234,26 @@ export default function FilterBar() {
                     }}
                   >
                     {showLandmarks ? <FiEye size={16} /> : <FiEyeOff size={16} />}
-                    {showLandmarks ? 'Landmarks On' : 'Landmarks Off'}
+                    {showLandmarks ? 'On' : 'Off'}
+                  </button>
+                </div>
+
+                {/* Map Labels */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Map Labels</label>
+                  <button
+                    type="button"
+                    onClick={toggleLabels}
+                    style={{
+                      height: 42, border: showLabels ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
+                      background: showLabels ? 'rgba(245, 158, 11, 0.2)' : 'rgba(30, 41, 59, 0.6)',
+                      color: showLabels ? '#f59e0b' : '#94a3b8',
+                      borderRadius: 12, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
+                    }}
+                  >
+                    <FiType size={16} />
+                    {showLabels ? 'On' : 'Off'}
                   </button>
                 </div>
               </div>

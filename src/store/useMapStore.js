@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
+import { getCategoryOptionsForUnit } from '../config/categories';
 
 export const useMapStore = create(
   persist(
@@ -25,8 +26,12 @@ export const useMapStore = create(
         customAreas: [],
         syncedAreas: [],
         previewSubmission: null,
+        myRequestsSubmissions: [],
+        myRequestsStatusFilter: null,
 
         setPreviewSubmission: (sub) => set({ previewSubmission: sub }),
+        setMyRequestsSubmissions: (subs) => set({ myRequestsSubmissions: subs || [] }),
+        setMyRequestsStatusFilter: (status) => set({ myRequestsStatusFilter: status }),
 
         addCustomArea: (areaName) => set((state) => {
           const name = areaName?.trim();
@@ -101,7 +106,14 @@ export const useMapStore = create(
         setFilterPrimary: (city) => set({ filterPrimary: city, filterSecondary: null }),
         setFilterSecondary: (location) => set({ filterSecondary: location }),
         setFilterType: (type) => set({ filterType: type }),
-        setGlobalAreaUnit: (unit) => set({ globalAreaUnit: unit }),
+        // Clears the active category filter if it no longer applies to the new area unit —
+        // guards against any caller (not just FilterBar) changing globalAreaUnit directly.
+        setGlobalAreaUnit: (unit) => set((state) => {
+          const filterType = state.filterType && !getCategoryOptionsForUnit(unit).includes(state.filterType)
+            ? null
+            : state.filterType;
+          return { globalAreaUnit: unit, filterType };
+        }),
 
         setGoogleAccessToken: (token) => set({ googleAccessToken: token, googleSheetsConnected: true }),
         setSpreadsheetId: (id) => set({ spreadsheetId: id }),

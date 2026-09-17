@@ -1,6 +1,7 @@
 import { FaRegShareSquare } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
+import { getPublicShareUrl } from '../../utils/shareUrl';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
@@ -65,7 +66,8 @@ export default function RightActionDock() {
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
     const features = useMapStore.getState().features;
 
-    let text = "Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/";
+    const currentUrl = getPublicShareUrl();
+    let text = `Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\n${currentUrl}`;
 
     if (selectedFeatureId) {
       const feature = features.find(f => f.id === selectedFeatureId);
@@ -73,7 +75,7 @@ export default function RightActionDock() {
         const name = feature.data.name || feature.data.project || '';
         const tpFp = feature.data.tpNo ? ` (TP ${feature.data.tpNo} / FP ${feature.data.fpNo})` : '';
         if (name) {
-          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/`;
+          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\n${currentUrl}`;
         }
       }
     }
@@ -95,7 +97,7 @@ export default function RightActionDock() {
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
     const selectedFeature = features.find(f => f.id === selectedFeatureId);
 
-    const shareUrl = new URL(window.location.href);
+    const shareUrl = new URL(getPublicShareUrl());
 
     if (selectedFeature) {
       shareUrl.searchParams.set('feature', selectedFeature.id);
@@ -144,7 +146,7 @@ export default function RightActionDock() {
     } else {
       const generalShareText = `Karma Realtors - Exclusive Land Project
 Explore our exclusive Land Project with custom filters like Sq Yard & Wingha. Choose your ideal plot based on category. Take a virtual tour now 👇
-https://karma-map-editor.onrender.com/`;
+${getPublicShareUrl()}`;
 
       if (navigator.share) {
         try {

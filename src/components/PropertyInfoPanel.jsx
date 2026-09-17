@@ -3,6 +3,7 @@ import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, Fi
 import { useMapStore } from '../store/useMapStore';
 import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
+import { getFeatureAreaUnit } from '../utils/unitFilter';
 
 import toast from 'react-hot-toast';
 import { requestLogin, syncFeatureToSheet } from '../services/googleSheets'
@@ -393,11 +394,17 @@ export default function PropertyInfoPanel() {
       if (match) fpVal = match[1];
     }
 
-    const tpOpFp = `TP: ${tpVal || '_'}   |   OP: ${opVal || '_'}   |   FP: ${fpVal || '_'}`;
+    const tpOpFpParts = [];
+    if (tpVal) tpOpFpParts.push(`TP: ${tpVal}`);
+    if (opVal) tpOpFpParts.push(`OP: ${opVal}`);
+    if (fpVal) tpOpFpParts.push(`FP: ${fpVal}`);
+    const tpOpFp = tpOpFpParts.join('   |   ');
     const rawName = (formData.name && formData.name.trim() !== '' && formData.name !== '-' && formData.name !== '_' && formData.name !== 'Polygon' && formData.name !== 'Marker') ? formData.name : '';
     const numArea = parseFloat(formData.area);
+    // Always reflect the property's own stored unit type, not the currently active global filter
+    const detectedUnit = getFeatureAreaUnit(displayFeature) || (formData.areaUnit && /wingha|vingha|vigha/i.test(formData.areaUnit) ? 'wingha' : 'yards');
     const areaValue = Number.isFinite(numArea)
-      ? (areaUnit === 'wingha'
+      ? (detectedUnit === 'wingha'
         ? `${(numArea / YARDS_PER_WINGHA).toFixed(2)} Wingha`
         : `${numArea} Sq yard`)
       : (formData.area ? `${formData.area} Sq yard` : 'No Area');
@@ -416,11 +423,9 @@ export default function PropertyInfoPanel() {
     const coords = getFeatureCoords(displayFeature);
 
     const handleRedirectToGoogleMaps = (e) => {
-      if (e.target.closest('.close-panel-btn') || e.target.closest('.share-polygon-btn')) {
-        return;
-      }
+      if (e) e.stopPropagation();
       if (coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lng)) {
-        const mapsUrl = `https://www.google.com/maps?q=${coords.lat},${coords.lng}`;
+        const mapsUrl = `https://www.google.com/maps?q=${coords.lat},${coords.lng}&t=k`;
         window.open(mapsUrl, '_blank', 'noopener,noreferrer');
       } else {
         import('react-hot-toast').then(m => m.default.error('No valid coordinates found for this pin.'));
@@ -492,8 +497,6 @@ export default function PropertyInfoPanel() {
       <div
         key={displayFeature.id}
         className={`responsive-info-panel ${isOpen ? 'is-open' : ''}`}
-        onClick={handleRedirectToGoogleMaps}
-        title="Click anywhere to open location in Google Maps ↗"
         style={{
           ...panelStyle,
           background: 'rgba(15, 23, 42, 0.92)',
@@ -502,7 +505,6 @@ export default function PropertyInfoPanel() {
           padding: '20px 16px 16px 16px',
           color: '#e2e8f0',
           boxShadow: `0 20px 48px rgba(0, 0, 0, 0.5), 0 0 16px ${themeColor}40`,
-          cursor: 'pointer',
           transform: isOpen ? 'translateX(0)' : 'translateX(120%)',
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
@@ -548,22 +550,28 @@ export default function PropertyInfoPanel() {
         <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.1)', margin: '16px 0' }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <FiCrosshair size={18} color={themeColor} style={{ marginTop: 2, flexShrink: 0 }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span style={{ fontSize: 15, color: '#cbd5e1', letterSpacing: '0.3px', fontWeight: 600 }}>{tpOpFp}</span>
-              {rawName && (
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>{rawName}</span>
-              )}
+          {(tpOpFp || rawName) && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <FiCrosshair size={18} color={themeColor} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {tpOpFp && (
+                  <span style={{ fontSize: 15, color: '#cbd5e1', letterSpacing: '0.3px', fontWeight: 600 }}>{tpOpFp}</span>
+                )}
+                {rawName && (
+                  <span style={{ fontSize: 12, color: '#94a3b8' }}>{rawName}</span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <FiMapPin size={18} color={themeColor} style={{ marginTop: 2, flexShrink: 0 }} />
-            <span style={{ fontSize: 15, color: '#cbd5e1', lineHeight: 1.4 }}>
-              {formData.location || formData.landmark || 'No location set'}
-            </span>
-          </div>
+          {(formData.location || formData.landmark) && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <FiMapPin size={18} color={themeColor} style={{ marginTop: 2, flexShrink: 0 }} />
+              <span style={{ fontSize: 15, color: '#cbd5e1', lineHeight: 1.4 }}>
+                {formData.location || formData.landmark}
+              </span>
+            </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <FiBriefcase size={18} color={themeColor} style={{ flexShrink: 0 }} />
@@ -586,34 +594,43 @@ export default function PropertyInfoPanel() {
           </div>
 
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{
-              width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${themeColor}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: themeColor, fontSize: 10, fontWeight: 'bold', flexShrink: 0, marginTop: 2
-            }}>
-              R
+          {formData.remarks && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${themeColor}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: themeColor, fontSize: 10, fontWeight: 'bold', flexShrink: 0, marginTop: 2
+              }}>
+                R
+              </div>
+              <span style={{ fontSize: 15, color: '#cbd5e1' }}>Remark : {formData.remarks}</span>
             </div>
-            <span style={{ fontSize: 15, color: '#cbd5e1' }}>Remark : {formData.remarks || '-'}</span>
-          </div>
+          )}
         </div>
 
-        <div style={{
-          marginTop: 16,
-          padding: '8px 12px',
-          borderRadius: 10,
-          background: 'rgba(59, 130, 246, 0.15)',
-          border: '1px solid rgba(59, 130, 246, 0.35)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          fontSize: 12,
-          fontWeight: 600,
-          color: '#60a5fa'
-        }}>
+        <button
+          type="button"
+          onClick={handleRedirectToGoogleMaps}
+          title="Open location in Google Maps (satellite view) ↗"
+          style={{
+            marginTop: 16,
+            width: '100%',
+            padding: '8px 12px',
+            borderRadius: 10,
+            background: 'rgba(59, 130, 246, 0.15)',
+            border: '1px solid rgba(59, 130, 246, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            color: '#60a5fa',
+            cursor: 'pointer'
+          }}
+        >
           <FiExternalLink size={14} /> Open in Google Maps ↗
-        </div>
+        </button>
       </div>
     );
   }

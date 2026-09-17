@@ -362,9 +362,9 @@ export function zoomToProperty(map, property) {
   }
 
   if (targetCenter) {
-    // Apply a vertical offset for Mobile Portrait so the polygon isn't hidden by the bottom info panel
     const isMobilePortrait = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px) and (orientation: portrait)').matches;
     if (isMobilePortrait && map.getProjection()) {
+      // Apply a vertical offset for Mobile Portrait so the polygon isn't hidden by the bottom info panel
       const projection = map.getProjection();
       const targetPoint = projection.fromLatLngToPoint(targetCenter);
       if (targetPoint) {
@@ -372,8 +372,23 @@ export function zoomToProperty(map, property) {
         const offsetPixels = window.innerHeight * 0.25; // Offset by 25% of screen height
         const scale = Math.pow(2, targetZoom);
         targetPoint.y += offsetPixels / scale;
-        
+
         // Convert back to LatLng
+        const offsetLatLng = projection.fromPointToLatLng(targetPoint);
+        if (offsetLatLng) {
+          targetCenter = offsetLatLng;
+        }
+      }
+    } else if (!isMobilePortrait && map.getProjection()) {
+      // Apply a horizontal offset on Desktop so the polygon isn't hidden by the top-right property info panel
+      const projection = map.getProjection();
+      const targetPoint = projection.fromLatLngToPoint(targetCenter);
+      if (targetPoint) {
+        // Move the center point East (positive X) so the polygon appears further left of the panel
+        const offsetPixels = 190; // roughly half the info panel's width plus margin
+        const scale = Math.pow(2, targetZoom);
+        targetPoint.x += offsetPixels / scale;
+
         const offsetLatLng = projection.fromPointToLatLng(targetPoint);
         if (offsetLatLng) {
           targetCenter = offsetLatLng;

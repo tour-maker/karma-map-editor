@@ -131,9 +131,29 @@ body.hide-ui-for-screenshot nav {
     top: 16px !important;
     left: 16px !important;
     transform: none !important;
-    width: calc(100vw - 84px) !important; /* Leave 68px for the opts circle */
+    width: calc(100vw - 96px) !important; /* Leave room for the opts circle, with a clear gap so they never merge */
     max-width: 440px !important;
     z-index: 1100 !important;
+  }
+
+  /* 2b. Viewer top bar (logo + Add Your Property + Sign In): moved below the search
+     row and allowed to wrap, so it never overflows under the search bar / opts circle */
+  .viewer-topbar {
+    position: absolute !important;
+    top: 70px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    max-width: none !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    z-index: 900 !important;
+  }
+
+  .viewer-topbar img {
+    height: 26px !important;
+    max-width: 130px !important;
   }
 
   /* 3. Opts Button Top Right */
@@ -564,12 +584,14 @@ div[style*="z-index: 1000001"] { display: none !important; }
 
 /* Google Places Autocomplete Dark Theme Overrides */
 .pac-container {
+  position: fixed !important;
   background-color: #1e293b !important;
   border: 1px solid rgba(245, 158, 11, 0.4) !important;
   border-radius: 8px !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
   margin-top: 6px !important;
   font-family: Inter, system-ui, -apple-system, sans-serif !important;
+  z-index: 3500 !important;
 }
 
 .pac-item {
