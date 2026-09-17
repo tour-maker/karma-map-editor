@@ -221,7 +221,6 @@ export const useMapStore = create(
           uiHidden: state.uiHidden,
           showLabels: state.showLabels,
           spreadsheetId: state.spreadsheetId,
-          globalAreaUnit: state.globalAreaUnit,
           customAreas: state.customAreas,
           syncedAreas: state.syncedAreas,
           isAdminAuthenticated: state.isAdminAuthenticated,

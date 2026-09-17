@@ -407,7 +407,8 @@ export default function PropertyInfoPanel() {
     const detectedUnit = getFeatureAreaUnit(displayFeature) || 'yards';
     const areaValue = Number.isFinite(numArea)
       ? (detectedUnit === 'wingha'
-        ? `${(numArea / YARDS_PER_WINGHA).toFixed(2)} Wingha`
+        // formData.area already holds the raw Wingha number from the sheet — display as-is, no conversion
+        ? `${numArea} Wingha`
         : `${numArea} Sq yard`)
       : (formData.area ? `${formData.area} Sq yard` : 'No Area');
 
@@ -439,12 +440,11 @@ export default function PropertyInfoPanel() {
       if (!displayFeature) return;
 
       const d = displayFeature.data || {};
-      const areaUnitState = useMapStore.getState().globalAreaUnit;
 
       let areaStr = '';
       if (d.area) {
-        areaStr = areaUnitState === 'wingha'
-          ? `${(Number(d.area) / (23.83 * 121)).toFixed(2)} Wingha`
+        areaStr = getFeatureAreaUnit(displayFeature) === 'wingha'
+          ? `${d.area} Wingha`
           : `${d.area} sq. yard`;
       }
 
