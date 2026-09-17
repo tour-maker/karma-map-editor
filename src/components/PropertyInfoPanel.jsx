@@ -401,8 +401,10 @@ export default function PropertyInfoPanel() {
     const tpOpFp = tpOpFpParts.join('   |   ');
     const rawName = (formData.name && formData.name.trim() !== '' && formData.name !== '-' && formData.name !== '_' && formData.name !== 'Polygon' && formData.name !== 'Marker') ? formData.name : '';
     const numArea = parseFloat(formData.area);
-    // Always reflect the property's own stored unit type, not the currently active global filter
-    const detectedUnit = getFeatureAreaUnit(displayFeature) || (formData.areaUnit && /wingha|vingha|vigha/i.test(formData.areaUnit) ? 'wingha' : 'yards');
+    // Always reflect the property's own stored unit type, not the currently active global filter.
+    // getFeatureAreaUnit already checks the raw stored areaUnit field first; only fall back to
+    // 'yards' when nothing in the feature's data indicates a unit at all.
+    const detectedUnit = getFeatureAreaUnit(displayFeature) || 'yards';
     const areaValue = Number.isFinite(numArea)
       ? (detectedUnit === 'wingha'
         ? `${(numArea / YARDS_PER_WINGHA).toFixed(2)} Wingha`

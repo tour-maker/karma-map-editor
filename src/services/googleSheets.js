@@ -843,6 +843,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const localPartyPhone = String(d.partyPhone || '').trim();
         const localBrokerName = String(d.brokerName || '').trim();
         const localBrokerPhone = String(d.brokerPhone || '').trim();
+        const localAreaUnit = String(d.areaUnit || '').trim();
 
         const tpChanged = sheetMatch.tp && sheetMatch.tp !== localTp;
         const opChanged = sheetMatch.op && sheetMatch.op !== localOp;
@@ -856,8 +857,9 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const partyPhoneChanged = sheetMatch.partyPhone && sheetMatch.partyPhone !== localPartyPhone;
         const brokerNameChanged = sheetMatch.brokerName && sheetMatch.brokerName !== localBrokerName;
         const brokerPhoneChanged = sheetMatch.brokerPhone && sheetMatch.brokerPhone !== localBrokerPhone;
+        const areaUnitChanged = sheetMatch.areaUnit && sheetMatch.areaUnit !== localAreaUnit;
 
-        if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged || partyNameChanged || partyPhoneChanged || brokerNameChanged || brokerPhoneChanged) {
+        if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged || partyNameChanged || partyPhoneChanged || brokerNameChanged || brokerPhoneChanged || areaUnitChanged) {
           if (f.syncStatus === 'edited') return f;
           updateCount++;
           const newType = sheetMatch.type || localType;
