@@ -36,27 +36,10 @@ function App() {
         });
     }
 
-    // Verify viewer account JWT with backend on every page load
-    const storedUserJWT = localStorage.getItem('karmaUserJWT');
-    if (storedUserJWT) {
-      fetch(`${API_BASE_URL}/api/auth/user-verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: storedUserJWT })
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.valid) {
-            useMapStore.getState().setViewerUsername(data.username);
-          } else {
-            localStorage.removeItem('karmaUserJWT');
-            useMapStore.getState().setViewerUsername(null);
-          }
-        })
-        .catch(() => {
-          // If server unreachable, keep the cached username but don't trust it for API calls
-        });
-    }
+    // Viewer accounts do not survive a page refresh: every fresh load starts signed out,
+    // and Map Labels always starts OFF (stale values from older persisted storage are reset too).
+    localStorage.removeItem('karmaUserJWT');
+    useMapStore.setState({ viewerUsername: null, showLabels: false });
 
     // Hydrate Google token from store if it exists
     if (googleAccessToken) {

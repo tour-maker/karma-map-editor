@@ -219,12 +219,10 @@ export const useMapStore = create(
           appMode: state.appMode,
           theme: state.theme,
           uiHidden: state.uiHidden,
-          showLabels: state.showLabels,
           spreadsheetId: state.spreadsheetId,
           customAreas: state.customAreas,
           syncedAreas: state.syncedAreas,
           isAdminAuthenticated: state.isAdminAuthenticated,
-          viewerUsername: state.viewerUsername,
           googleAccessToken: state.googleAccessToken,
         };
       }

@@ -392,10 +392,15 @@ export default function PropertyInfoPanel() {
       if (match) fpVal = match[1];
     }
 
+    // A literal "-" is a placeholder dash, treated the same as an empty value
+    const hasValue = (v) => {
+      const s = String(v ?? '').trim();
+      return s !== '' && s !== '-';
+    };
     const tpOpFpParts = [];
-    if (tpVal) tpOpFpParts.push(`TP: ${tpVal}`);
-    if (opVal) tpOpFpParts.push(`OP: ${opVal}`);
-    if (fpVal) tpOpFpParts.push(`FP: ${fpVal}`);
+    if (hasValue(tpVal)) tpOpFpParts.push(`TP: ${tpVal}`);
+    if (hasValue(opVal)) tpOpFpParts.push(`OP: ${opVal}`);
+    if (hasValue(fpVal)) tpOpFpParts.push(`FP: ${fpVal}`);
     const tpOpFp = tpOpFpParts.join('   |   ');
     const rawName = (formData.name && formData.name.trim() !== '' && formData.name !== '-' && formData.name !== '_' && formData.name !== 'Polygon' && formData.name !== 'Marker') ? formData.name : '';
     const numArea = parseFloat(formData.area);
@@ -592,7 +597,7 @@ export default function PropertyInfoPanel() {
           </div>
 
 
-          {formData.remarks && (
+          {hasValue(formData.remarks) && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{
                 width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${themeColor}`,

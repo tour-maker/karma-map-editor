@@ -1,4 +1,3 @@
-import { FaRegShareSquare } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { getPublicShareUrl } from '../../utils/shareUrl';
@@ -281,7 +280,10 @@ ${getPublicShareUrl()}`;
         onClick={handleShare}
         title="Share map view"
       >
-        <FaRegShareSquare size={22} />
+        <span className="mobile-cta-box">
+          <FiShare2 size={22} color="#f59e0b" />
+        </span>
+        <span className="mobile-cta-label">Share</span>
       </button>
 
       {/* Outer Dock Container Anchored at Top 38% (NO transform: translateY(-50%) so top buttons NEVER move when opening!) */}

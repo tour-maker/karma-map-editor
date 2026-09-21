@@ -80,7 +80,7 @@ export default function WhatsAppCTA() {
       >
         <WhatsAppIcon color="#f59e0b" size={48} />
       </div>
-      <span className="desktop-only-text" style={{ 
+      <span className="desktop-only-text mobile-cta-label" style={{
         color: '#ffffff', 
         fontSize: '11px', 
         fontWeight: 600, 

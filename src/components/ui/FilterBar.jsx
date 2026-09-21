@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
@@ -6,6 +6,38 @@ import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
 import { isFeatureMatchingUnit } from '../../utils/unitFilter';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GLASS_BLUR, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
+
+const countPillStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 7,
+  padding: '6px 14px',
+  borderRadius: 999,
+  background: 'rgba(10, 14, 23, 0.85)',
+  border: '1px solid rgba(253, 183, 19, 0.35)',
+  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.35)',
+  whiteSpace: 'nowrap',
+  userSelect: 'none',
+  flexShrink: 0
+};
+
+const mobileChipStyle = (active) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '7px 12px',
+  borderRadius: 999,
+  border: active ? `1px solid ${GLASS_COLORS.borderActive}` : '1px solid rgba(255, 255, 255, 0.22)',
+  background: active ? 'rgba(245, 158, 11, 0.22)' : 'rgba(10, 14, 23, 0.78)',
+  backdropFilter: GLASS_BLUR,
+  WebkitBackdropFilter: GLASS_BLUR,
+  color: active ? '#f59e0b' : '#e2e8f0',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  boxShadow: '0 4px 14px rgba(0,0,0,0.4)'
+});
 
 const PushPinIcon = ({ color }) => (
   <svg width="18" height="24" viewBox="0 0 16 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -18,10 +50,14 @@ const PushPinIcon = ({ color }) => (
 // ---------------------------------------------------------------------------
 // 1. Primary Location Dropdown Component
 // ---------------------------------------------------------------------------
-function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false }) {
+function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, onOpenChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -45,7 +81,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto' }}>
+    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto', height: '100%' }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -53,7 +89,9 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
-          padding: '2px 4px',
+          // Trigger fills the whole bordered container so the first click anywhere on it opens the menu
+          padding: isInModal ? '0 14px' : '0 10px',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isInModal ? 'space-between' : 'flex-start',
@@ -109,7 +147,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           />
 
           <div style={{
-            maxHeight: 240,
+            maxHeight: isInModal ? 180 : 240,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -172,10 +210,14 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
 // ---------------------------------------------------------------------------
 // 2. Sub-Location Dropdown Component
 // ---------------------------------------------------------------------------
-function SubLocationDropdown({ subLocations, primaryName, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false }) {
+function SubLocationDropdown({ subLocations, primaryName, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, onOpenChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -199,7 +241,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto' }}>
+    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto', height: '100%' }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -207,7 +249,9 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
-          padding: '2px 4px',
+          // Trigger fills the whole bordered container so the first click anywhere on it opens the menu
+          padding: isInModal ? '0 14px' : '0 10px',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isInModal ? 'space-between' : 'flex-start',
@@ -263,7 +307,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           />
 
           <div style={{
-            maxHeight: 240,
+            maxHeight: isInModal ? 180 : 240,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -326,9 +370,13 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
 // ---------------------------------------------------------------------------
 // 3. Category Dropdown Component
 // ---------------------------------------------------------------------------
-function CategoryDropdown({ options, value, onChange, placeholder = 'Category', activeColor = '#f59e0b', isInModal = false }) {
+function CategoryDropdown({ options, value, onChange, placeholder = 'Category', activeColor = '#f59e0b', isInModal = false, onOpenChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -348,7 +396,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto' }}>
+    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto', height: '100%' }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -356,7 +404,9 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
-          padding: '2px 4px',
+          // Trigger fills the whole bordered container so the first click anywhere on it opens the menu
+          padding: isInModal ? '0 14px' : '0 10px',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isInModal ? 'space-between' : 'flex-start',
@@ -582,6 +632,28 @@ export default function FilterBar() {
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
 
+  // While any desktop dropdown is open the whole dock is lifted above sibling overlays
+  // (right dock, WhatsApp CTA, top bars) so the menu is never partially covered.
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const trackDropdown = useCallback((name, open) => {
+    setOpenDropdown(prev => (open ? name : (prev === name ? null : prev)));
+  }, []);
+  const onPrimaryOpen = useCallback((open) => trackDropdown('primary', open), [trackDropdown]);
+  const onSubOpen = useCallback((open) => trackDropdown('sub', open), [trackDropdown]);
+  const onCategoryOpen = useCallback((open) => trackDropdown('category', open), [trackDropdown]);
+
+  const handleResetAll = () => {
+    setFilterPrimary(null);
+    setFilterSecondary(null);
+    setFilterType(null);
+    setGlobalAreaUnit(null);
+    setSelectedFeatureId(null);
+    setIsInfoPanelOpen(false);
+    if (map && features.length > 0) {
+      fitAllBounds(map, features);
+    }
+  };
+
   const activeFiltersSummaryString = useMemo(() => {
     const parts = [];
     if (filterPrimary) parts.push(filterPrimary);
@@ -614,7 +686,7 @@ export default function FilterBar() {
           bottom: 0,
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 1000,
+          zIndex: openDropdown ? 1250 : 1000,
           height: 60,
           boxSizing: 'border-box',
           display: 'flex',
@@ -634,17 +706,7 @@ export default function FilterBar() {
         {isFilterActive && (
           <button
             type="button"
-            onClick={() => {
-              setFilterPrimary(null);
-              setFilterSecondary(null);
-              setFilterType(null);
-              setGlobalAreaUnit(null);
-              setSelectedFeatureId(null);
-              setIsInfoPanelOpen(false);
-              if (map && features.length > 0) {
-                fitAllBounds(map, features);
-              }
-            }}
+            onClick={handleResetAll}
             title="Reset all applied filters"
             style={{
               position: 'absolute',
@@ -736,7 +798,7 @@ export default function FilterBar() {
           border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
-          padding: '0 10px',
+          padding: 0,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box'
@@ -747,6 +809,7 @@ export default function FilterBar() {
             onChange={(cat) => handleFilterChange({ primary: cat, secondary: null })}
             placeholder="Location"
             activeColor="#f59e0b"
+            onOpenChange={onPrimaryOpen}
           />
         </div>
 
@@ -760,7 +823,7 @@ export default function FilterBar() {
               border: `1px solid ${GLASS_COLORS.border}`,
               background: 'rgba(30, 41, 59, 0.5)',
               borderRadius: 10,
-              padding: '0 10px',
+              padding: 0,
               display: 'flex',
               alignItems: 'center',
               boxSizing: 'border-box'
@@ -772,6 +835,7 @@ export default function FilterBar() {
                 onChange={(sub) => handleFilterChange({ secondary: sub })}
                 placeholder="Location"
                 activeColor="#f59e0b"
+                onOpenChange={onSubOpen}
               />
             </div>
             <FiArrowRight size={16} color="#ffffff" className="filter-arrow-divider" style={{ flexShrink: 0 }} />
@@ -852,7 +916,7 @@ export default function FilterBar() {
           border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
-          padding: '0 10px',
+          padding: 0,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box'
@@ -863,45 +927,44 @@ export default function FilterBar() {
             onChange={(type) => handleFilterChange({ type })}
             placeholder="Category"
             activeColor="#f59e0b"
+            onOpenChange={onCategoryOpen}
           />
         </div>
 
         {/* Vertical Divider */}
         <div className="filter-divider" style={{ width: 1, height: 26, background: 'rgba(255, 255, 255, 0.18)', flexShrink: 0 }} />
 
-        {/* 5. Property Count Badge */}
+        {/* 5. Property Count Badge — dark pill: icon + bold number + "found" */}
         <div
           key={animateKey}
           title={`${visibleCount} matching property feature${visibleCount === 1 ? '' : 's'}`}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            whiteSpace: 'nowrap',
-            userSelect: 'none',
-            padding: '0 2px'
-          }}
+          style={countPillStyle}
         >
-          <div style={{
-            background: 'rgba(245, 158, 11, 0.12)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            padding: '2px 8px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.1), 0 2px 6px rgba(245, 158, 11, 0.15)'
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#fbbf24', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.5px' }}>
-              {visibleCount}
-            </span>
-          </div>
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: '#cbd5e1', letterSpacing: '0.3px', marginLeft: 4 }} className="desktop-only-text">
-            properties found
+          <FiMapPin size={15} color="#FDB713" />
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#f8fafc', fontVariantNumeric: 'tabular-nums' }}>
+            {visibleCount}
           </span>
+          <span style={{ fontSize: 12.5, fontWeight: 500, color: '#94a3b8' }}>found</span>
         </div>
 
       </div>
+
+      {/* MOBILE: Landmarks + Map Labels toggles, sitting above the Filters dock */}
+      {!isMobileSheetOpen && (
+        <div
+          className="mobile-toggle-chips"
+          style={{ position: 'fixed', bottom: 70, left: 16, zIndex: 1000, gap: 8 }}
+        >
+          <button type="button" onClick={toggleLandmarks} style={mobileChipStyle(showLandmarks)}>
+            {showLandmarks ? <FiEye size={14} /> : <FiEyeOff size={14} />}
+            Landmarks
+          </button>
+          <button type="button" onClick={toggleLabels} style={mobileChipStyle(showLabels)}>
+            <FiType size={14} />
+            Labels
+          </button>
+        </div>
+      )}
 
       {/* MOBILE FILTERS DOCK NOTCH (Matches User Mockup Screenshot 100%) */}
       <div
@@ -966,34 +1029,23 @@ export default function FilterBar() {
         </div>
 
         {/* Right: Count Badge (e.g. 307 found) */}
-        <div style={{
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          background: 'rgba(245, 158, 11, 0.10)',
-          borderRadius: GLASS_RADIUS.control,
-          padding: '4px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          flexShrink: 0
-        }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#f59e0b', fontVariantNumeric: 'tabular-nums' }}>
+        <div style={{ ...countPillStyle, padding: '5px 12px' }}>
+          <FiMapPin size={14} color="#FDB713" />
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: '#f8fafc', fontVariantNumeric: 'tabular-nums' }}>
             {visibleCount}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>
-            found
-          </span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>found</span>
         </div>
       </div>
 
-      {/* MOBILE FILTER SHEET MODAL OVERLAY */}
+      {/* MOBILE FILTER SHEET OVERLAY — transparent + click-through so the map above the sheet stays pannable/clickable */}
       {isMobileSheetOpen && (
         <div
-          onClick={() => setIsMobileSheetOpen(false)}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(8px)',
+            background: 'transparent',
+            pointerEvents: 'none',
             zIndex: 2200,
             display: 'flex',
             alignItems: 'flex-end',
@@ -1004,6 +1056,7 @@ export default function FilterBar() {
             onClick={(e) => e.stopPropagation()}
             style={{
               ...glassPanelStyle,
+              pointerEvents: 'auto',
               width: '100%',
               maxWidth: 480,
               borderRadius: `${GLASS_RADIUS.panel}px ${GLASS_RADIUS.panel}px 0 0`,
@@ -1018,49 +1071,41 @@ export default function FilterBar() {
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* Reset All sits before the title, and only exists while something is selected */}
+                {isFilterActive && (
+                  <button
+                    type="button"
+                    onClick={handleResetAll}
+                    title="Reset all applied filters"
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.14)',
+                      border: `1px solid ${GLASS_COLORS.borderActive}`,
+                      color: '#f59e0b',
+                      borderRadius: GLASS_RADIUS.control,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <FiRefreshCw size={12} /> Reset All
+                  </button>
+                )}
                 <FiSliders size={20} color="#f59e0b" />
                 <span style={{ fontSize: 18, color: '#ffffff', ...GLASS_FONT.serif }}>Map Filters</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterPrimary(null);
-                    setFilterSecondary(null);
-                    setFilterType(null);
-                    setGlobalAreaUnit(null);
-                    setSelectedFeatureId(null);
-                    setIsInfoPanelOpen(false);
-                    if (map && features.length > 0) fitAllBounds(map, features);
-                  }}
-                  title="Reset all applied filters"
-                  style={{
-                    background: isFilterActive ? 'rgba(245, 158, 11, 0.14)' : 'transparent',
-                    border: isFilterActive ? `1px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
-                    color: isFilterActive ? '#f59e0b' : '#94a3b8',
-                    borderRadius: GLASS_RADIUS.control,
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <FiRefreshCw size={12} /> Reset All
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsMobileSheetOpen(false)}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
-                >
-                  <FiX size={20} color="#94a3b8" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileSheetOpen(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
+              >
+                <FiX size={20} color="#94a3b8" />
+              </button>
             </div>
 
             {/* Filter Controls Stack */}
@@ -1070,7 +1115,7 @@ export default function FilterBar() {
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
                 <div style={{
                   height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: GLASS_RADIUS.control, padding: '0 14px', display: 'flex', alignItems: 'center'
+                  borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
                 }}>
                   <PrimaryLocationDropdown
                     primaryCategories={primaryCategories}
@@ -1089,7 +1134,7 @@ export default function FilterBar() {
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
                   <div style={{
                     height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
-                    borderRadius: GLASS_RADIUS.control, padding: '0 14px', display: 'flex', alignItems: 'center'
+                    borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
                   }}>
                     <SubLocationDropdown
                       subLocations={subLocationsForPrimary}
@@ -1109,7 +1154,7 @@ export default function FilterBar() {
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Property Category</label>
                 <div style={{
                   height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: GLASS_RADIUS.control, padding: '0 14px', display: 'flex', alignItems: 'center'
+                  borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
                 }}>
                   <CategoryDropdown
                     options={categoryOptions}
@@ -1158,44 +1203,6 @@ export default function FilterBar() {
                       Wingha
                     </button>
                   </div>
-                </div>
-
-                {/* Landmarks */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Landmarks</label>
-                  <button
-                    type="button"
-                    onClick={toggleLandmarks}
-                    style={{
-                      height: 42, border: showLandmarks ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
-                      background: showLandmarks ? 'rgba(245, 158, 11, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                      color: showLandmarks ? '#f59e0b' : '#94a3b8',
-                      borderRadius: GLASS_RADIUS.control, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                    }}
-                  >
-                    {showLandmarks ? <FiEye size={16} /> : <FiEyeOff size={16} />}
-                    {showLandmarks ? 'On' : 'Off'}
-                  </button>
-                </div>
-
-                {/* Map Labels */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Map Labels</label>
-                  <button
-                    type="button"
-                    onClick={toggleLabels}
-                    style={{
-                      height: 42, border: showLabels ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
-                      background: showLabels ? 'rgba(245, 158, 11, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                      color: showLabels ? '#f59e0b' : '#94a3b8',
-                      borderRadius: GLASS_RADIUS.control, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                    }}
-                  >
-                    <FiType size={16} />
-                    {showLabels ? 'On' : 'Off'}
-                  </button>
                 </div>
               </div>
 

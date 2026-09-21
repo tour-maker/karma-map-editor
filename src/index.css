@@ -147,8 +147,14 @@ body.hide-ui-for-screenshot nav {
 
 /* Desktop Default Styles for Mobile-Specific Elements */
 .mobile-filter-dock-bar,
-.mobile-only-whatsapp-btn {
+.mobile-only-whatsapp-btn,
+.mobile-toggle-chips {
   display: none !important;
+}
+
+/* Search bar keeps the app's dark surface (the shared glass-input class is otherwise near-transparent) */
+.search-box-container input.karma-glass-input {
+  background: rgba(10, 14, 23, 0.82) !important;
 }
 
 .whatsapp-cta-button {
@@ -180,7 +186,8 @@ body.hide-ui-for-screenshot nav {
     display: none !important;
   }
 
-  .mobile-filter-dock-bar {
+  .mobile-filter-dock-bar,
+  .mobile-toggle-chips {
     display: flex !important;
   }
 
@@ -286,32 +293,72 @@ body.hide-ui-for-screenshot nav {
     display: none !important;
   }
 
+  /* Mobile Share + Contact: icon in a rounded box, label text underneath */
   .mobile-share-floating-btn {
     display: flex !important;
+    flex-direction: column !important;
     position: fixed !important;
-    bottom: 152px !important;
-    right: 20px !important;
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 50% !important;
+    bottom: 156px !important;
+    right: 16px !important;
+    width: 64px !important;
+    height: auto !important;
+    gap: 4px !important;
     background: transparent !important;
     border: none !important;
+    padding: 0 !important;
     align-items: center !important;
     justify-content: center !important;
     box-shadow: none !important;
     z-index: 1050 !important;
     cursor: pointer !important;
   }
-  
-  .mobile-share-floating-btn svg {
-    color: #f59e0b !important;
+
+  .mobile-cta-box,
+  .whatsapp-cta-button {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 14px !important;
+    background: rgba(10, 14, 23, 0.78) !important;
+    border: 1px solid rgba(253, 183, 19, 0.35) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+    filter: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mobile-cta-box {
+    display: flex !important;
+  }
+
+  .whatsapp-cta-button svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  /* The WhatsApp glyph ships with its own dark disc; the box replaces it */
+  .whatsapp-cta-button svg path:first-child {
+    display: none;
+  }
+
+  .mobile-cta-label {
+    display: block !important;
+    color: #f1f5f9 !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   }
 
   /* Show Standalone WhatsApp wrapper on Mobile portrait (Bottom Right CTA) */
   .whatsapp-cta-wrapper {
     display: flex !important;
-    bottom: 74px !important;
+    bottom: 78px !important;
     right: 16px !important;
+    width: 64px !important;
+    gap: 4px !important;
   }
 
 
@@ -557,6 +604,7 @@ div[style*="z-index: 1000001"] { display: none !important; }
   
   /* 1. HIDE MOBILE ELEMENTS */
   .mobile-filter-dock-bar,
+  .mobile-toggle-chips,
   .mobile-projects-dock-bar {
     display: none !important;
   }
