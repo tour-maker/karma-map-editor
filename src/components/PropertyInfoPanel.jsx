@@ -4,6 +4,7 @@ import { useMapStore } from '../store/useMapStore';
 import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
 import { getFeatureAreaUnit } from '../utils/unitFilter';
+import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
@@ -375,32 +376,12 @@ export default function PropertyInfoPanel() {
   };
 
   if (!isEdit) {
-    let tpVal = formData.tp;
-    let opVal = formData.op;
-    let fpVal = formData.fp;
-
-    if (!tpVal && formData.name) {
-      const match = formData.name.match(/TP[:\s]*([A-Z0-9\/]+)/i);
-      if (match) tpVal = match[1];
-    }
-    if (!opVal && formData.name) {
-      const match = formData.name.match(/OP[:\s]*([A-Z0-9\/]+)/i);
-      if (match) opVal = match[1];
-    }
-    if (!fpVal && formData.name) {
-      const match = formData.name.match(/FP[:\s]*([A-Z0-9\/]+)/i);
-      if (match) fpVal = match[1];
-    }
-
-    // A literal "-" is a placeholder dash, treated the same as an empty value
-    const hasValue = (v) => {
-      const s = String(v ?? '').trim();
-      return s !== '' && s !== '-';
-    };
+    // Hide a field only when it is genuinely empty or exactly "-"; real values always show
+    const { tp: tpVal, op: opVal, fp: fpVal } = resolveTpOpFp(formData);
     const tpOpFpParts = [];
-    if (hasValue(tpVal)) tpOpFpParts.push(`TP: ${tpVal}`);
-    if (hasValue(opVal)) tpOpFpParts.push(`OP: ${opVal}`);
-    if (hasValue(fpVal)) tpOpFpParts.push(`FP: ${fpVal}`);
+    if (tpVal) tpOpFpParts.push(`TP: ${tpVal}`);
+    if (opVal) tpOpFpParts.push(`OP: ${opVal}`);
+    if (fpVal) tpOpFpParts.push(`FP: ${fpVal}`);
     const tpOpFp = tpOpFpParts.join('   |   ');
     const rawName = (formData.name && formData.name.trim() !== '' && formData.name !== '-' && formData.name !== '_' && formData.name !== 'Polygon' && formData.name !== 'Marker') ? formData.name : '';
     const numArea = parseFloat(formData.area);
@@ -597,7 +578,7 @@ export default function PropertyInfoPanel() {
           </div>
 
 
-          {hasValue(formData.remarks) && (
+          {isMeaningfulValue(formData.remarks) && (
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
               <div style={{
                 width: 18, height: 18, borderRadius: '50%', border: `1.5px solid ${themeColor}`,
