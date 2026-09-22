@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiEdit2 } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
@@ -132,7 +132,14 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const filterType = useMapStore(state => state.filterType);
   const customAreas = useMapStore(state => state.customAreas) || [];
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
+  const setFilterSecondary = useMapStore(state => state.setFilterSecondary);
+  const renameArea = useMapStore(state => state.renameArea);
   const [isAddingArea, setIsAddingArea] = useState(false);
+
+  // Sub-area dropdown (Areas tab): which area's sub-locations are currently shown,
+  // captured at open-time so the floating panel isn't tied to the virtualized row.
+  const [openSubareaDropdown, setOpenSubareaDropdown] = useState(null); // { areaName, subLocations, features, rect } | null
+  const [editingSubarea, setEditingSubarea] = useState(null); // { oldName, value } | null
 
   // Show all visible features in the panel, filtered by global map filters
   const polygons = useMemo(() => {
@@ -333,18 +340,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
         }
       });
     } else if (activeTab === 'landmarks') {
+      // Flat list — landmarks span many different cities/locations, not sub-areas of a
+      // single parent, so grouping them under a "Surat (N)" style header was misleading.
       filteredLandmarks.forEach(l => {
-        const groupName = l.parentLocation || determineParentLocation(l.location) || 'Surat';
-        if (!groups[groupName]) groups[groupName] = [];
-        groups[groupName].push({ itemType: 'landmark', landmark: l, feature: l.feature });
-      });
-
-      Object.keys(groups).sort().forEach(groupName => {
-        const isExpanded = expandedGroups[groupName] !== false;
-        rows.push({ type: 'header', groupName, count: groups[groupName].length, isExpanded });
-        if (isExpanded) {
-          groups[groupName].forEach(item => rows.push({ type: 'item', ...item }));
-        }
+        rows.push({ type: 'item', itemType: 'landmark', landmark: l, feature: l.feature });
       });
     } else if (activeTab === 'areas') {
       filteredAreas.forEach(area => {
@@ -416,13 +415,21 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 </a>
               )}
               {appMode === 'edit' && (
-                <span style={{
-                  fontSize: 10, fontWeight: 700, color: '#f59e0b',
-                  background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
-                  padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
-                }}>
-                  Map Editor
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('karmaAdminJWT');
+                    useMapStore.getState().setIsAdminAuthenticated(false);
+                  }}
+                  title="Sign out of the admin editor"
+                  style={{
+                    fontSize: 10, fontWeight: 700, color: '#ef4444', cursor: 'pointer',
+                    background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.4)',
+                    padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
+                  }}
+                >
+                  Sign Out
+                </button>
               )}
               {isMobileOpen && (
                 <button
@@ -1079,16 +1086,45 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           </span>
                         </div>
 
-                        <div style={{
-                          fontSize: 11, fontWeight: 400, opacity: 0.7,
-                          color: isDark ? '#94a3b8' : '#64748b',
-                          display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          marginTop: 1,
-                          paddingLeft: 32
-                        }}>
-                          {subLocsText}
-                        </div>
+                        {row.area.subLocations && row.area.subLocations.length > 0 ? (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setEditingSubarea(null);
+                              setOpenSubareaDropdown(prev => (prev?.areaName === row.area.name ? null : {
+                                areaName: row.area.name,
+                                subLocations: row.area.subLocations,
+                                features: row.area.features,
+                                rect
+                              }));
+                            }}
+                            title="View & edit sub-areas"
+                            className="btn-hover-effect"
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 5,
+                              fontSize: 11, fontWeight: 600, opacity: 0.85,
+                              color: isDark ? '#d9a74a' : '#b45309',
+                              overflow: 'hidden', marginTop: 1, paddingLeft: 32, cursor: 'pointer'
+                            }}
+                          >
+                            <FiChevronDown size={12} style={{ flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {row.area.subLocations.length} sub-area{row.area.subLocations.length === 1 ? '' : 's'}: {subLocsText}
+                            </span>
+                          </div>
+                        ) : (
+                          <div style={{
+                            fontSize: 11, fontWeight: 400, opacity: 0.7,
+                            color: isDark ? '#94a3b8' : '#64748b',
+                            display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            marginTop: 1,
+                            paddingLeft: 32
+                          }}>
+                            {subLocsText}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -1231,6 +1267,114 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           dropdown of sidebar
         </span>
       </div>
+
+      {/* SUB-AREA DROPDOWN (Areas tab): floated with position:fixed, anchored to the
+          triggering row's rect, so it isn't clipped by the virtualized list's scroll
+          container and never affects that row's fixed measured height. */}
+      {openSubareaDropdown && (
+        <>
+          <div
+            onClick={() => { setOpenSubareaDropdown(null); setEditingSubarea(null); }}
+            style={{ position: 'fixed', inset: 0, zIndex: 2400 }}
+          />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: openSubareaDropdown.rect.bottom + 6,
+              left: openSubareaDropdown.rect.left,
+              minWidth: Math.max(220, openSubareaDropdown.rect.width),
+              maxWidth: 300,
+              maxHeight: 280,
+              overflowY: 'auto',
+              zIndex: 2401,
+              background: isDark ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
+              border: isDark ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #e2e8f0',
+              borderRadius: 12,
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)',
+              padding: 6
+            }}
+          >
+            {openSubareaDropdown.subLocations.map(subName => {
+              const isEditing = editingSubarea?.oldName === subName;
+              return (
+                <div
+                  key={subName}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '7px 8px', borderRadius: 8,
+                    cursor: isEditing ? 'default' : 'pointer'
+                  }}
+                  className={isEditing ? '' : 'btn-hover-effect'}
+                  onClick={() => {
+                    if (isEditing) return;
+                    const subFeatures = openSubareaDropdown.features.filter(f => f.data?.location === subName);
+                    if (map && subFeatures.length > 0) {
+                      if (subFeatures.length === 1) zoomToProperty(map, subFeatures[0]);
+                      else fitAllBounds(map, subFeatures);
+                    }
+                    setFilterPrimary(openSubareaDropdown.areaName);
+                    setFilterSecondary(subName);
+                    setOpenSubareaDropdown(null);
+                  }}
+                >
+                  <FiMapPin size={12} color="#f59e0b" style={{ flexShrink: 0 }} />
+                  {isEditing ? (
+                    <input
+                      autoFocus
+                      value={editingSubarea.value}
+                      onChange={(e) => setEditingSubarea(prev => ({ ...prev, value: e.target.value }))}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') e.currentTarget.blur();
+                        if (e.key === 'Escape') setEditingSubarea(null);
+                      }}
+                      onBlur={() => {
+                        const newName = editingSubarea.value.trim();
+                        if (newName && newName !== editingSubarea.oldName) {
+                          renameArea(editingSubarea.oldName, newName);
+                          setOpenSubareaDropdown(null);
+                        }
+                        setEditingSubarea(null);
+                      }}
+                      style={{
+                        flex: 1, fontSize: 12.5, fontWeight: 600, padding: '3px 6px', borderRadius: 6,
+                        border: '1px solid rgba(245, 158, 11, 0.5)',
+                        background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff',
+                        color: isDark ? '#f8fafc' : '#0f172a', outline: 'none'
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <span style={{
+                        flex: 1, fontSize: 12.5, fontWeight: 600,
+                        color: isDark ? '#e2e8f0' : '#1e293b',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                      }}>
+                        {subName}
+                      </span>
+                      <button
+                        type="button"
+                        title={`Rename ${subName}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingSubarea({ oldName: subName, value: subName });
+                        }}
+                        style={{
+                          background: 'transparent', border: 'none', cursor: 'pointer',
+                          color: '#94a3b8', display: 'flex', alignItems: 'center', padding: 3, flexShrink: 0
+                        }}
+                      >
+                        <FiEdit2 size={12} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </>
   );
 }

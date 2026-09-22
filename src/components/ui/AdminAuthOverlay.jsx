@@ -9,11 +9,13 @@ export default function AdminAuthOverlay() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
@@ -28,14 +30,13 @@ export default function AdminAuthOverlay() {
           style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
         });
       } else {
-        toast.error('Invalid ID or Password!', {
-          style: { background: '#0f172a', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }
-        });
+        // Shown inline (not just as a toast) — this overlay's z-index sits above the
+        // toast container, so a toast alone renders invisibly behind it.
+        setErrorMessage('Incorrect username or password.');
       }
     } catch (err) {
-      toast.error('Cannot reach server. Make sure the backend is running.', {
-        style: { background: '#0f172a', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }
-      });
+      console.error('Admin login error:', err);
+      setErrorMessage('Cannot reach server. Make sure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -91,7 +92,7 @@ export default function AdminAuthOverlay() {
             <input
               type="text"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); setErrorMessage(''); }}
               placeholder="Enter ID"
               style={{
                 width: '100%',
@@ -113,7 +114,7 @@ export default function AdminAuthOverlay() {
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
                 placeholder="Enter Password"
                 style={{
                   width: '100%',
@@ -149,6 +150,17 @@ export default function AdminAuthOverlay() {
               </button>
             </div>
           </div>
+
+          {errorMessage && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: 10, padding: '10px 12px',
+              color: '#f87171', fontSize: 13, fontWeight: 600, textAlign: 'left'
+            }}>
+              {errorMessage}
+            </div>
+          )}
 
           <button
             type="submit"

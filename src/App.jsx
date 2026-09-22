@@ -120,30 +120,21 @@ function App() {
           >
             {googleSheetsConnected ? 'Google Sheets Connected' : 'Connect Google Sheets'}
           </button> */}
-          <button
-            onClick={() => {
-              localStorage.removeItem('karmaAdminJWT');
-              useMapStore.getState().setIsAdminAuthenticated(false);
-            }}
-            style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.5)',
-              color: '#ef4444',
-              borderRadius: 8,
-              padding: '6px 14px',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s',
-              fontFamily: 'Inter, system-ui, sans-serif'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-          >
-            Logout
-          </button>
+          <span style={{
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            color: '#f59e0b',
+            borderRadius: 12,
+            padding: '3px 9px',
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            backdropFilter: 'blur(8px)',
+            fontFamily: 'Inter, system-ui, sans-serif'
+          }}>
+            Map Editor
+          </span>
         </div>
       )}
       <Toaster position="top-center" />

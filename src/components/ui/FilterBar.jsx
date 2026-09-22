@@ -528,23 +528,42 @@ export default function FilterBar() {
 
   const [animateKey, setAnimateKey] = useState(0);
 
+  // Tracks whether the current filterType was set BY US (single-option auto-select)
+  // rather than by the user, so a location change can safely clear it without ever
+  // touching a category the user actually picked themselves.
+  const autoSelectedCategoryRef = useRef(null);
+
   const handleFilterChange = (updates) => {
     let nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
     let nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
     const nextAreaUnit = updates.areaUnit !== undefined ? updates.areaUnit : globalAreaUnit;
     let nextType = updates.type !== undefined ? updates.type : filterType;
 
+    if (updates.type !== undefined) {
+      autoSelectedCategoryRef.current = null; // a manual pick, not an auto-selection
+    }
+
     // Clear the selected category if it doesn't apply to the newly selected area unit
     if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit).includes(nextType)) {
       nextType = null;
     }
 
-    // Location -> Category: clear an already-active category that has zero properties
-    // in the newly selected location (secondary sub-location if set, else the primary)
-    if ((updates.primary !== undefined || updates.secondary !== undefined) && nextType) {
+    // Location -> Category: auto-select the sole category when the new location narrows
+    // it down to exactly one option; clear it again once 2+ (or 0) options are available —
+    // but only when the active category is one we auto-selected, never a manual pick.
+    if (updates.primary !== undefined || updates.secondary !== undefined) {
       const allowedCategories = getCategoriesForLocation(locationCategoryMatrix, nextSecondary || nextPrimary);
-      if (allowedCategories && !allowedCategories.includes(nextType)) {
-        nextType = null;
+      if (allowedCategories === null) {
+        if (nextType && autoSelectedCategoryRef.current === nextType) nextType = null;
+        autoSelectedCategoryRef.current = null;
+      } else if (allowedCategories.length === 1) {
+        nextType = allowedCategories[0];
+        autoSelectedCategoryRef.current = nextType;
+      } else {
+        if (nextType && (!allowedCategories.includes(nextType) || autoSelectedCategoryRef.current === nextType)) {
+          nextType = null;
+        }
+        autoSelectedCategoryRef.current = null;
       }
     }
 
@@ -679,6 +698,7 @@ export default function FilterBar() {
   const onCategoryOpen = useCallback((open) => trackDropdown('category', open), [trackDropdown]);
 
   const handleResetAll = () => {
+    autoSelectedCategoryRef.current = null;
     setFilterPrimary(null);
     setFilterSecondary(null);
     setFilterType(null);
