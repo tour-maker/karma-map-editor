@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, getExcludedCategoriesForLocation, getExcludedLocationsForCategory } from '../../config/categories';
+import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
@@ -521,6 +521,11 @@ export default function FilterBar() {
     return buildDynamicLocationMap(features);
   }, [features]);
 
+  // Live Location <-> Category matrix, derived straight from the actual features —
+  // no per-location config. Recomputes automatically as properties are added,
+  // removed or recategorized in the sheet.
+  const locationCategoryMatrix = useMemo(() => buildLocationCategoryMatrix(features), [features]);
+
   const [animateKey, setAnimateKey] = useState(0);
 
   const handleFilterChange = (updates) => {
@@ -530,21 +535,27 @@ export default function FilterBar() {
     let nextType = updates.type !== undefined ? updates.type : filterType;
 
     // Clear the selected category if it doesn't apply to the newly selected area unit
-    if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit, nextPrimary).includes(nextType)) {
+    if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit).includes(nextType)) {
       nextType = null;
     }
 
-    // Location -> Category: e.g. selecting Surat auto-clears an already-active
-    // Industrial/Agriculture/Ready Farmhouse category, per LOCATION_CATEGORY_EXCLUSIONS
-    if (updates.primary !== undefined && nextType && getExcludedCategoriesForLocation(nextPrimary).includes(nextType)) {
-      nextType = null;
+    // Location -> Category: clear an already-active category that has zero properties
+    // in the newly selected location (secondary sub-location if set, else the primary)
+    if ((updates.primary !== undefined || updates.secondary !== undefined) && nextType) {
+      const allowedCategories = getCategoriesForLocation(locationCategoryMatrix, nextSecondary || nextPrimary);
+      if (allowedCategories && !allowedCategories.includes(nextType)) {
+        nextType = null;
+      }
     }
 
-    // Category -> Location (reverse of the above): e.g. selecting Industrial
-    // auto-clears an already-active Surat location filter
-    if (updates.type !== undefined && nextPrimary && getExcludedLocationsForCategory(nextType).includes(nextPrimary)) {
-      nextPrimary = null;
-      nextSecondary = null;
+    // Category -> Location (reverse of the above): clear an already-active location
+    // that has zero properties in the newly selected category
+    if (updates.type !== undefined && nextPrimary) {
+      const allowedLocations = getLocationsForCategory(locationCategoryMatrix, nextType);
+      if (allowedLocations && !allowedLocations.includes(nextPrimary)) {
+        nextPrimary = null;
+        nextSecondary = null;
+      }
     }
 
     if (updates.primary !== undefined) setFilterPrimary(updates.primary);
@@ -625,18 +636,18 @@ export default function FilterBar() {
     setAnimateKey(prev => prev + 1);
   }, [visibleCount, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
 
-  // Locations excluded because they don't apply to the active category (e.g. Industrial
-  // hides Surat) are filtered out here, so the dropdown never even offers them.
+  // Locations with zero properties in the active category are filtered out here — computed
+  // live from locationCategoryMatrix, so it never needs a per-location config entry.
   const primaryCategories = useMemo(() => {
-    const excludedLocations = getExcludedLocationsForCategory(filterType);
-    return Object.keys(dynamicCategoryMap)
-      .filter(loc => !excludedLocations.includes(loc))
+    const allowedLocations = getLocationsForCategory(locationCategoryMatrix, filterType);
+    const base = Object.keys(dynamicCategoryMap);
+    return (allowedLocations ? base.filter(loc => allowedLocations.includes(loc)) : base)
       .sort((a, b) => {
         if (a.toLowerCase() === 'surat') return -1;
         if (b.toLowerCase() === 'surat') return 1;
         return a.localeCompare(b);
       });
-  }, [dynamicCategoryMap, filterType]);
+  }, [dynamicCategoryMap, locationCategoryMatrix, filterType]);
 
   // Secondary location field appears whenever the selected primary location actually
   // has sub-locations in the live data (not just Surat — e.g. "NH 48 , Palsana" too).
@@ -646,7 +657,13 @@ export default function FilterBar() {
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
 
-  const categoryOptions = useMemo(() => getCategoryOptionsForUnit(globalAreaUnit, filterPrimary), [globalAreaUnit, filterPrimary]);
+  // Categories with zero properties in the active location (sub-location takes precedence
+  // over the broader primary when both are set) are filtered out — also live from the matrix.
+  const categoryOptions = useMemo(() => {
+    const options = getCategoryOptionsForUnit(globalAreaUnit);
+    const allowedCategories = getCategoriesForLocation(locationCategoryMatrix, filterSecondary || filterPrimary);
+    return allowedCategories ? options.filter(t => allowedCategories.includes(t)) : options;
+  }, [globalAreaUnit, locationCategoryMatrix, filterPrimary, filterSecondary]);
   const isFilterActive = Boolean(filterPrimary || filterSecondary || filterType || globalAreaUnit);
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);

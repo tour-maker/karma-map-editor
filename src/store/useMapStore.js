@@ -109,7 +109,7 @@ export const useMapStore = create(
         // Clears the active category filter if it no longer applies to the new area unit —
         // guards against any caller (not just FilterBar) changing globalAreaUnit directly.
         setGlobalAreaUnit: (unit) => set((state) => {
-          const filterType = state.filterType && !getCategoryOptionsForUnit(unit, state.filterPrimary).includes(state.filterType)
+          const filterType = state.filterType && !getCategoryOptionsForUnit(unit).includes(state.filterType)
             ? null
             : state.filterType;
           return { globalAreaUnit: unit, filterType };
