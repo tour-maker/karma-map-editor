@@ -83,12 +83,36 @@ export default function MapEditor() {
   const [authIntent, setAuthIntent] = useState('account'); // 'account' | 'add'
   const hasInitialFitRef = useRef(false);
 
-  // Fit all pins into the initial viewport once, as soon as both the map and data are ready
+  // Fit all pins into the initial viewport once, as soon as both the map and data are ready —
+  // unless a specific plot was requested via ?feature=<id> (share links), which takes over below.
   useEffect(() => {
     if (hasInitialFitRef.current || !map || features.length === 0) return;
     hasInitialFitRef.current = true;
+    const sharedFeatureId = new URLSearchParams(window.location.search).get('feature');
+    if (sharedFeatureId) return;
     fitAllBounds(map, features.filter(f => f.style?.visible !== false));
   }, [map, features]);
+
+  // Land directly on a shared plot (?feature=<id>, set by the backend's /share/:id preview
+  // route) once its data has loaded — same lookup fallback (id, then TP/FP) the share route uses.
+  const hasAppliedSharedFeatureRef = useRef(false);
+  useEffect(() => {
+    if (hasAppliedSharedFeatureRef.current || !map || features.length === 0) return;
+    const sharedFeatureId = new URLSearchParams(window.location.search).get('feature');
+    if (!sharedFeatureId) return;
+
+    const sharedFeature = features.find(f => {
+      if (f.id === sharedFeatureId) return true;
+      const d = f.data || {};
+      return Boolean((d.tp || d.fp) && `${d.tp || ''}_${d.fp || ''}` === sharedFeatureId);
+    });
+    if (!sharedFeature) return;
+
+    hasAppliedSharedFeatureRef.current = true;
+    setSelectedFeatureId(sharedFeature.id);
+    setIsInfoPanelOpen(true);
+    zoomToProperty(map, sharedFeature);
+  }, [map, features, setSelectedFeatureId, setIsInfoPanelOpen]);
 
   const handleAddProperty = () => {
     if (!useMapStore.getState().viewerUsername) {

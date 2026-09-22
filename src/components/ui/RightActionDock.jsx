@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { getPublicShareUrl } from '../../utils/shareUrl';
+import { getPublicShareUrl, getPlotShareUrl } from '../../utils/shareUrl';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
@@ -97,10 +97,8 @@ export default function RightActionDock() {
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
     const selectedFeature = features.find(f => f.id === selectedFeatureId);
 
-    const shareUrl = new URL(getPublicShareUrl());
-
     if (selectedFeature) {
-      shareUrl.searchParams.set('feature', selectedFeature.id);
+      const shareUrl = new URL(getPlotShareUrl(selectedFeature.id));
       const d = selectedFeature.data || {};
       const title = d.name || d.location || `Polygon ${selectedFeature.id}`;
       const tpFp = [

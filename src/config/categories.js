@@ -42,14 +42,39 @@ export const DEFAULT_PROPERTY_COLOR = '#38bdf8';
 const CATEGORIES_HIDDEN_FOR_YARDS = ['Industrial', 'Agriculture', 'Ready Farmhouse'];
 const CATEGORIES_HIDDEN_FOR_WINGHA = ['Commercial', 'Industrial'];
 
-export function getCategoryOptionsForUnit(areaUnit) {
+// Location <-> Category cross-exclusion rules, keyed by primary location. Add more
+// locations here to extend the rule — no code changes needed elsewhere.
+export const LOCATION_CATEGORY_EXCLUSIONS = {
+  'Surat': ['Industrial', 'Agriculture', 'Ready Farmhouse']
+};
+
+export function getExcludedCategoriesForLocation(location) {
+  if (!location) return [];
+  return LOCATION_CATEGORY_EXCLUSIONS[location] || [];
+}
+
+// The reverse lookup: which locations must be hidden/disabled because the active
+// category is excluded for them. Derived from LOCATION_CATEGORY_EXCLUSIONS, so the
+// two directions can never drift out of sync.
+export function getExcludedLocationsForCategory(category) {
+  if (!category) return [];
+  return Object.keys(LOCATION_CATEGORY_EXCLUSIONS).filter(location =>
+    LOCATION_CATEGORY_EXCLUSIONS[location].includes(category)
+  );
+}
+
+export function getCategoryOptionsForUnit(areaUnit, location) {
+  let options = PROPERTY_TYPES;
   if (areaUnit === 'yards') {
-    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_YARDS.includes(t));
+    options = options.filter(t => !CATEGORIES_HIDDEN_FOR_YARDS.includes(t));
+  } else if (areaUnit === 'wingha') {
+    options = options.filter(t => !CATEGORIES_HIDDEN_FOR_WINGHA.includes(t));
   }
-  if (areaUnit === 'wingha') {
-    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_WINGHA.includes(t));
+  const excludedForLocation = getExcludedCategoriesForLocation(location);
+  if (excludedForLocation.length) {
+    options = options.filter(t => !excludedForLocation.includes(t));
   }
-  return PROPERTY_TYPES;
+  return options;
 }
 
 export function normalizePropertyType(rawType) {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit } from '../../config/categories';
+import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, getExcludedCategoriesForLocation, getExcludedLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
@@ -524,17 +524,31 @@ export default function FilterBar() {
   const [animateKey, setAnimateKey] = useState(0);
 
   const handleFilterChange = (updates) => {
-    const nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
-    const nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
+    let nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
+    let nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
     const nextAreaUnit = updates.areaUnit !== undefined ? updates.areaUnit : globalAreaUnit;
     let nextType = updates.type !== undefined ? updates.type : filterType;
 
     // Clear the selected category if it doesn't apply to the newly selected area unit
-    if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit).includes(nextType)) {
+    if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit, nextPrimary).includes(nextType)) {
       nextType = null;
     }
 
+    // Location -> Category: e.g. selecting Surat auto-clears an already-active
+    // Industrial/Agriculture/Ready Farmhouse category, per LOCATION_CATEGORY_EXCLUSIONS
+    if (updates.primary !== undefined && nextType && getExcludedCategoriesForLocation(nextPrimary).includes(nextType)) {
+      nextType = null;
+    }
+
+    // Category -> Location (reverse of the above): e.g. selecting Industrial
+    // auto-clears an already-active Surat location filter
+    if (updates.type !== undefined && nextPrimary && getExcludedLocationsForCategory(nextType).includes(nextPrimary)) {
+      nextPrimary = null;
+      nextSecondary = null;
+    }
+
     if (updates.primary !== undefined) setFilterPrimary(updates.primary);
+    else if (nextPrimary !== filterPrimary) setFilterPrimary(nextPrimary);
     if (updates.secondary !== undefined) setFilterSecondary(updates.secondary);
     if (updates.type !== undefined || nextType !== filterType) setFilterType(nextType);
     if (updates.areaUnit !== undefined) setGlobalAreaUnit(updates.areaUnit);
@@ -611,13 +625,18 @@ export default function FilterBar() {
     setAnimateKey(prev => prev + 1);
   }, [visibleCount, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
 
+  // Locations excluded because they don't apply to the active category (e.g. Industrial
+  // hides Surat) are filtered out here, so the dropdown never even offers them.
   const primaryCategories = useMemo(() => {
-    return Object.keys(dynamicCategoryMap).sort((a, b) => {
-      if (a.toLowerCase() === 'surat') return -1;
-      if (b.toLowerCase() === 'surat') return 1;
-      return a.localeCompare(b);
-    });
-  }, [dynamicCategoryMap]);
+    const excludedLocations = getExcludedLocationsForCategory(filterType);
+    return Object.keys(dynamicCategoryMap)
+      .filter(loc => !excludedLocations.includes(loc))
+      .sort((a, b) => {
+        if (a.toLowerCase() === 'surat') return -1;
+        if (b.toLowerCase() === 'surat') return 1;
+        return a.localeCompare(b);
+      });
+  }, [dynamicCategoryMap, filterType]);
 
   // Secondary location field appears whenever the selected primary location actually
   // has sub-locations in the live data (not just Surat — e.g. "NH 48 , Palsana" too).
@@ -627,7 +646,7 @@ export default function FilterBar() {
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
 
-  const categoryOptions = useMemo(() => getCategoryOptionsForUnit(globalAreaUnit), [globalAreaUnit]);
+  const categoryOptions = useMemo(() => getCategoryOptionsForUnit(globalAreaUnit, filterPrimary), [globalAreaUnit, filterPrimary]);
   const isFilterActive = Boolean(filterPrimary || filterSecondary || filterType || globalAreaUnit);
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);

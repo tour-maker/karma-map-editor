@@ -5,6 +5,7 @@ import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropert
 import SearchableSelect from './ui/SearchableSelect';
 import { getFeatureAreaUnit } from '../utils/unitFilter';
 import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
+import { getPlotShareUrl } from '../utils/shareUrl';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
@@ -432,8 +433,7 @@ export default function PropertyInfoPanel() {
           : `${d.area} sq. yard`;
       }
 
-      const shareUrl = new URL(window.location.href);
-      shareUrl.searchParams.set('feature', displayFeature.id);
+      const shareUrl = new URL(getPlotShareUrl(displayFeature.id));
 
       const tp = d.tpNo || d.tp || '-';
       const fp = d.fpNo || d.fp || '-';
