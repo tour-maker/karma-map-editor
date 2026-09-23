@@ -354,7 +354,14 @@ export default function PropertyInfoPanel() {
 
     try {
       toast.loading('Syncing to Google Sheets...', { id: 'sync-sheet' });
-      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, updatedFeature, 'update'));
+      // 'create' (not 'update'): a brand-new polygon has no matching row in the
+      // sheet yet, and syncFeatureToSheet's 'update' action silently no-ops when
+      // no match is found (by design, to avoid corrupting an unrelated row) —
+      // which was producing a false "Saved and synced!" toast while writing
+      // nothing at all. 'create' does the same safe match-by-id/tp/op/fp lookup
+      // and updates in place if found, but appends a new row when it isn't,
+      // so both first-time saves and edits of existing rows are handled.
+      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, updatedFeature, 'create'));
       updateFeature(displayFeature.id, { syncStatus: 'synced' });
       toast.success('Saved and synced property!', { id: 'sync-sheet' });
       setIsOpen(false);
