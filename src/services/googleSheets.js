@@ -461,7 +461,8 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       feature.coordinates && feature.coordinates.length > 0 ? JSON.stringify(feature.coordinates) : '',
       center ? `${center.lat}, ${center.lng}` : '',
       d.reference || feature.reference || '',
-      d.areaUnit || feature.areaUnit || ''
+      d.areaUnit || feature.areaUnit || '',
+      new Date().toISOString()
     ];
 
     let targetRowIndex = -1;
@@ -470,6 +471,11 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
     const sheetData = await fetchSheetData(spreadsheetId, 'Polygons');
     const rows = sheetData.values || [];
     if (rows.length > 0) {
+      // Label column S if it's missing, so the new timestamp isn't a headerless column
+      const existingS1 = String((rows[0][18] || '')).trim().toLowerCase();
+      if (existingS1 !== 'last updated') {
+        await updateSheetRow(spreadsheetId, 'Polygons!S1', [['last updated']]);
+      }
       const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
       const idIdx = headers.indexOf('id') >= 0 ? headers.indexOf('id') : 0;
       const tpIdx = headers.indexOf('tp') >= 0 ? headers.indexOf('tp') : 1;
@@ -519,15 +525,15 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       } else if (action === 'update' || action === 'edit' || action === 'save') {
         if (targetRowIndex > 1) {
           // Update ONLY the specific matched row
-          await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:R${targetRowIndex}`, [cleanRow]);
+          await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:S${targetRowIndex}`, [cleanRow]);
         } else {
           console.warn(`[syncFeatureToSheet] No matching row found in Google Sheet for polygon id="${feature.id}" (TP: ${tpVal}, FP: ${fpVal}). Skipping update to avoid creating new rows or overwriting unrelated polygons.`);
         }
       } else if (action === 'create' || action === 'add') {
         if (targetRowIndex > 1) {
-          await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:R${targetRowIndex}`, [cleanRow]);
+          await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:S${targetRowIndex}`, [cleanRow]);
         } else {
-          await appendSheetRow(spreadsheetId, 'Polygons!A:R', cleanRow);
+          await appendSheetRow(spreadsheetId, 'Polygons!A:S', cleanRow);
         }
       }
     }
@@ -538,8 +544,8 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 };
 
 export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], range = 'Polygons') => {
-  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates', 'center pin lat long', 'reference', 'area unit'];
-  
+  const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates', 'center pin lat long', 'reference', 'area unit', 'last updated'];
+
   const polygonFeatures = features.filter(f => !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark'));
 
   const rows = [
@@ -566,7 +572,9 @@ export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], r
         f.coordinates && f.coordinates.length > 0 ? JSON.stringify(f.coordinates) : '',
         center ? `${center.lat}, ${center.lng}` : '',
         d.reference || '',
-        d.areaUnit || ''
+        d.areaUnit || '',
+        // Preserve an existing timestamp on overwrite instead of stamping every row "now"
+        d.lastUpdated || new Date().toISOString()
       ];
     })
   ];
@@ -712,6 +720,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     const coordsIdx = !isCorruptedHeaders && rawHeaders.indexOf('coordinates') >= 0 ? rawHeaders.indexOf('coordinates') : 14;
     const referenceIdx = !isCorruptedHeaders && rawHeaders.indexOf('reference') >= 0 ? rawHeaders.indexOf('reference') : 16;
     const areaUnitIdx = !isCorruptedHeaders && rawHeaders.indexOf('area unit') >= 0 ? rawHeaders.indexOf('area unit') : 17;
+    const lastUpdatedIdx = !isCorruptedHeaders && rawHeaders.indexOf('last updated') >= 0 ? rawHeaders.indexOf('last updated') : 18;
 
     const sheetMap = new Map();
     for (let i = 1; i < polygonsData.length; i++) {
@@ -759,7 +768,8 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         brokerPhone: rawBrokerPhone.includes('[{"lat":') ? '' : rawBrokerPhone,
         coordinates: coordsIdx >= 0 ? String(row[coordsIdx] || '').trim() : '',
         reference: referenceIdx >= 0 ? String(row[referenceIdx] || '').trim() : '',
-        areaUnit: areaUnitIdx >= 0 ? String(row[areaUnitIdx] || '').trim() : ''
+        areaUnit: areaUnitIdx >= 0 ? String(row[areaUnitIdx] || '').trim() : '',
+        lastUpdated: lastUpdatedIdx >= 0 ? String(row[lastUpdatedIdx] || '').trim() : ''
       };
 
       if (id) sheetMap.set(`id:${id}`, rowData);
@@ -904,7 +914,8 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
               brokerName: sheetMatch.brokerName || localBrokerName,
               brokerPhone: sheetMatch.brokerPhone || localBrokerPhone,
               reference: sheetMatch.reference || d.reference || '',
-              areaUnit: sheetMatch.areaUnit || d.areaUnit || ''
+              areaUnit: sheetMatch.areaUnit || d.areaUnit || '',
+              lastUpdated: sheetMatch.lastUpdated || d.lastUpdated || ''
             },
             style: {
               ...f.style,
@@ -957,7 +968,8 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
                 type: sheetMatch.type || 'Freehold',
                 remarks: sheetMatch.remarks,
                 reference: sheetMatch.reference || '',
-                areaUnit: sheetMatch.areaUnit || ''
+                areaUnit: sheetMatch.areaUnit || '',
+                lastUpdated: sheetMatch.lastUpdated || ''
               },
               style: {
                 fillColor: newColor,
