@@ -387,6 +387,29 @@ export const repairSheet1Headers = async (spreadsheetId, sheetName = 'Polygons')
   }
 };
 
+/**
+ * Wraps an async sync call with retry + backoff logic.
+ * Attempts up to `retries` total tries, waiting `delayMs * attempt` between
+ * each failed attempt. Re-throws the last error if every attempt fails, so
+ * callers can rely on a thrown error meaning "sync did NOT succeed" even
+ * after retrying.
+ */
+export const withSyncRetry = async (fn, { retries = 3, delayMs = 700 } = {}) => {
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      console.warn(`[withSyncRetry] Attempt ${attempt}/${retries} failed:`, err?.message || err);
+      if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+  throw lastError;
+};
+
 export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'update') => {
   if (!feature) return;
 

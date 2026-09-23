@@ -128,10 +128,12 @@ export const useMapStore = create(
         updateFeature: (id, updates) => set((state) => ({
           features: state.features.map(f => {
             if (f.id === id) {
+              const { data, style, ...restUpdates } = updates || {};
               return {
                 ...f,
-                data: { ...f.data, ...updates.data },
-                style: { ...f.style, ...updates.style }
+                ...restUpdates,
+                data: { ...f.data, ...data },
+                style: { ...f.style, ...style }
               };
             }
             return f;

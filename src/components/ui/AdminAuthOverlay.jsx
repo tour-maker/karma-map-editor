@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { API_BASE_URL } from '../../config/api';
-import { FiLock, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiLock, FiArrowRight, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function AdminAuthOverlay() {
@@ -9,10 +9,12 @@ export default function AdminAuthOverlay() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -28,14 +30,10 @@ export default function AdminAuthOverlay() {
           style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
         });
       } else {
-        toast.error('Invalid ID or Password!', {
-          style: { background: '#0f172a', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }
-        });
+        setErrorMessage(data?.error || 'Invalid ID or Password!');
       }
     } catch (err) {
-      toast.error('Cannot reach server. Make sure the backend is running.', {
-        style: { background: '#0f172a', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)' }
-      });
+      setErrorMessage('Cannot reach server. Make sure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -45,7 +43,7 @@ export default function AdminAuthOverlay() {
     <div style={{
       position: 'fixed',
       inset: 0,
-      zIndex: 999999, // Super high z-index to cover everything
+      zIndex: 2000000, // Must clear Google Maps' own overlays (which can render around z-index 1000000/1000001)
       background: 'rgba(10, 14, 23, 0.75)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
@@ -85,11 +83,34 @@ export default function AdminAuthOverlay() {
         <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 8px 0' }}>Admin Authentication</h2>
         <p style={{ color: '#94a3b8', fontSize: 14, margin: '0 0 24px 0' }}>Please enter your credentials to access the Karma Map Editor admin panel.</p>
 
+        {errorMessage && (
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            color: '#fca5a5',
+            borderRadius: 10,
+            padding: '10px 12px',
+            fontSize: 12.5,
+            fontWeight: 600,
+            textAlign: 'left',
+            marginBottom: 16,
+            boxSizing: 'border-box'
+          }}>
+            <FiAlertCircle size={16} style={{ flexShrink: 0, color: '#ef4444' }} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <form onSubmit={handleLogin} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'left' }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', marginLeft: 4 }}>Admin ID</label>
             <input
               type="text"
+              className="karma-glass-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter ID"
@@ -112,6 +133,7 @@ export default function AdminAuthOverlay() {
             <div style={{ position: 'relative', width: '100%' }}>
               <input
                 type={showPassword ? "text" : "password"}
+                className="karma-glass-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter Password"

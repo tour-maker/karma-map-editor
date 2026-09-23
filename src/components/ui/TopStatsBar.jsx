@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { FiAlertTriangle } from 'react-icons/fi';
 import { useMapStore } from '../../store/useMapStore';
 import { buildDynamicLocationMap } from '../../config/categories';
 
@@ -8,6 +9,11 @@ export default function TopStatsBar() {
   const filterPrimary = useMapStore(state => state.filterPrimary);
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
+  const appMode = useMapStore(state => state.appMode);
+
+  const unsyncedCount = useMemo(() => {
+    return features.filter(f => f.source === 'drawn' && f.syncStatus !== 'synced').length;
+  }, [features]);
 
   let locationText = 'All Locations';
   if (filterSecondary) {
@@ -114,7 +120,36 @@ export default function TopStatsBar() {
           properties
         </div>
       </div>
-      
+
+      {appMode === 'edit' && unsyncedCount > 0 && (
+        <>
+          <div style={{
+            width: 1,
+            height: 32,
+            background: '#ef4444',
+            opacity: 0.5
+          }} />
+
+          <div
+            title="Drawn properties not yet synced to Google Sheets — save them before leaving this page"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: 999,
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)'
+            }}
+          >
+            <FiAlertTriangle size={14} color="#f87171" />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171' }}>
+              {unsyncedCount} unsynced
+            </span>
+          </div>
+        </>
+      )}
+
     </div>
   );
 }

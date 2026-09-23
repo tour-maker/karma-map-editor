@@ -5,7 +5,7 @@ import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropert
 import SearchableSelect from './ui/SearchableSelect';
 
 import toast from 'react-hot-toast';
-import { requestLogin, syncFeatureToSheet } from '../services/googleSheets'
+import { requestLogin, syncFeatureToSheet, withSyncRetry } from '../services/googleSheets'
 import { API_BASE_URL } from '../config/api';
 
 const MATCH_TIER_BADGES = {
@@ -326,51 +326,68 @@ export default function PropertyInfoPanel() {
       visible: true
     };
 
+    const updatedFeature = {
+      ...displayFeature,
+      data: updatedData,
+      style: updatedStyle
+    };
+
+    // No sheet configured — this is a purely local save, nothing to sync.
+    if (!spreadsheetId) {
+      updateFeature(displayFeature.id, {
+        data: updatedData,
+        style: updatedStyle,
+        syncStatus: 'synced'
+      });
+      toast.success('Saved property locally!');
+      setIsOpen(false);
+      setIsSaving(false);
+      return;
+    }
+
+    // Optimistic local update, marked pending until the sync actually succeeds.
     updateFeature(displayFeature.id, {
       data: updatedData,
       style: updatedStyle,
-      syncStatus: 'edited'
+      syncStatus: 'pending'
     });
 
     try {
-      const updatedFeature = {
-        ...displayFeature,
-        data: updatedData,
-        style: updatedStyle
-      };
-      
-      if (spreadsheetId) {
-        toast.loading('Syncing to Google Sheets...', { id: 'sync-sheet' });
-        await syncFeatureToSheet(spreadsheetId, updatedFeature, 'update');
-        toast.success('Saved and synced property!', { id: 'sync-sheet' });
-      } else {
-        toast.success('Saved property locally!');
-      }
+      toast.loading('Syncing to Google Sheets...', { id: 'sync-sheet' });
+      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, updatedFeature, 'update'));
+      updateFeature(displayFeature.id, { syncStatus: 'synced' });
+      toast.success('Saved and synced property!', { id: 'sync-sheet' });
+      setIsOpen(false);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to sync to Google Sheets', { id: 'sync-sheet' });
+      updateFeature(displayFeature.id, { syncStatus: 'error' });
+      toast.error('Failed to sync to Google Sheets after multiple attempts. Your edits are only saved locally — try Save again before leaving this page.', { id: 'sync-sheet', duration: 6000 });
+      // Keep the panel open on failure so the admin notices the unsynced state
+      // and can retry, instead of silently losing the edit on navigation/refresh.
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsOpen(false);
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
     if (!displayFeature) return;
 
-    removeFeature(displayFeature.id);
-    setIsOpen(false);
-    setSelectedFeatureId(null);
-    
     if (spreadsheetId) {
       toast.loading('Deleting from Google Sheets...', { id: 'delete-sheet' });
       try {
-        await syncFeatureToSheet(spreadsheetId, displayFeature, 'delete');
+        await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, displayFeature, 'delete'));
         toast.success('Polygon deleted from map and sheets!', { id: 'delete-sheet' });
+        removeFeature(displayFeature.id);
+        setIsOpen(false);
+        setSelectedFeatureId(null);
       } catch (e) {
-        toast.error('Failed to delete from sheets', { id: 'delete-sheet' });
+        console.error(e);
+        toast.error('Failed to delete from Google Sheets after multiple attempts. The polygon was kept on the map — try again.', { id: 'delete-sheet', duration: 6000 });
       }
     } else {
+      removeFeature(displayFeature.id);
+      setIsOpen(false);
+      setSelectedFeatureId(null);
       toast.success('Polygon deleted locally!');
     }
   };

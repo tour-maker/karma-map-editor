@@ -607,3 +607,16 @@ div[style*="z-index: 1000001"] { display: none !important; }
   filter: invert(1) brightness(0.8) sepia(1) hue-rotate(180deg) saturate(2) !important;
   background-color: transparent !important;
 }
+
+/* Dark-glass autofill fix — forces Chrome/Safari autofill background to match
+   the dark glassmorphism UI instead of the default jarring white/yellow fill. */
+.karma-glass-input:-webkit-autofill,
+.karma-glass-input:-webkit-autofill:hover,
+.karma-glass-input:-webkit-autofill:focus,
+.karma-glass-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(30, 41, 59, 0.95) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(30, 41, 59, 0.95) inset !important;
+  caret-color: #ffffff;
+  transition: background-color 5000s ease-in-out 0s;
+}

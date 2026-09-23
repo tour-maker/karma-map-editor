@@ -79,6 +79,35 @@ export default function MapEditor() {
     }
   }, []);
 
+  // --- Unsynced-work protection ---
+  // Keep a live ref of the unsynced-drawn-feature count and current app mode
+  // so the beforeunload handler always reads fresh state, never a stale
+  // closure value from when the listener was first registered.
+  const unsyncedCountRef = useRef(0);
+  const appModeRef = useRef(appMode);
+
+  useEffect(() => {
+    unsyncedCountRef.current = features.filter(
+      (f) => f.source === 'drawn' && f.syncStatus !== 'synced'
+    ).length;
+  }, [features]);
+
+  useEffect(() => {
+    appModeRef.current = appMode;
+  }, [appMode]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (appModeRef.current === 'edit' && unsyncedCountRef.current > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
     libraries: GOOGLE_MAPS_LIBRARIES
@@ -186,6 +215,7 @@ export default function MapEditor() {
         type: 'Freehold',
         remarks: ''
       },
+      syncStatus: 'pending',
       style: {
         fillColor: '#facc15',
         fillOpacity: 0.4,

@@ -5,7 +5,7 @@ import { FiMapPin, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 import { cleanLandmarkTitle } from './LandmarkManager';
-import { syncFeatureToSheet } from '../services/googleSheets';
+import { syncFeatureToSheet, withSyncRetry } from '../services/googleSheets';
 
 export default function AddLandmarkModal({ position, onClose, onSaved }) {
   const [name, setName] = useState('');
@@ -54,10 +54,10 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
     // Targeted sync — only this one landmark, not a full sheet overwrite
     if (spreadsheetId) {
       try {
-        await syncFeatureToSheet(spreadsheetId, newLandmarkFeature, 'create');
+        await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, newLandmarkFeature, 'create'));
       } catch (err) {
         console.error('Failed to sync new landmark to Google Sheets:', err);
-        toast.error('Landmark added locally, but sync to Google Sheets failed.');
+        toast.error('Landmark added locally, but sync to Google Sheets failed after multiple attempts.', { duration: 6000 });
       }
     }
   };

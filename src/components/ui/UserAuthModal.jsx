@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiX, FiUser, FiArrowRight, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiX, FiUser, FiArrowRight, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { API_BASE_URL } from '../../config/api';
@@ -10,13 +10,21 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const setViewerUsername = useMapStore(state => state.setViewerUsername);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+
     if (!username.trim() || !password) {
-      toast.error('Please enter a username and password');
+      setErrorMessage('Please enter a username and password');
+      return;
+    }
+
+    if (mode === 'signup' && password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters');
       return;
     }
 
@@ -31,7 +39,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || 'Something went wrong');
+        setErrorMessage(data.error || 'Something went wrong');
         return;
       }
 
@@ -41,7 +49,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       onSuccess?.(data.username);
     } catch (err) {
       console.error('Auth error:', err);
-      toast.error('Cannot reach server. Make sure the backend is running.');
+      setErrorMessage('Cannot reach server. Make sure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -85,7 +93,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
         <div style={{ display: 'flex', gap: 4, background: 'rgba(30, 41, 59, 0.6)', padding: 3, borderRadius: 10, marginBottom: 20 }}>
           <button
             type="button"
-            onClick={() => setMode('login')}
+            onClick={() => { setMode('login'); setErrorMessage(''); }}
             style={{
               flex: 1, padding: '8px 0', border: 'none', borderRadius: 8,
               background: mode === 'login' ? '#f59e0b' : 'transparent',
@@ -97,7 +105,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
           </button>
           <button
             type="button"
-            onClick={() => setMode('signup')}
+            onClick={() => { setMode('signup'); setErrorMessage(''); }}
             style={{
               flex: 1, padding: '8px 0', border: 'none', borderRadius: 8,
               background: mode === 'signup' ? '#f59e0b' : 'transparent',
@@ -109,11 +117,32 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
           </button>
         </div>
 
+        {errorMessage && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            color: '#fca5a5',
+            borderRadius: 10,
+            padding: '10px 12px',
+            fontSize: 12.5,
+            fontWeight: 600,
+            marginBottom: 14,
+            boxSizing: 'border-box'
+          }}>
+            <FiAlertCircle size={16} style={{ flexShrink: 0, color: '#ef4444' }} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 6 }}>Username</label>
             <input
               type="text"
+              className="karma-glass-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Choose a username"
@@ -131,6 +160,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
             <div style={{ position: 'relative', width: '100%' }}>
               <input
                 type={showPassword ? 'text' : 'password'}
+                className="karma-glass-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === 'signup' ? 'At least 6 characters' : 'Enter Password'}
