@@ -17,8 +17,11 @@ const PushPinIcon = ({ color }) => (
 // ---------------------------------------------------------------------------
 // 1. Primary Location Dropdown Component
 // ---------------------------------------------------------------------------
-function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false }) {
-  const [isOpen, setIsOpen] = useState(false);
+function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, forceOpen = false }) {
+  // forceOpen seeds the initial open state so the parent "Filters" pill can open this
+  // specific dropdown directly (e.g. clicking the "Location" label). This component is
+  // freshly mounted each time the modal sheet opens, so this only needs to run once.
+  const [isOpen, setIsOpen] = useState(forceOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
 
@@ -59,10 +62,16 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           width: isInModal ? '100%' : 'auto',
           boxSizing: 'border-box',
           gap: 4,
-          userSelect: 'none'
+          userSelect: 'none',
+          minWidth: 0
         }}
       >
-        <span className="desktop-only-text">{value || placeholder}</span>
+        <span
+          className="desktop-only-text"
+          style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}
+        >
+          {value || placeholder}
+        </span>
         <span className="mobile-only-text" style={{ display: 'inline-flex', alignItems: 'center' }}>
           {value ? (value.length > 18 ? value.substring(0, 18) + '..' : value) : (isInModal ? placeholder : <FiMapPin size={16} color="#f59e0b" />)}
         </span>
@@ -230,10 +239,16 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           width: isInModal ? '100%' : 'auto',
           boxSizing: 'border-box',
           gap: 4,
-          userSelect: 'none'
+          userSelect: 'none',
+          minWidth: 0
         }}
       >
-        <span className="desktop-only-text">{value || placeholder}</span>
+        <span
+          className="desktop-only-text"
+          style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}
+        >
+          {value || placeholder}
+        </span>
         <span className="mobile-only-text" style={{ display: 'inline-flex', alignItems: 'center' }}>
           {value ? (value.length > 18 ? value.substring(0, 18) + '..' : value) : (isInModal ? placeholder : <FiNavigation size={15} color="#f59e0b" />)}
         </span>
@@ -359,8 +374,11 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
 // ---------------------------------------------------------------------------
 // 3. Category Dropdown Component
 // ---------------------------------------------------------------------------
-function CategoryDropdown({ options, value, onChange, placeholder = 'Category', activeColor = '#f59e0b', isInModal = false }) {
-  const [isOpen, setIsOpen] = useState(false);
+function CategoryDropdown({ options, value, onChange, placeholder = 'Category', activeColor = '#f59e0b', isInModal = false, forceOpen = false }) {
+  // forceOpen seeds the initial open state so the parent "Filters" pill can open this
+  // specific dropdown directly (e.g. clicking the "Category" label). This component is
+  // freshly mounted each time the modal sheet opens, so this only needs to run once.
+  const [isOpen, setIsOpen] = useState(forceOpen);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -435,8 +453,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
         } : {
           position: 'absolute',
           bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          right: 0,
           marginBottom: 16,
           background: 'rgba(15, 23, 42, 0.96)',
           backdropFilter: 'blur(12px)',
@@ -628,20 +645,19 @@ export default function FilterBar() {
   const isFilterActive = Boolean(filterPrimary || filterSecondary || filterType || globalAreaUnit);
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
+  const [autoExpandField, setAutoExpandField] = useState(null); // 'location' | 'category' | null
 
-  const activeFiltersSummaryString = useMemo(() => {
-    const parts = [];
-    if (filterPrimary) parts.push(filterPrimary);
-    else parts.push('Location');
+  const activeFiltersSummaryParts = useMemo(() => ([
+    { key: 'location', label: filterPrimary || 'Location' },
+    { key: 'category', label: filterType || 'Category' },
+    { key: 'unit', label: globalAreaUnit ? (globalAreaUnit === 'yards' ? 'Sq.Yard' : 'Wingha') : 'Sq.Yard' }
+  ]), [filterPrimary, filterType, globalAreaUnit]);
 
-    if (filterType) parts.push(filterType);
-    else parts.push('Category');
-
-    if (globalAreaUnit) parts.push(globalAreaUnit === 'yards' ? 'Sq.Yard' : 'Wingha');
-    else parts.push('Sq.Yard');
-
-    return parts.join(' · ');
-  }, [filterPrimary, filterType, globalAreaUnit]);
+  const openFilterFieldDirectly = (fieldKey) => (e) => {
+    e.stopPropagation();
+    setAutoExpandField(fieldKey);
+    setIsMobileSheetOpen(true);
+  };
 
   return (
     <>
@@ -657,7 +673,7 @@ export default function FilterBar() {
       <div
         className="responsive-filter-bar no-scrollbar"
         style={{
-          position: 'absolute',
+          position: 'fixed',
           bottom: 0,
           left: '50%',
           transform: 'translateX(-50%)',
@@ -953,8 +969,41 @@ export default function FilterBar() {
           boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.75)'
         }}
       >
-        {/* Left: Filter Icon & Subtitle Summary */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        {/* Left: Reset All (when a filter is active, shown before the Filters title) + Filter Icon & Subtitle Summary */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          {isFilterActive && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFilterPrimary(null);
+                setFilterSecondary(null);
+                setFilterType(null);
+                setGlobalAreaUnit(null);
+                setSelectedFeatureId(null);
+                setIsInfoPanelOpen(false);
+                if (map && features.length > 0) fitAllBounds(map, features);
+              }}
+              title="Reset all applied filters"
+              style={{
+                background: 'rgba(245, 158, 11, 0.14)',
+                border: '1px solid rgba(245, 158, 11, 0.45)',
+                color: '#f59e0b',
+                borderRadius: 10,
+                width: 38,
+                height: 38,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'all 0.2s'
+              }}
+            >
+              <FiRefreshCw size={16} />
+            </button>
+          )}
+
           <div style={{
             width: 38,
             height: 38,
@@ -982,7 +1031,20 @@ export default function FilterBar() {
               textOverflow: 'ellipsis',
               marginTop: 2
             }}>
-              {activeFiltersSummaryString}
+              {activeFiltersSummaryParts.map((part, idx) => (
+                <span key={part.key}>
+                  {idx > 0 && ' · '}
+                  {(part.key === 'location' || part.key === 'category') ? (
+                    <span
+                      onClick={openFilterFieldDirectly(part.key)}
+                      title={part.key === 'location' ? 'Open Location filter' : 'Open Category filter'}
+                      style={{ textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 2, cursor: 'pointer' }}
+                    >
+                      {part.label}
+                    </span>
+                  ) : part.label}
+                </span>
+              ))}
             </span>
           </div>
         </div>
@@ -1010,7 +1072,7 @@ export default function FilterBar() {
       {/* MOBILE FILTER SHEET MODAL OVERLAY */}
       {isMobileSheetOpen && (
         <div
-          onClick={() => setIsMobileSheetOpen(false)}
+          onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
           style={{
             position: 'fixed',
             inset: 0,
@@ -1080,7 +1142,7 @@ export default function FilterBar() {
 
                 <button
                   type="button"
-                  onClick={() => setIsMobileSheetOpen(false)}
+                  onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
                 >
                   <FiX size={20} color="#94a3b8" />
@@ -1104,6 +1166,7 @@ export default function FilterBar() {
                     placeholder="All Locations"
                     activeColor="#f59e0b"
                     isInModal={true}
+                    forceOpen={autoExpandField === 'location'}
                   />
                 </div>
               </div>
@@ -1143,6 +1206,7 @@ export default function FilterBar() {
                     placeholder="All Categories"
                     activeColor="#f59e0b"
                     isInModal={true}
+                    forceOpen={autoExpandField === 'category'}
                   />
                 </div>
               </div>
@@ -1207,7 +1271,7 @@ export default function FilterBar() {
               <div style={{ marginTop: 8 }}>
                 <button
                   type="button"
-                  onClick={() => setIsMobileSheetOpen(false)}
+                  onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
                   style={{
                     width: '100%', padding: '13px 0', border: 'none',
                     background: '#f59e0b', color: '#000000', borderRadius: 12,
