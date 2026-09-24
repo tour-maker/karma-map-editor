@@ -126,6 +126,32 @@ body.hide-ui-for-screenshot nav {
     display: none !important;
   }
 
+  /* 1b. Viewer Top Bar (Logo + Add Property + Sign In): keep clear of the search bar
+     and keep both buttons evenly aligned instead of overflowing off-screen */
+  .viewer-top-bar {
+    top: 76px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: calc(100vw - 32px) !important;
+    max-width: none !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 8px 10px !important;
+    z-index: 1000 !important;
+  }
+
+  .viewer-top-bar img {
+    height: 26px !important;
+  }
+
+  .viewer-top-bar button {
+    padding: 7px 10px !important;
+    font-size: 11.5px !important;
+    align-items: center !important;
+  }
+
   /* 2. Top Left Search Bar */
   .search-box-container {
     top: 16px !important;

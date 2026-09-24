@@ -274,12 +274,14 @@ export default function MapEditor() {
       )}
 
       {appMode === 'viewer' && (
-        <div style={{
-          position: 'absolute', top: 20, left: 20, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 16,
-          background: 'rgba(15, 23, 42, 0.85)', padding: '8px 10px 8px 14px', borderRadius: 12,
-          backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
-        }}>
+        <div
+          className="viewer-top-bar"
+          style={{
+            position: 'absolute', top: 20, left: 20, zIndex: 1000, display: 'flex', alignItems: 'center', gap: 16,
+            background: 'rgba(15, 23, 42, 0.85)', padding: '8px 10px 8px 14px', borderRadius: 12,
+            backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+          }}>
           <a
             href="http://karmagroup.co.in/Home/Index?Area=Surat&Latitude=21.1702&Longitude=72.8311"
             target="_blank"
