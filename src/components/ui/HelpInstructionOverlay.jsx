@@ -168,6 +168,16 @@ export default function HelpInstructionOverlay({ onClose }) {
             <span style={{ fontSize: 12, color: '#cbd5e1' }}>Help & tools</span>
           </div>
 
+          {/* MOBILE: SHARE */}
+          <div style={{
+            position: 'absolute', bottom: 196, right: 24,
+            textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
+          }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Share</span>
+            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Share this map view</span>
+            <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
+          </div>
+
           {/* MOBILE: WHATSAPP */}
           <div style={{
             position: 'absolute', bottom: 140, right: 24,
