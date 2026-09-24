@@ -1020,7 +1020,15 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     }
 
     if (updateCount > 0 || deleteCount > 0) {
-      useMapStore.getState().setFeatures([...updatedFeatures, ...newFeaturesToImport]);
+      // Guard: preserve any feature that is still mid-save (not yet confirmed written to the
+      // sheet) even if it isn't in this fetch's sheet data — otherwise a refresh that lands
+      // while a brand-new locally-drawn feature is uploading could silently drop it.
+      const finalFeatureIds = new Set([...updatedFeatures, ...newFeaturesToImport].map(f => f.id));
+      const latestFeatures = useMapStore.getState().features;
+      const unsyncedFeaturesToPreserve = latestFeatures.filter(f =>
+        (f.syncStatus === 'pending' || f.syncStatus === 'error') && !finalFeatureIds.has(f.id)
+      );
+      useMapStore.getState().setFeatures([...updatedFeatures, ...newFeaturesToImport, ...unsyncedFeaturesToPreserve]);
     }
 
     return updateCount + deleteCount;
