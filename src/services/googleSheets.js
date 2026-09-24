@@ -8,6 +8,15 @@ let accessToken = null;
 let _autoRefreshTimer = null;
 let _onTokenResponseCallback = null;
 
+// Human-readable "last updated" stamp, in IST, e.g. "Sep 24, 2026, 05:17 PM"
+// (this is purely for people reading the sheet — nothing elsewhere parses it
+// back into a Date, it's only ever re-displayed as-is).
+const formatTimestamp = (date = new Date()) => new Intl.DateTimeFormat('en-US', {
+  day: '2-digit', month: 'short', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', hour12: true,
+  timeZone: 'Asia/Kolkata'
+}).format(date);
+
 const _handleTokenResponse = (response) => {
   if (response.error !== undefined) {
     console.warn('Google silent auth failed:', response.error);
@@ -462,7 +471,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       center ? `${center.lat}, ${center.lng}` : '',
       d.reference || feature.reference || '',
       d.areaUnit || feature.areaUnit || '',
-      new Date().toISOString()
+      formatTimestamp()
     ];
 
     let targetRowIndex = -1;
@@ -574,7 +583,7 @@ export const overwriteSheetWithFeatures = async (spreadsheetId, features = [], r
         d.reference || '',
         d.areaUnit || '',
         // Preserve an existing timestamp on overwrite instead of stamping every row "now"
-        d.lastUpdated || new Date().toISOString()
+        d.lastUpdated || formatTimestamp()
       ];
     })
   ];
