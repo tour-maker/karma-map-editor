@@ -381,62 +381,67 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
 
           {/* Karma Realtors Brand Header */}
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            display: 'flex', flexDirection: 'column', gap: 6,
             paddingBottom: 10, borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
           }}>
-            <a
-              href="http://karmagroup.co.in/Home/Index?Area=Surat&Latitude=21.1702&Longitude=72.8311"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'flex', cursor: 'pointer', outline: 'none' }}
-            >
-              <img
-                src="https://karmagroup.co.in/images/Karma%20logo%20R%20PNG%20(1)%20(1).png"
-                alt="Karma Realtors Logo"
-                style={{ height: 38, maxWidth: 220, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.25))' }}
-              />
-            </a>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {appMode === 'edit' && (
-                <a
-                  href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Open Google Sheet"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#10b981', cursor: 'pointer', transition: 'transform 0.2s',
-                    background: 'rgba(16, 185, 129, 0.1)', padding: 6, borderRadius: '50%',
-                    border: '1px solid rgba(16, 185, 129, 0.3)'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <FaFileExcel size={16} />
-                </a>
-              )}
-              {appMode === 'edit' && (
-                <span style={{
-                  fontSize: 10, fontWeight: 700, color: '#f59e0b',
-                  background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
-                  padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
-                }}>
-                  Map Editor
-                </span>
-              )}
-              {isMobileOpen && (
-                <button
-                  onClick={() => setIsMobileOpen(false)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#94a3b8', cursor: 'pointer', padding: 6, borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}
-                >
-                  <FiX size={16} />
-                </button>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <a
+                href="http://karmagroup.co.in/Home/Index?Area=Surat&Latitude=21.1702&Longitude=72.8311"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', cursor: 'pointer', outline: 'none' }}
+              >
+                <img
+                  src="https://karmagroup.co.in/images/Karma%20logo%20R%20PNG%20(1)%20(1).png"
+                  alt="Karma Realtors Logo"
+                  style={{ height: 38, maxWidth: 220, objectFit: 'contain', filter: 'drop-shadow(0 2px 8px rgba(245, 158, 11, 0.25))' }}
+                />
+              </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {appMode === 'edit' && (
+                  <a
+                    href={`https://docs.google.com/spreadsheets/d/${import.meta.env.VITE_GOOGLE_SHEET_ID}/edit`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open Google Sheet"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#10b981', cursor: 'pointer', transition: 'transform 0.2s',
+                      background: 'rgba(16, 185, 129, 0.1)', padding: 6, borderRadius: '50%',
+                      border: '1px solid rgba(16, 185, 129, 0.3)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <FaFileExcel size={16} />
+                  </a>
+                )}
+                {isMobileOpen && (
+                  <button
+                    onClick={() => setIsMobileOpen(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#94a3b8', cursor: 'pointer', padding: 6, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <FiX size={16} />
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Map Editor button: sits directly beneath the logo */}
+            {appMode === 'edit' && (
+              <span style={{
+                alignSelf: 'flex-start',
+                fontSize: 10, fontWeight: 700, color: '#f59e0b',
+                background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.4)',
+                padding: '3px 9px', borderRadius: 12, letterSpacing: '0.5px', textTransform: 'uppercase'
+              }}>
+                Map Editor
+              </span>
+            )}
           </div>
 
           {/* Desktop Navigation Tabs Bar (Horizontal) */}
