@@ -92,6 +92,31 @@ export default function RightActionDock() {
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
+  // Guaranteed-working fallback for when the native share sheet isn't available
+  // (most desktop browsers) or fails for any other reason. Rather than silently
+  // doing nothing — which is what happened before when navigator.clipboard also
+  // rejected (e.g. non-secure context, permission denied) — this always opens
+  // WhatsApp directly with the message text. WhatsApp fetches Open Graph tags
+  // for any URL in that text itself, so the shared /share/:id link renders with
+  // a real title/description/thumbnail preview, same as a native share would.
+  const shareViaWhatsAppFallback = async (text, successMessage) => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch (clipErr) {
+      console.warn('[Share] Clipboard write failed, continuing to WhatsApp fallback:', clipErr);
+    }
+
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
+    toast.success(successMessage, {
+      icon: '💬',
+      style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
+    });
+  };
+
   const handleShare = async () => {
     const features = useMapStore.getState().features;
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
@@ -132,25 +157,23 @@ export default function RightActionDock() {
           return;
         } catch (e) {
           if (e.name === 'AbortError') return;
+          console.warn('[Share] navigator.share failed, falling back to WhatsApp:', e);
         }
       }
 
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(shareText);
-        toast.success('Selected polygon info & link copied to clipboard! 📋', {
-          style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
-        });
-      }
+      await shareViaWhatsAppFallback(shareText, 'Opening WhatsApp with this plot\'s details & preview link! 🚀');
     } else {
+      const generalShareUrl = getPublicShareUrl();
       const generalShareText = `Karma Realtors - Exclusive Land Project
 Explore our exclusive Land Project with custom filters like Sq Yard & Wingha. Choose your ideal plot based on category. Take a virtual tour now 👇
-${getPublicShareUrl()}`;
+${generalShareUrl}`;
 
       if (navigator.share) {
         try {
           await navigator.share({
             title: 'Karma Realtors - Exclusive Land Project',
-            text: generalShareText
+            text: generalShareText,
+            url: generalShareUrl
           });
           toast.success('Project details & tour link shared! 🚀', {
             style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
@@ -158,14 +181,11 @@ ${getPublicShareUrl()}`;
           return;
         } catch (e) {
           if (e.name === 'AbortError') return;
+          console.warn('[Share] navigator.share failed, falling back to WhatsApp:', e);
         }
       }
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(generalShareText);
-        toast.success('Project details & tour link copied to clipboard! 📋', {
-          style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
-        });
-      }
+
+      await shareViaWhatsAppFallback(generalShareText, 'Opening WhatsApp with the tour link & preview! 🚀');
     }
   };
 
