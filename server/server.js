@@ -6,6 +6,7 @@ import submissionRoutes from './routes/submissions.js';
 import authRoutes from './routes/auth.js';
 import documentRoutes from './routes/documents.js';
 import sheetsRoutes from './routes/sheets.js';
+import shareRoutes from './routes/share.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/sheets', sheetsRoutes);
+app.use('/share', shareRoutes);
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sleepyraj10_db_user:FWRjDCAij8ynvAEU@test-0.opmgpmd.mongodb.net/?appName=test-0';

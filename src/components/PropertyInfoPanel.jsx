@@ -6,7 +6,7 @@ import SearchableSelect from './ui/SearchableSelect';
 
 import toast from 'react-hot-toast';
 import { requestLogin, syncFeatureToSheet, withSyncRetry } from '../services/googleSheets'
-import { API_BASE_URL } from '../config/api';
+import { API_BASE_URL, PUBLIC_SITE_ORIGIN } from '../config/api';
 
 const MATCH_TIER_BADGES = {
   'exact-tp-fp': { label: 'Matched by TP/FP', background: '#dcfce7', color: '#15803d' },
@@ -465,8 +465,7 @@ export default function PropertyInfoPanel() {
           : `${d.area} sq. yard`;
       }
 
-      const shareUrl = new URL(window.location.href);
-      shareUrl.searchParams.set('feature', displayFeature.id);
+      const shareUrl = new URL(`${PUBLIC_SITE_ORIGIN}/share/${encodeURIComponent(displayFeature.id)}`);
 
       const tp = d.tpNo || d.tp || '-';
       const fp = d.fpNo || d.fp || '-';

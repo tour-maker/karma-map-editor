@@ -108,6 +108,43 @@ export default function MapEditor() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
+  // --- Shared-link deep-linking: /share/:id or the older ?feature=<id> ---
+  // Read the id back out of the URL once on mount (features load
+  // asynchronously from the Google Sheet via GoogleSheetsConnect, so we
+  // can't select/zoom to it yet at this point).
+  const pendingShareIdRef = useRef(null);
+  const shareHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const pathMatch = window.location.pathname.match(/\/share\/([^/?#]+)/);
+    const featureParam = new URLSearchParams(window.location.search).get('feature');
+    pendingShareIdRef.current = pathMatch ? decodeURIComponent(pathMatch[1]) : (featureParam || null);
+  }, []);
+
+  // Once the map is ready and features have loaded from the sheet, resolve
+  // the pending shared id (if any): select it via the same mechanism used
+  // when a user clicks a polygon, and pan/zoom to it exactly like a matched
+  // search result does (see handlePlaceSelected below). Then clean the URL
+  // so a refresh doesn't re-trigger the selection.
+  useEffect(() => {
+    if (shareHandledRef.current) return;
+    const pendingId = pendingShareIdRef.current;
+    if (!pendingId || !map || features.length === 0) return;
+
+    const targetFeature = features.find(f => f.id === pendingId);
+    if (targetFeature) {
+      setSelectedFeatureId(targetFeature.id);
+      setIsInfoPanelOpen(true);
+      zoomToProperty(map, targetFeature);
+    }
+
+    shareHandledRef.current = true;
+    const cleanPath = window.location.pathname.replace(/\/share\/[^/?#]+\/?/, '/');
+    const cleanUrl = `${cleanPath || '/'}${window.location.hash || ''}`;
+    window.history.replaceState(null, '', cleanUrl);
+  }, [features, map, setSelectedFeatureId, setIsInfoPanelOpen]);
+
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
     libraries: GOOGLE_MAPS_LIBRARIES

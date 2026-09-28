@@ -1,6 +1,7 @@
 import { FaRegShareSquare } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
+import { PUBLIC_SITE_ORIGIN } from '../../config/api';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
@@ -95,10 +96,8 @@ export default function RightActionDock() {
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
     const selectedFeature = features.find(f => f.id === selectedFeatureId);
 
-    const shareUrl = new URL(window.location.href);
-
     if (selectedFeature) {
-      shareUrl.searchParams.set('feature', selectedFeature.id);
+      const shareUrl = new URL(`${PUBLIC_SITE_ORIGIN}/share/${encodeURIComponent(selectedFeature.id)}`);
       const d = selectedFeature.data || {};
       const title = d.name || d.location || `Polygon ${selectedFeature.id}`;
       const tpFp = [

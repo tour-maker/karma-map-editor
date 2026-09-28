@@ -7,18 +7,20 @@
     <title>Karma Map Editor — Interactive Real Estate & Property Mapping Tool</title>
     <meta name="description" content="Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics." />
 
-    <!-- Open Graph / link-preview tags (e.g. WhatsApp, social shares). These are static/site-wide
-         because this is a client-rendered SPA with no server-side route that can inject per-property
-         tags before crawlers (which don't execute JS) read the page — see PR notes for details. -->
+    <!-- Open Graph / link-preview tags (e.g. WhatsApp, social shares). These are the generic,
+         site-wide defaults for the root URL. A per-property share link (see the "Share" button)
+         instead points to GET /share/:id on the backend, which serves this same built index.html
+         with these tag values swapped for property-specific title/description before crawlers
+         (which don't execute JS) read the page — see server/routes/share.js. -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Karma Map Editor — Interactive Real Estate & Property Mapping Tool" />
     <meta property="og:description" content="Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics." />
-    <meta property="og:image" content="https://karma-map-editor.onrender.com/favicon.png" />
-    <meta property="og:url" content="https://karma-map-editor.onrender.com/" />
+    <meta property="og:image" content="https://karmalandtour.360eye.tech/favicon.png" />
+    <meta property="og:url" content="https://karmalandtour.360eye.tech/" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Karma Map Editor — Interactive Real Estate & Property Mapping Tool" />
     <meta name="twitter:description" content="Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics." />
-    <meta name="twitter:image" content="https://karma-map-editor.onrender.com/favicon.png" />
+    <meta name="twitter:image" content="https://karmalandtour.360eye.tech/favicon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
