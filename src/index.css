@@ -27,6 +27,25 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Mobile browsers (Chrome/Safari) resize their address bar as the page is
+   touched/scrolled, but 100vh is fixed to the *tallest* possible viewport —
+   so a `position: fixed` element pinned to `bottom: 0` of a 100vh container
+   can end up positioned below the actually-visible screen area, appearing
+   to need a scroll to reach, or jumping as the address bar shows/hides.
+   100dvh tracks the real, current visible viewport instead. Kept as a
+   separate class (rather than editing the vh values directly) so browsers
+   without dvh support keep the existing 100vh behavior via @supports. */
+.karma-dvh-viewport {
+  height: 100vh;
+  min-height: 100vh;
+}
+@supports (height: 100dvh) {
+  .karma-dvh-viewport {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+}
+
 /* Hide ALL UI elements & overlays visually during screenshot capture without unmounting Google Map */
 body.hide-ui-for-screenshot .responsive-right-dock,
 body.hide-ui-for-screenshot .responsive-filter-bar,

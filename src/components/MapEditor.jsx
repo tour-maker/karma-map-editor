@@ -333,7 +333,7 @@ export default function MapEditor() {
   }
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} className="karma-dvh-viewport">
       {isLoaded && <SearchBox onPlaceSelected={handlePlaceSelected} />}
 
       {appMode === 'edit' && (
@@ -445,6 +445,7 @@ export default function MapEditor() {
       {isLoaded && (
         <GoogleMap
           mapContainerStyle={containerStyle}
+          mapContainerClassName="karma-dvh-viewport"
           center={defaultCenter}
           zoom={13}
           onLoad={handleMapLoad}

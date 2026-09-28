@@ -128,7 +128,9 @@ function SearchBox({ onPlaceSelected, placeholder = 'Search for a place or prope
     <div
       className="search-box-container"
       style={{
-        position: 'absolute',
+        // 'fixed', not 'absolute' — pins it to the actual viewport regardless of
+        // any ancestor's positioning, matching the filter dock's own `fixed`.
+        position: 'fixed',
         top: 16,
         left: '50%',
         transform: 'translateX(-50%)',
