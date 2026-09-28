@@ -130,45 +130,40 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <input
-            type="text"
-            placeholder="Search location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            className="karma-auth-input"
-            onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(253,183,19,0.25)',
-              borderRadius: GLASS_RADIUS.control,
-              padding: '6px 10px',
-              color: '#f1f5f9',
-              fontSize: 13,
-              fontWeight: 400,
-              outline: 'none',
-              marginBottom: 8,
-              width: '100%',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.15s, box-shadow 0.15s'
-            }}
-          />
+          {/* Fixed header — search input + "All Locations" reset stay pinned here,
+              outside the scrollable list below, so scrolling the location list
+              never carries them away (matches the search box's own fixed behavior). */}
+          <div style={{ flexShrink: 0, background: glassPanelStyle.background }}>
+            <input
+              type="text"
+              placeholder="Search location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="karma-auth-input"
+              onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(253,183,19,0.25)',
+                borderRadius: GLASS_RADIUS.control,
+                padding: '6px 10px',
+                color: '#f1f5f9',
+                fontSize: 13,
+                fontWeight: 400,
+                outline: 'none',
+                marginBottom: 6,
+                width: '100%',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.15s, box-shadow 0.15s'
+              }}
+            />
 
-          <div style={{
-            maxHeight: isInModal ? 180 : 240,
-            overflowY: 'auto',
-            overscrollBehavior: 'contain',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(245, 158, 11, 0.5) transparent'
-          }}>
             <div
               onClick={() => handleSelect(null)}
               style={{
                 padding: '8px 12px',
+                marginBottom: 2,
                 cursor: 'pointer',
                 borderRadius: GLASS_RADIUS.control,
                 fontSize: 13,
@@ -182,7 +177,18 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
             >
               <FiRefreshCw size={14} /> All Locations
             </div>
+          </div>
 
+          <div style={{
+            maxHeight: isInModal ? 180 : 240,
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(245, 158, 11, 0.5) transparent'
+          }}>
             {filtered.length === 0 && (
               <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, fontWeight: 400, textAlign: 'center' }}>
                 No results
@@ -297,45 +303,40 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <input
-            type="text"
-            placeholder={`Search in ${primaryName}...`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            className="karma-auth-input"
-            onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
-            onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
-            style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(253,183,19,0.25)',
-              borderRadius: GLASS_RADIUS.control,
-              padding: '6px 10px',
-              color: '#f1f5f9',
-              fontSize: 13,
-              fontWeight: 400,
-              outline: 'none',
-              marginBottom: 8,
-              width: '100%',
-              boxSizing: 'border-box',
-              transition: 'border-color 0.15s, box-shadow 0.15s'
-            }}
-          />
+          {/* Fixed header — search input + "All {primaryName}" reset stay pinned here,
+              outside the scrollable list below, so scrolling the sub-location list
+              never carries them away (matches the search box's own fixed behavior). */}
+          <div style={{ flexShrink: 0, background: glassPanelStyle.background }}>
+            <input
+              type="text"
+              placeholder={`Search in ${primaryName}...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="karma-auth-input"
+              onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(253,183,19,0.25)',
+                borderRadius: GLASS_RADIUS.control,
+                padding: '6px 10px',
+                color: '#f1f5f9',
+                fontSize: 13,
+                fontWeight: 400,
+                outline: 'none',
+                marginBottom: 8,
+                width: '100%',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.15s, box-shadow 0.15s'
+              }}
+            />
 
-          <div style={{
-            maxHeight: isInModal ? 180 : 240,
-            overflowY: 'auto',
-            overscrollBehavior: 'contain',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'rgba(245, 158, 11, 0.5) transparent'
-          }}>
             <div
               onClick={() => handleSelect(null)}
               style={{
                 padding: '8px 12px',
+                marginBottom: 2,
                 cursor: 'pointer',
                 borderRadius: GLASS_RADIUS.control,
                 fontSize: 13,
@@ -349,7 +350,18 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
             >
               <FiRefreshCw size={14} /> All {primaryName}
             </div>
+          </div>
 
+          <div style={{
+            maxHeight: isInModal ? 180 : 240,
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'rgba(245, 158, 11, 0.5) transparent'
+          }}>
             {filtered.length === 0 && (
               <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, fontWeight: 400, textAlign: 'center' }}>
                 No results
