@@ -1,97 +1,65 @@
 import express from 'express';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { getSheets, SPREADSHEET_ID } from '../sheetsHelper.js';
+import { findPropertyById } from '../utils/sheetPropertyLookup.js';
+import { isMeaningfulValue } from '../../src/utils/propertyFields.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// server/routes/share.js -> server/routes -> server -> repo root -> dist/index.html
-const DIST_INDEX_PATH = join(__dirname, '..', '..', 'dist', 'index.html');
-
-const SITE_ORIGIN = 'https://karmalandtour.360eye.tech';
-const GENERIC_TITLE = 'Karma Map Editor - Interactive Real Estate & Property Mapping Tool';
-const GENERIC_DESCRIPTION = 'Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics.';
-const GENERIC_IMAGE = `${SITE_ORIGIN}/favicon.png`;
-
-// Columns in the Polygons sheet (A:S), 0-indexed to match the array returned
-// by a Polygons!A:S values.get call:
-// 0 id, 1 tp, 2 op, 3 fp, 4 area, 5 location, 6 parent_location, 7 landmark,
-// 8 type, 9 remarks, 10 Party Name, 11 Party Phone, 12 Broker Name,
-// 13 Broker Phone, 14 coordinates, 15 center pin lat long, 16 reference,
-// 17 area unit, 18 last updated
-const COL = {
-  id: 0,
-  tp: 1,
-  op: 2,
-  fp: 3,
-  area: 4,
-  location: 5,
-  parentLocation: 6,
-  landmark: 7,
-  type: 8,
-  remarks: 9,
-  areaUnit: 17,
-};
-
 const router = express.Router();
 
-/**
- * Fetches just the single row (if any) matching `id` from the Polygons sheet,
- * without pulling in all of sheetsHelper.js's write-side logic.
- */
-async function findPolygonRowById(id) {
-  const sheets = getSheets();
-  const result = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: 'Polygons!A:S',
-  });
+// The public origin the share link and the OG image URL are built against.
+const SITE_ORIGIN = (process.env.PUBLIC_SITE_ORIGIN || 'https://karmalandtour.360eye.tech').replace(/\/$/, '');
+const GENERIC_TITLE = 'Karma Map Editor - Interactive Real Estate & Property Mapping Tool';
+const GENERIC_DESCRIPTION = 'Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics.';
+const GENERIC_IMAGE = `${SITE_ORIGIN}/preview.webp`;
 
-  const rows = result.data.values || [];
-  const idStr = String(id);
-  const row = rows.find((r) => r[COL.id] === idStr);
-  return row || null;
+// Prefer the built frontend's index.html (correct hashed asset tags) when this
+// server is deployed alongside the frontend build; fall back to the repo's
+// source template otherwise (dev, or the two are hosted separately).
+const INDEX_HTML_CANDIDATES = [
+  join(__dirname, '..', '..', 'dist', 'index.html'),
+  join(__dirname, '..', '..', 'index.html'),
+];
+
+function loadIndexHtmlTemplate() {
+  for (const path of INDEX_HTML_CANDIDATES) {
+    if (existsSync(path)) return readFileSync(path, 'utf8');
+  }
+  return null;
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
 }
 
-function buildTitleAndDescription(row) {
-  if (!row) {
+function buildTitleAndDescription(property) {
+  if (!property) {
     return { title: GENERIC_TITLE, description: GENERIC_DESCRIPTION };
   }
 
-  const area = row[COL.area] || '';
-  const areaUnit = row[COL.areaUnit] || 'sq. yard';
-  const type = row[COL.type] || 'Land';
-  const location = row[COL.location] || 'Surat';
-  const parentLocation = row[COL.parentLocation] || '';
-  const tp = row[COL.tp] || '';
-  const op = row[COL.op] || '';
-  const fp = row[COL.fp] || '';
-  const landmark = row[COL.landmark] || '';
-  const remarks = row[COL.remarks] || '';
+  const areaUnit = isMeaningfulValue(property.areaUnit) ? property.areaUnit : 'sq. yard';
+  const type = isMeaningfulValue(property.type) ? property.type : 'Land';
+  const location = isMeaningfulValue(property.location) ? property.location : 'Surat';
+  const parentLocation = isMeaningfulValue(property.parentLocation) ? property.parentLocation : '';
 
-  const areaPart = area ? `${area} ${areaUnit}` : '';
+  const areaPart = isMeaningfulValue(property.area) ? `${property.area} ${areaUnit}` : '';
   const locationPart = parentLocation ? `${location}, ${parentLocation}` : location;
 
   const title = `${[areaPart, type].filter(Boolean).join(' ')} Plot - ${locationPart} | Karma Realtors`;
 
   const tpFp = [
-    tp ? `TP: ${tp}` : '',
-    op ? `OP: ${op}` : '',
-    fp ? `FP: ${fp}` : '',
+    isMeaningfulValue(property.tp) ? `TP: ${property.tp}` : '',
+    isMeaningfulValue(property.op) ? `OP: ${property.op}` : '',
+    isMeaningfulValue(property.fp) ? `FP: ${property.fp}` : '',
   ].filter(Boolean).join(' | ');
 
   const descriptionParts = [
     tpFp,
-    landmark ? `Near ${landmark}` : '',
-    remarks || '',
+    isMeaningfulValue(property.landmark) ? `Near ${property.landmark}` : '',
+    isMeaningfulValue(property.remarks) ? property.remarks : '',
   ].filter(Boolean);
 
   const description = descriptionParts.length > 0
@@ -105,6 +73,10 @@ function buildTitleAndDescription(row) {
 // @desc    Serve the built index.html with property-specific Open Graph /
 //          Twitter tags swapped in, so link previews (WhatsApp, etc.) show
 //          real property details instead of the generic site-wide tags.
+//          Real visitors get the same page (the script tag is untouched), so
+//          they land on the actual app with this plot preselected - see the
+//          /share/:id parsing in MapEditor.jsx. Works for any id already in
+//          the sheet, nothing here is hardcoded per-property.
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -112,19 +84,17 @@ router.get('/:id', async (req, res) => {
   let description = GENERIC_DESCRIPTION;
 
   try {
-    const row = await findPolygonRowById(id);
-    ({ title, description } = buildTitleAndDescription(row));
+    const property = await findPropertyById(id);
+    ({ title, description } = buildTitleAndDescription(property));
   } catch (error) {
     // Bad/old id, sheet unreachable, etc. — fall back to the generic tags
     // rather than failing the request.
-    console.warn(`[share] Could not look up polygon "${id}" for link preview, using generic tags:`, error.message);
+    console.warn(`[share] Could not look up property "${id}" for link preview, using generic tags:`, error.message);
   }
 
-  let html;
-  try {
-    html = readFileSync(DIST_INDEX_PATH, 'utf8');
-  } catch (error) {
-    console.warn('[share] Could not read dist/index.html (no build present?):', error.message);
+  const template = loadIndexHtmlTemplate();
+  if (!template) {
+    console.warn('[share] Could not find dist/index.html or index.html (no build present?)');
     return res
       .status(200)
       .type('html')
@@ -135,16 +105,31 @@ router.get('/:id', async (req, res) => {
   const escTitle = escapeHtml(title);
   const escDescription = escapeHtml(description);
 
-  html = html
+  // Strip the generic OG/Twitter block already in the template, then inject the
+  // property-specific tags, so tags are never duplicated regardless of exactly
+  // which meta tags the template currently ships with.
+  let html = template
     .replace(/<title>.*?<\/title>/s, `<title>${escTitle}</title>`)
     .replace(/(<meta\s+name="description"\s+content=")[^"]*(")/, `$1${escDescription}$2`)
-    .replace(/(<meta\s+property="og:title"\s+content=")[^"]*(")/, `$1${escTitle}$2`)
-    .replace(/(<meta\s+property="og:description"\s+content=")[^"]*(")/, `$1${escDescription}$2`)
-    .replace(/(<meta\s+property="og:image"\s+content=")[^"]*(")/, `$1${GENERIC_IMAGE}$2`)
-    .replace(/(<meta\s+property="og:url"\s+content=")[^"]*(")/, `$1${shareUrl}$2`)
-    .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*(")/, `$1${escTitle}$2`)
-    .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*(")/, `$1${escDescription}$2`)
-    .replace(/(<meta\s+name="twitter:image"\s+content=")[^"]*(")/, `$1${GENERIC_IMAGE}$2`);
+    .replace(/<meta property="og:[^>]*>\s*/g, '')
+    .replace(/<meta name="twitter:[^>]*>\s*/g, '');
+
+  const ogTags = [
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="Karma Realtors" />`,
+    `<meta property="og:title" content="${escTitle}" />`,
+    `<meta property="og:description" content="${escDescription}" />`,
+    `<meta property="og:image" content="${GENERIC_IMAGE}" />`,
+    `<meta property="og:url" content="${shareUrl}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${escTitle}" />`,
+    `<meta name="twitter:description" content="${escDescription}" />`,
+    `<meta name="twitter:image" content="${GENERIC_IMAGE}" />`,
+  ].join('\n    ');
+
+  html = html.includes('<head>')
+    ? html.replace('<head>', `<head>\n    ${ogTags}`)
+    : html;
 
   res.type('html').send(html);
 });

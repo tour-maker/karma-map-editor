@@ -36,27 +36,10 @@ function App() {
         });
     }
 
-    // Verify viewer account JWT with backend on every page load
-    const storedUserJWT = localStorage.getItem('karmaUserJWT');
-    if (storedUserJWT) {
-      fetch(`${API_BASE_URL}/api/auth/user-verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: storedUserJWT })
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.valid) {
-            useMapStore.getState().setViewerUsername(data.username);
-          } else {
-            localStorage.removeItem('karmaUserJWT');
-            useMapStore.getState().setViewerUsername(null);
-          }
-        })
-        .catch(() => {
-          // If server unreachable, keep the cached username but don't trust it for API calls
-        });
-    }
+    // Viewer accounts do not survive a page refresh: every fresh load starts signed out,
+    // and Map Labels always starts OFF (stale values from older persisted storage are reset too).
+    localStorage.removeItem('karmaUserJWT');
+    useMapStore.setState({ viewerUsername: null, showLabels: false });
 
     // Hydrate Google token from store if it exists
     if (googleAccessToken) {
@@ -149,30 +132,21 @@ function App() {
           >
             {googleSheetsConnected ? 'Google Sheets Connected' : 'Connect Google Sheets'}
           </button> */}
-          <button
-            onClick={() => {
-              localStorage.removeItem('karmaAdminJWT');
-              useMapStore.getState().setIsAdminAuthenticated(false);
-            }}
-            style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.5)',
-              color: '#ef4444',
-              borderRadius: 8,
-              padding: '6px 14px',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s',
-              fontFamily: 'Inter, system-ui, sans-serif'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-          >
-            Logout
-          </button>
+          <span style={{
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            color: '#f59e0b',
+            borderRadius: 12,
+            padding: '3px 9px',
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            backdropFilter: 'blur(8px)',
+            fontFamily: 'Inter, system-ui, sans-serif'
+          }}>
+            Map Editor
+          </span>
         </div>
       )}
       <Toaster position="top-center" />

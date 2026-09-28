@@ -16,6 +16,7 @@ export default function AdminAuthOverlay() {
     e.preventDefault();
     setErrorMessage('');
     setLoading(true);
+    setErrorMessage('');
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
@@ -30,9 +31,12 @@ export default function AdminAuthOverlay() {
           style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
         });
       } else {
-        setErrorMessage(data?.error || 'Invalid ID or Password!');
+        // Shown inline (not just as a toast) — this overlay's z-index sits above the
+        // toast container, so a toast alone renders invisibly behind it.
+        setErrorMessage(data?.error || 'Incorrect username or password.');
       }
     } catch (err) {
+      console.error('Admin login error:', err);
       setErrorMessage('Cannot reach server. Make sure the backend is running.');
     } finally {
       setLoading(false);
@@ -112,7 +116,7 @@ export default function AdminAuthOverlay() {
               type="text"
               className="karma-glass-input"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); setErrorMessage(''); }}
               placeholder="Enter ID"
               style={{
                 width: '100%',
@@ -135,7 +139,7 @@ export default function AdminAuthOverlay() {
                 type={showPassword ? "text" : "password"}
                 className="karma-glass-input"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
                 placeholder="Enter Password"
                 style={{
                   width: '100%',
@@ -171,6 +175,17 @@ export default function AdminAuthOverlay() {
               </button>
             </div>
           </div>
+
+          {errorMessage && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: 10, padding: '10px 12px',
+              color: '#f87171', fontSize: 13, fontWeight: 600, textAlign: 'left'
+            }}>
+              {errorMessage}
+            </div>
+          )}
 
           <button
             type="submit"

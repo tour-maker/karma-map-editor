@@ -3,20 +3,18 @@ import { useCallback, useState } from 'react';
 import { useMapStore } from '../store/useMapStore';
 import { FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { GLASS_SHADOW, GLASS_BLUR } from '../styles/glass';
 
 const inputStyle = {
   width: '100%',
   padding: '12px 20px',
   borderRadius: '24px',
-  border: '1px solid rgba(255, 255, 255, 0.22)',
   fontSize: '14.5px',
-  fontWeight: '500',
+  fontWeight: 400,
   outline: 'none',
-  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.65)',
-  background: 'rgba(10, 14, 23, 0.70)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  color: '#f8fafc',
+  boxShadow: GLASS_SHADOW,
+  backdropFilter: GLASS_BLUR,
+  WebkitBackdropFilter: GLASS_BLUR,
   boxSizing: 'border-box'
 };
 
@@ -146,6 +144,7 @@ function SearchBox({ onPlaceSelected, placeholder = 'Search for a place or prope
           <input
             type="text"
             placeholder={placeholder}
+            className="karma-glass-input"
             style={{
               ...inputStyle,
               paddingRight: searchValue ? 40 : 20

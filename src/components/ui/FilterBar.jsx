@@ -1,10 +1,43 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, buildDynamicLocationMap } from '../../config/categories';
+import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
-import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
 import { isFeatureMatchingUnit } from '../../utils/unitFilter';
+import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GLASS_BLUR, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
+
+const countPillStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 7,
+  padding: '6px 14px',
+  borderRadius: 999,
+  background: 'rgba(10, 14, 23, 0.85)',
+  border: '1px solid rgba(253, 183, 19, 0.35)',
+  boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.35)',
+  whiteSpace: 'nowrap',
+  userSelect: 'none',
+  flexShrink: 0
+};
+
+const mobileChipStyle = (active) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '7px 12px',
+  borderRadius: 999,
+  border: active ? `1px solid ${GLASS_COLORS.borderActive}` : '1px solid rgba(255, 255, 255, 0.22)',
+  background: active ? 'rgba(245, 158, 11, 0.22)' : 'rgba(10, 14, 23, 0.78)',
+  backdropFilter: GLASS_BLUR,
+  WebkitBackdropFilter: GLASS_BLUR,
+  color: active ? '#f59e0b' : '#e2e8f0',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  boxShadow: '0 4px 14px rgba(0,0,0,0.4)'
+});
 
 const PushPinIcon = ({ color }) => (
   <svg width="18" height="24" viewBox="0 0 16 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -17,13 +50,17 @@ const PushPinIcon = ({ color }) => (
 // ---------------------------------------------------------------------------
 // 1. Primary Location Dropdown Component
 // ---------------------------------------------------------------------------
-function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, forceOpen = false }) {
+function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, forceOpen = false, onOpenChange }) {
   // forceOpen seeds the initial open state so the parent "Filters" pill can open this
   // specific dropdown directly (e.g. clicking the "Location" label). This component is
   // freshly mounted each time the modal sheet opens, so this only needs to run once.
   const [isOpen, setIsOpen] = useState(forceOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -47,7 +84,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto' }}>
+    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto', height: '100%' }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -55,7 +92,9 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
-          padding: '2px 4px',
+          // Trigger fills the whole bordered container so the first click anywhere on it opens the menu
+          padding: isInModal ? '0 14px' : '0 10px',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isInModal ? 'space-between' : 'flex-start',
@@ -79,37 +118,15 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
       </div>
 
       {isOpen && (
-        <div style={isInModal ? {
+        <div style={{
+          ...glassPanelStyle,
           position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          width: '100%',
-          marginTop: 6,
-          background: 'rgba(15, 23, 42, 0.98)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
+          ...(isInModal ? {
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : {
+            bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 190, zIndex: 1100
+          }),
           padding: 8,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8)',
-          zIndex: 3000,
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column'
-        } : {
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: 16,
-          background: 'rgba(15, 23, 42, 0.96)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
-          padding: 8,
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-          minWidth: 190,
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -119,22 +136,27 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            className="karma-auth-input"
+            onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
             style={{
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(253,183,19,0.25)',
+              borderRadius: GLASS_RADIUS.control,
               padding: '6px 10px',
-              color: '#e2e8f0',
+              color: '#f1f5f9',
               fontSize: 13,
+              fontWeight: 400,
               outline: 'none',
               marginBottom: 8,
               width: '100%',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s, box-shadow 0.15s'
             }}
           />
 
           <div style={{
-            maxHeight: 240,
+            maxHeight: isInModal ? 180 : 240,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -147,7 +169,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
               style={{
                 padding: '8px 12px',
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: GLASS_RADIUS.control,
                 fontSize: 13,
                 fontWeight: 600,
                 color: !value ? activeColor : '#94a3b8',
@@ -161,7 +183,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
             </div>
 
             {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, textAlign: 'center' }}>
+              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, fontWeight: 400, textAlign: 'center' }}>
                 No results
               </div>
             )}
@@ -175,7 +197,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
                   style={{
                     padding: '8px 12px',
                     cursor: 'pointer',
-                    borderRadius: 8,
+                    borderRadius: GLASS_RADIUS.control,
                     fontSize: 13,
                     fontWeight: 600,
                     color: isActive ? activeColor : '#e2e8f0',
@@ -197,10 +219,14 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
 // ---------------------------------------------------------------------------
 // 2. Sub-Location Dropdown Component
 // ---------------------------------------------------------------------------
-function SubLocationDropdown({ subLocations, primaryName, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false }) {
+function SubLocationDropdown({ subLocations, primaryName, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, onOpenChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -224,7 +250,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto' }}>
+    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto', height: '100%' }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -232,7 +258,9 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
-          padding: '2px 4px',
+          // Trigger fills the whole bordered container so the first click anywhere on it opens the menu
+          padding: isInModal ? '0 14px' : '0 10px',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isInModal ? 'space-between' : 'flex-start',
@@ -256,37 +284,15 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
       </div>
 
       {isOpen && (
-        <div style={isInModal ? {
+        <div style={{
+          ...glassPanelStyle,
           position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          width: '100%',
-          marginTop: 6,
-          background: 'rgba(15, 23, 42, 0.98)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
+          ...(isInModal ? {
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : {
+            bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 180, zIndex: 1100
+          }),
           padding: 8,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8)',
-          zIndex: 3000,
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column'
-        } : {
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: 16,
-          background: 'rgba(15, 23, 42, 0.96)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
-          padding: 8,
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-          minWidth: 180,
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column'
         }}>
@@ -296,22 +302,27 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            className="karma-auth-input"
+            onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
             style={{
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(253,183,19,0.25)',
+              borderRadius: GLASS_RADIUS.control,
               padding: '6px 10px',
-              color: '#e2e8f0',
+              color: '#f1f5f9',
               fontSize: 13,
+              fontWeight: 400,
               outline: 'none',
               marginBottom: 8,
               width: '100%',
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
+              transition: 'border-color 0.15s, box-shadow 0.15s'
             }}
           />
 
           <div style={{
-            maxHeight: 240,
+            maxHeight: isInModal ? 180 : 240,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -324,7 +335,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
               style={{
                 padding: '8px 12px',
                 cursor: 'pointer',
-                borderRadius: 8,
+                borderRadius: GLASS_RADIUS.control,
                 fontSize: 13,
                 fontWeight: 600,
                 color: !value ? activeColor : '#94a3b8',
@@ -338,7 +349,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
             </div>
 
             {filtered.length === 0 && (
-              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, textAlign: 'center' }}>
+              <div style={{ padding: '8px 12px', color: '#64748b', fontSize: 12, fontWeight: 400, textAlign: 'center' }}>
                 No results
               </div>
             )}
@@ -352,7 +363,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
                   style={{
                     padding: '8px 12px',
                     cursor: 'pointer',
-                    borderRadius: 8,
+                    borderRadius: GLASS_RADIUS.control,
                     fontSize: 13,
                     fontWeight: 600,
                     color: isActive ? activeColor : '#e2e8f0',
@@ -374,12 +385,16 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
 // ---------------------------------------------------------------------------
 // 3. Category Dropdown Component
 // ---------------------------------------------------------------------------
-function CategoryDropdown({ options, value, onChange, placeholder = 'Category', activeColor = '#f59e0b', isInModal = false, forceOpen = false }) {
+function CategoryDropdown({ options, value, onChange, placeholder = 'Category', activeColor = '#f59e0b', isInModal = false, forceOpen = false, onOpenChange }) {
   // forceOpen seeds the initial open state so the parent "Filters" pill can open this
   // specific dropdown directly (e.g. clicking the "Category" label). This component is
   // freshly mounted each time the modal sheet opens, so this only needs to run once.
   const [isOpen, setIsOpen] = useState(forceOpen);
   const ref = useRef(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -399,7 +414,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto' }}>
+    <div ref={ref} style={{ position: 'relative', width: isInModal ? '100%' : 'auto', height: '100%' }}>
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -407,7 +422,9 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
           fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
-          padding: '2px 4px',
+          // Trigger fills the whole bordered container so the first click anywhere on it opens the menu
+          padding: isInModal ? '0 14px' : '0 10px',
+          height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isInModal ? 'space-between' : 'flex-start',
@@ -432,37 +449,15 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
       </div>
 
       {isOpen && (
-        <div style={isInModal ? {
+        <div style={{
+          ...glassPanelStyle,
           position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          width: '100%',
-          marginTop: 6,
-          background: 'rgba(15, 23, 42, 0.98)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
+          ...(isInModal ? {
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : {
+            bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 200, zIndex: 1100
+          }),
           padding: 8,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8)',
-          zIndex: 3000,
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4
-        } : {
-          position: 'absolute',
-          bottom: '100%',
-          right: 0,
-          marginBottom: 16,
-          background: 'rgba(15, 23, 42, 0.96)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          borderRadius: 14,
-          padding: 8,
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.6)',
-          minWidth: 200,
-          zIndex: 1100,
           display: 'flex',
           flexDirection: 'column',
           gap: 4
@@ -478,7 +473,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
               fontWeight: 600,
               color: !value ? activeColor : '#94a3b8',
               padding: '8px 12px',
-              borderRadius: 8,
+              borderRadius: GLASS_RADIUS.control,
               background: !value ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
             }}
           >
@@ -500,7 +495,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
                   fontWeight: 600,
                   color: isActive ? activeColor : '#e2e8f0',
                   padding: '8px 12px',
-                  borderRadius: 8,
+                  borderRadius: GLASS_RADIUS.control,
                   background: isActive ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
                   transition: 'background 0.15s ease'
                 }}
@@ -544,17 +539,66 @@ export default function FilterBar() {
     return buildDynamicLocationMap(features);
   }, [features]);
 
+  // Live Location <-> Category matrix, derived straight from the actual features —
+  // no per-location config. Recomputes automatically as properties are added,
+  // removed or recategorized in the sheet.
+  const locationCategoryMatrix = useMemo(() => buildLocationCategoryMatrix(features), [features]);
+
   const [animateKey, setAnimateKey] = useState(0);
 
+  // Tracks whether the current filterType was set BY US (single-option auto-select)
+  // rather than by the user, so a location change can safely clear it without ever
+  // touching a category the user actually picked themselves.
+  const autoSelectedCategoryRef = useRef(null);
+
   const handleFilterChange = (updates) => {
-    const nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
-    const nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
-    const nextType = updates.type !== undefined ? updates.type : filterType;
+    let nextPrimary = updates.primary !== undefined ? updates.primary : filterPrimary;
+    let nextSecondary = updates.secondary !== undefined ? updates.secondary : filterSecondary;
     const nextAreaUnit = updates.areaUnit !== undefined ? updates.areaUnit : globalAreaUnit;
+    let nextType = updates.type !== undefined ? updates.type : filterType;
+
+    if (updates.type !== undefined) {
+      autoSelectedCategoryRef.current = null; // a manual pick, not an auto-selection
+    }
+
+    // Clear the selected category if it doesn't apply to the newly selected area unit
+    if (updates.areaUnit !== undefined && nextType && !getCategoryOptionsForUnit(nextAreaUnit).includes(nextType)) {
+      nextType = null;
+    }
+
+    // Location -> Category: auto-select the sole category when the new location narrows
+    // it down to exactly one option; clear it again once 2+ (or 0) options are available —
+    // but only when the active category is one we auto-selected, never a manual pick.
+    if (updates.primary !== undefined || updates.secondary !== undefined) {
+      const allowedCategories = getCategoriesForLocation(locationCategoryMatrix, nextSecondary || nextPrimary);
+      if (allowedCategories === null) {
+        if (nextType && autoSelectedCategoryRef.current === nextType) nextType = null;
+        autoSelectedCategoryRef.current = null;
+      } else if (allowedCategories.length === 1) {
+        nextType = allowedCategories[0];
+        autoSelectedCategoryRef.current = nextType;
+      } else {
+        if (nextType && (!allowedCategories.includes(nextType) || autoSelectedCategoryRef.current === nextType)) {
+          nextType = null;
+        }
+        autoSelectedCategoryRef.current = null;
+      }
+    }
+
+    // Category -> Location (reverse of the above): clear an already-active location
+    // that has zero properties in the newly selected category
+    if (updates.type !== undefined && nextPrimary) {
+      const allowedLocations = getLocationsForCategory(locationCategoryMatrix, nextType);
+      if (allowedLocations && !allowedLocations.includes(nextPrimary)) {
+        nextPrimary = null;
+        nextSecondary = null;
+      }
+    }
 
     if (updates.primary !== undefined) setFilterPrimary(updates.primary);
+    else if (nextPrimary !== filterPrimary) setFilterPrimary(nextPrimary);
     if (updates.secondary !== undefined) setFilterSecondary(updates.secondary);
-    if (updates.type !== undefined) setFilterType(updates.type);
+    if (updates.type !== undefined || nextType !== filterType) setFilterType(nextType);
     if (updates.areaUnit !== undefined) setGlobalAreaUnit(updates.areaUnit);
 
     setSelectedFeatureId(null);
@@ -629,13 +673,18 @@ export default function FilterBar() {
     setAnimateKey(prev => prev + 1);
   }, [visibleCount, filterPrimary, filterSecondary, filterType, globalAreaUnit]);
 
+  // Locations with zero properties in the active category are filtered out here — computed
+  // live from locationCategoryMatrix, so it never needs a per-location config entry.
   const primaryCategories = useMemo(() => {
-    return Object.keys(dynamicCategoryMap).sort((a, b) => {
-      if (a.toLowerCase() === 'surat') return -1;
-      if (b.toLowerCase() === 'surat') return 1;
-      return a.localeCompare(b);
-    });
-  }, [dynamicCategoryMap]);
+    const allowedLocations = getLocationsForCategory(locationCategoryMatrix, filterType);
+    const base = Object.keys(dynamicCategoryMap);
+    return (allowedLocations ? base.filter(loc => allowedLocations.includes(loc)) : base)
+      .sort((a, b) => {
+        if (a.toLowerCase() === 'surat') return -1;
+        if (b.toLowerCase() === 'surat') return 1;
+        return a.localeCompare(b);
+      });
+  }, [dynamicCategoryMap, locationCategoryMatrix, filterType]);
 
   // Secondary location field appears whenever the selected primary location actually
   // has sub-locations in the live data (not just Surat — e.g. "NH 48 , Palsana" too).
@@ -644,6 +693,14 @@ export default function FilterBar() {
   }, [dynamicCategoryMap, filterPrimary]);
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
+
+  // Categories with zero properties in the active location (sub-location takes precedence
+  // over the broader primary when both are set) are filtered out — also live from the matrix.
+  const categoryOptions = useMemo(() => {
+    const options = getCategoryOptionsForUnit(globalAreaUnit);
+    const allowedCategories = getCategoriesForLocation(locationCategoryMatrix, filterSecondary || filterPrimary);
+    return allowedCategories ? options.filter(t => allowedCategories.includes(t)) : options;
+  }, [globalAreaUnit, locationCategoryMatrix, filterPrimary, filterSecondary]);
   const isFilterActive = Boolean(filterPrimary || filterSecondary || filterType || globalAreaUnit);
 
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
@@ -654,6 +711,29 @@ export default function FilterBar() {
     { key: 'category', label: filterType || 'Category' },
     { key: 'unit', label: globalAreaUnit ? (globalAreaUnit === 'yards' ? 'Sq.Yard' : 'Wingha') : 'Sq.Yard' }
   ]), [filterPrimary, filterType, globalAreaUnit]);
+
+  // While any desktop dropdown is open the whole dock is lifted above sibling overlays
+  // (right dock, WhatsApp CTA, top bars) so the menu is never partially covered.
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const trackDropdown = useCallback((name, open) => {
+    setOpenDropdown(prev => (open ? name : (prev === name ? null : prev)));
+  }, []);
+  const onPrimaryOpen = useCallback((open) => trackDropdown('primary', open), [trackDropdown]);
+  const onSubOpen = useCallback((open) => trackDropdown('sub', open), [trackDropdown]);
+  const onCategoryOpen = useCallback((open) => trackDropdown('category', open), [trackDropdown]);
+
+  const handleResetAll = () => {
+    autoSelectedCategoryRef.current = null;
+    setFilterPrimary(null);
+    setFilterSecondary(null);
+    setFilterType(null);
+    setGlobalAreaUnit(null);
+    setSelectedFeatureId(null);
+    setIsInfoPanelOpen(false);
+    if (map && features.length > 0) {
+      fitAllBounds(map, features);
+    }
+  };
 
   const openFilterFieldDirectly = (fieldKey) => (e) => {
     e.stopPropagation();
@@ -679,46 +759,35 @@ export default function FilterBar() {
           bottom: 0,
           left: '50%',
           transform: 'translateX(-50%)',
-          zIndex: 1000,
+          zIndex: openDropdown ? 1250 : 1000,
           height: 60,
           boxSizing: 'border-box',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          background: 'rgba(10, 14, 23, 0.70)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.22)',
+          background: GLASS_COLORS.panelBg,
+          backdropFilter: GLASS_BLUR,
+          WebkitBackdropFilter: GLASS_BLUR,
+          border: `1px solid ${GLASS_COLORS.border}`,
           borderBottom: 'none',
           borderRadius: '28px 28px 0 0',
           padding: '0 24px',
-          // boxShadow: '0 -12px 40px rgba(0, 0, 0, 0.75)'
+          boxShadow: GLASS_SHADOW
         }}
       >
         {/* Reset All Floating Button (Only appears when a filter is active) */}
         {isFilterActive && (
           <button
             type="button"
-            onClick={() => {
-              setFilterPrimary(null);
-              setFilterSecondary(null);
-              setFilterType(null);
-              setGlobalAreaUnit(null);
-              setSelectedFeatureId(null);
-              setIsInfoPanelOpen(false);
-              if (map && features.length > 0) {
-                fitAllBounds(map, features);
-              }
-            }}
+            onClick={handleResetAll}
             title="Reset all applied filters"
             style={{
               position: 'absolute',
               top: -40,
-              left: 175,
-              background: 'rgba(15, 23, 42, 0.95)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(245, 158, 11, 0.4)',
-              borderRadius: 8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              ...glassPanelStyle,
+              borderRadius: GLASS_RADIUS.control,
               padding: '5px 14px',
               color: '#f8fafc',
               fontSize: 12.5,
@@ -727,7 +796,6 @@ export default function FilterBar() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap'
             }}
@@ -744,9 +812,9 @@ export default function FilterBar() {
           style={{
             height: 38,
             boxSizing: 'border-box',
-            border: showLandmarks ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.35)',
+            border: showLandmarks ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
             background: showLandmarks ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
-            borderRadius: 10,
+            borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
             alignItems: 'center',
@@ -767,20 +835,20 @@ export default function FilterBar() {
           <span className="desktop-only-text">Landmarks</span>
         </div>
 
-        {/* 1b. Labels Toggle Button — switches the base map between satellite-only
+        {/* 1b. Map Labels Toggle Button — switches the base map between satellite-only
             and hybrid (satellite + road/place names) view. Store logic
             (showLabels/toggleLabels) already existed and was already wired
             into MapEditor's mapTypeId, but no button called it anywhere. */}
         <div
           onClick={toggleLabels}
-          title={showLabels ? "Labels On (Click to turn off)" : "Labels Off (Click to turn on)"}
+          title={showLabels ? "Map Labels On (Click to turn off)" : "Map Labels Off (Click to turn on)"}
           className="filter-labels-toggle"
           style={{
             height: 38,
             boxSizing: 'border-box',
-            border: showLabels ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.35)',
+            border: showLabels ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
             background: showLabels ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
-            borderRadius: 10,
+            borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
             alignItems: 'center',
@@ -793,7 +861,7 @@ export default function FilterBar() {
             transition: 'all 0.2s ease'
           }}
         >
-          <FiTag size={16} color={showLabels ? '#f59e0b' : '#94a3b8'} />
+          <FiType size={16} color={showLabels ? '#f59e0b' : '#94a3b8'} />
           <span className="desktop-only-text">Labels</span>
         </div>
 
@@ -803,10 +871,10 @@ export default function FilterBar() {
         {/* 2. Primary Location Dropdown */}
         <div className="filter-dropdown-container" style={{
           height: 38,
-          border: '1px solid rgba(255, 255, 255, 0.35)',
+          border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
-          padding: '0 10px',
+          padding: 0,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box'
@@ -817,6 +885,7 @@ export default function FilterBar() {
             onChange={(cat) => handleFilterChange({ primary: cat, secondary: null })}
             placeholder="Location"
             activeColor="#f59e0b"
+            onOpenChange={onPrimaryOpen}
           />
         </div>
 
@@ -827,10 +896,10 @@ export default function FilterBar() {
           <>
             <div className="filter-dropdown-container" style={{
               height: 38,
-              border: '1px solid rgba(255, 255, 255, 0.35)',
+              border: `1px solid ${GLASS_COLORS.border}`,
               background: 'rgba(30, 41, 59, 0.5)',
               borderRadius: 10,
-              padding: '0 10px',
+              padding: 0,
               display: 'flex',
               alignItems: 'center',
               boxSizing: 'border-box'
@@ -842,6 +911,7 @@ export default function FilterBar() {
                 onChange={(sub) => handleFilterChange({ secondary: sub })}
                 placeholder="Location"
                 activeColor="#f59e0b"
+                onOpenChange={onSubOpen}
               />
             </div>
             <FiArrowRight size={16} color="#ffffff" className="filter-arrow-divider" style={{ flexShrink: 0 }} />
@@ -851,7 +921,7 @@ export default function FilterBar() {
         {/* 3. Unit Toggle */}
         <div style={{
           height: 38,
-          border: '1px solid rgba(255, 255, 255, 0.35)',
+          border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
           padding: '2px',
@@ -867,11 +937,11 @@ export default function FilterBar() {
             className="btn-hover-effect"
             style={{
               height: '100%',
-              background: globalAreaUnit === 'yards' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-              color: globalAreaUnit === 'yards' ? '#000000' : '#f59e0b',
-              boxShadow: globalAreaUnit === 'yards' ? '0 2px 8px rgba(245, 158, 11, 0.4)' : 'none',
+              background: globalAreaUnit === 'yards' ? GOLD_GRADIENT : 'transparent',
+              color: globalAreaUnit === 'yards' ? '#1c1406' : '#f59e0b',
+              boxShadow: globalAreaUnit === 'yards' ? GOLD_GRADIENT_SHADOW : 'none',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: GLASS_RADIUS.control,
               padding: '0 10px',
               fontSize: 13,
               fontWeight: 700,
@@ -893,11 +963,11 @@ export default function FilterBar() {
             className="btn-hover-effect"
             style={{
               height: '100%',
-              background: globalAreaUnit === 'wingha' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-              color: globalAreaUnit === 'wingha' ? '#000000' : '#f59e0b',
-              boxShadow: globalAreaUnit === 'wingha' ? '0 2px 8px rgba(245, 158, 11, 0.4)' : 'none',
+              background: globalAreaUnit === 'wingha' ? GOLD_GRADIENT : 'transparent',
+              color: globalAreaUnit === 'wingha' ? '#1c1406' : '#f59e0b',
+              boxShadow: globalAreaUnit === 'wingha' ? GOLD_GRADIENT_SHADOW : 'none',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: GLASS_RADIUS.control,
               padding: '0 10px',
               fontSize: 13,
               fontWeight: 700,
@@ -919,59 +989,58 @@ export default function FilterBar() {
         {/* 4. Category Dropdown */}
         <div className="filter-dropdown-container" style={{
           height: 38,
-          border: '1px solid rgba(255, 255, 255, 0.35)',
+          border: `1px solid ${GLASS_COLORS.border}`,
           background: 'rgba(30, 41, 59, 0.5)',
           borderRadius: 10,
-          padding: '0 10px',
+          padding: 0,
           display: 'flex',
           alignItems: 'center',
           boxSizing: 'border-box'
         }}>
           <CategoryDropdown
-            options={PROPERTY_TYPES}
+            options={categoryOptions}
             value={filterType}
             onChange={(type) => handleFilterChange({ type })}
             placeholder="Category"
             activeColor="#f59e0b"
+            onOpenChange={onCategoryOpen}
           />
         </div>
 
         {/* Vertical Divider */}
         <div className="filter-divider" style={{ width: 1, height: 26, background: 'rgba(255, 255, 255, 0.18)', flexShrink: 0 }} />
 
-        {/* 5. Property Count Badge */}
+        {/* 5. Property Count Badge — dark pill: icon + bold number + "found" */}
         <div
           key={animateKey}
           title={`${visibleCount} matching property feature${visibleCount === 1 ? '' : 's'}`}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            whiteSpace: 'nowrap',
-            userSelect: 'none',
-            padding: '0 2px'
-          }}
+          style={countPillStyle}
         >
-          <div style={{
-            background: 'rgba(245, 158, 11, 0.12)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
-            padding: '2px 8px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.1), 0 2px 6px rgba(245, 158, 11, 0.15)'
-          }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#fbbf24', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.5px' }}>
-              {visibleCount}
-            </span>
-          </div>
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: '#cbd5e1', letterSpacing: '0.3px', marginLeft: 4 }} className="desktop-only-text">
-            properties found
+          <FiMapPin size={15} color="#FDB713" />
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#f8fafc', fontVariantNumeric: 'tabular-nums' }}>
+            {visibleCount}
           </span>
+          <span style={{ fontSize: 12.5, fontWeight: 500, color: '#94a3b8' }}>found</span>
         </div>
 
       </div>
+
+      {/* MOBILE: Landmarks + Map Labels toggles, sitting above the Filters dock */}
+      {!isMobileSheetOpen && (
+        <div
+          className="mobile-toggle-chips"
+          style={{ position: 'fixed', bottom: 70, left: 16, zIndex: 1000, gap: 8 }}
+        >
+          <button type="button" onClick={toggleLandmarks} style={mobileChipStyle(showLandmarks)}>
+            {showLandmarks ? <FiEye size={14} /> : <FiEyeOff size={14} />}
+            Landmarks
+          </button>
+          <button type="button" onClick={toggleLabels} style={mobileChipStyle(showLabels)}>
+            <FiType size={14} />
+            Labels
+          </button>
+        </div>
+      )}
 
       {/* MOBILE FILTERS DOCK NOTCH (Matches User Mockup Screenshot 100%) */}
       <div
@@ -985,10 +1054,10 @@ export default function FilterBar() {
           width: 'calc(100vw - 32px)',
           maxWidth: 460,
           height: 60,
-          background: 'rgba(10, 14, 23, 0.70)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.22)',
+          background: GLASS_COLORS.panelBg,
+          backdropFilter: GLASS_BLUR,
+          WebkitBackdropFilter: GLASS_BLUR,
+          border: `1px solid ${GLASS_COLORS.border}`,
           borderBottom: 'none',
           borderRadius: '28px 28px 0 0',
           padding: '0 20px',
@@ -998,7 +1067,7 @@ export default function FilterBar() {
           justifyContent: 'space-between',
           zIndex: 1000,
           cursor: 'pointer',
-          boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.75)'
+          boxShadow: GLASS_SHADOW
         }}
       >
         {/* Left: Reset All (when a filter is active, shown before the Filters title) + Filter Icon & Subtitle Summary */}
@@ -1082,34 +1151,24 @@ export default function FilterBar() {
         </div>
 
         {/* Right: Count Badge (e.g. 307 found) */}
-        <div style={{
-          border: '1px solid rgba(245, 158, 11, 0.35)',
-          background: 'rgba(245, 158, 11, 0.10)',
-          borderRadius: 12,
-          padding: '4px 12px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 5,
-          flexShrink: 0
-        }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#f59e0b', fontVariantNumeric: 'tabular-nums' }}>
+        <div style={{ ...countPillStyle, padding: '5px 12px' }}>
+          <FiMapPin size={14} color="#FDB713" />
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: '#f8fafc', fontVariantNumeric: 'tabular-nums' }}>
             {visibleCount}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>
-            found
-          </span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>found</span>
         </div>
       </div>
 
-      {/* MOBILE FILTER SHEET MODAL OVERLAY */}
+      {/* MOBILE FILTER SHEET OVERLAY — transparent + click-through so the map above the sheet stays pannable/clickable */}
       {isMobileSheetOpen && (
         <div
           onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(8px)',
+            background: 'transparent',
+            pointerEvents: 'none',
             zIndex: 2200,
             display: 'flex',
             alignItems: 'flex-end',
@@ -1119,15 +1178,13 @@ export default function FilterBar() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
+              ...glassPanelStyle,
+              pointerEvents: 'auto',
               width: '100%',
               maxWidth: 480,
-              background: 'rgba(15, 23, 42, 0.96)',
-              backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              borderRadius: '24px 24px 0 0',
+              borderRadius: `${GLASS_RADIUS.panel}px ${GLASS_RADIUS.panel}px 0 0`,
               padding: '20px 20px 32px 20px',
               boxSizing: 'border-box',
-              boxShadow: '0 -20px 50px rgba(0, 0, 0, 0.8)',
               display: 'flex',
               flexDirection: 'column',
               gap: 16,
@@ -1137,49 +1194,41 @@ export default function FilterBar() {
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* Reset All sits before the title, and only exists while something is selected */}
+                {isFilterActive && (
+                  <button
+                    type="button"
+                    onClick={handleResetAll}
+                    title="Reset all applied filters"
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.14)',
+                      border: `1px solid ${GLASS_COLORS.borderActive}`,
+                      color: '#f59e0b',
+                      borderRadius: GLASS_RADIUS.control,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <FiRefreshCw size={12} /> Reset All
+                  </button>
+                )}
                 <FiSliders size={20} color="#f59e0b" />
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Map Filters</span>
+                <span style={{ fontSize: 18, color: '#ffffff', ...GLASS_FONT.serif }}>Map Filters</span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterPrimary(null);
-                    setFilterSecondary(null);
-                    setFilterType(null);
-                    setGlobalAreaUnit(null);
-                    setSelectedFeatureId(null);
-                    setIsInfoPanelOpen(false);
-                    if (map && features.length > 0) fitAllBounds(map, features);
-                  }}
-                  title="Reset all applied filters"
-                  style={{
-                    background: isFilterActive ? 'rgba(245, 158, 11, 0.14)' : 'transparent',
-                    border: isFilterActive ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid rgba(255, 255, 255, 0.15)',
-                    color: isFilterActive ? '#f59e0b' : '#94a3b8',
-                    borderRadius: 8,
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <FiRefreshCw size={12} /> Reset All
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
-                >
-                  <FiX size={20} color="#94a3b8" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center' }}
+              >
+                <FiX size={20} color="#94a3b8" />
+              </button>
             </div>
 
             {/* Filter Controls Stack */}
@@ -1188,8 +1237,8 @@ export default function FilterBar() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
                 <div style={{
-                  height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
+                  height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                  borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
                 }}>
                   <PrimaryLocationDropdown
                     primaryCategories={primaryCategories}
@@ -1208,8 +1257,8 @@ export default function FilterBar() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
                   <div style={{
-                    height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                    borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
+                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                    borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
                   }}>
                     <SubLocationDropdown
                       subLocations={subLocationsForPrimary}
@@ -1228,11 +1277,11 @@ export default function FilterBar() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Property Category</label>
                 <div style={{
-                  height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: 12, padding: '0 14px', display: 'flex', alignItems: 'center'
+                  height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                  borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
                 }}>
                   <CategoryDropdown
-                    options={PROPERTY_TYPES}
+                    options={categoryOptions}
                     value={filterType}
                     onChange={(type) => handleFilterChange({ type })}
                     placeholder="All Categories"
@@ -1246,19 +1295,20 @@ export default function FilterBar() {
               {/* Unit Toggle & Landmarks */}
               <div style={{ display: 'flex', gap: 10 }}>
                 {/* Unit Toggle */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ flex: 1.4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Area Unit</label>
                   <div style={{
-                    height: 42, border: '1px solid rgba(255, 255, 255, 0.2)', background: 'rgba(30, 41, 59, 0.6)',
-                    borderRadius: 12, padding: 3, display: 'flex', gap: 4
+                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                    borderRadius: GLASS_RADIUS.control, padding: 3, display: 'flex', gap: 4
                   }}>
                     <button
                       type="button"
                       onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'yards' ? null : 'yards' })}
                       style={{
                         flex: 1, border: 'none', borderRadius: 9,
-                        background: globalAreaUnit === 'yards' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-                        color: globalAreaUnit === 'yards' ? '#000000' : '#f59e0b',
+                        background: globalAreaUnit === 'yards' ? GOLD_GRADIENT : 'transparent',
+                        color: globalAreaUnit === 'yards' ? '#1c1406' : '#f59e0b',
+                        boxShadow: globalAreaUnit === 'yards' ? GOLD_GRADIENT_SHADOW : 'none',
                         fontWeight: 700, fontSize: 12.5, cursor: 'pointer'
                       }}
                     >
@@ -1269,33 +1319,15 @@ export default function FilterBar() {
                       onClick={() => handleFilterChange({ areaUnit: globalAreaUnit === 'wingha' ? null : 'wingha' })}
                       style={{
                         flex: 1, border: 'none', borderRadius: 9,
-                        background: globalAreaUnit === 'wingha' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'transparent',
-                        color: globalAreaUnit === 'wingha' ? '#000000' : '#f59e0b',
+                        background: globalAreaUnit === 'wingha' ? GOLD_GRADIENT : 'transparent',
+                        color: globalAreaUnit === 'wingha' ? '#1c1406' : '#f59e0b',
+                        boxShadow: globalAreaUnit === 'wingha' ? GOLD_GRADIENT_SHADOW : 'none',
                         fontWeight: 700, fontSize: 12.5, cursor: 'pointer'
                       }}
                     >
                       Wingha
                     </button>
                   </div>
-                </div>
-
-                {/* Landmarks */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Landmarks</label>
-                  <button
-                    type="button"
-                    onClick={toggleLandmarks}
-                    style={{
-                      height: 42, border: showLandmarks ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.2)',
-                      background: showLandmarks ? 'rgba(245, 158, 11, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-                      color: showLandmarks ? '#f59e0b' : '#94a3b8',
-                      borderRadius: 12, fontWeight: 600, fontSize: 12.5, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6
-                    }}
-                  >
-                    {showLandmarks ? <FiEye size={16} /> : <FiEyeOff size={16} />}
-                    {showLandmarks ? 'Landmarks On' : 'Landmarks Off'}
-                  </button>
                 </div>
               </div>
 
@@ -1306,9 +1338,9 @@ export default function FilterBar() {
                   onClick={() => { setIsMobileSheetOpen(false); setAutoExpandField(null); }}
                   style={{
                     width: '100%', padding: '13px 0', border: 'none',
-                    background: '#f59e0b', color: '#000000', borderRadius: 12,
+                    background: GOLD_GRADIENT, color: '#1c1406', borderRadius: GLASS_RADIUS.control,
                     fontWeight: 700, fontSize: 14, cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
+                    boxShadow: GOLD_GRADIENT_SHADOW
                   }}
                 >
                   Show {visibleCount} Properties

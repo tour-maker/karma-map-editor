@@ -1,10 +1,10 @@
-import { FaRegShareSquare } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PUBLIC_SITE_ORIGIN } from '../../config/api';
+import { getPublicShareUrl, getPlotShareUrl } from '../../utils/shareUrl';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
+import { GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GLASS_BLUR } from '../../styles/glass';
 
 const loadHtml2Canvas = () => {
   return new Promise((resolve, reject) => {
@@ -66,7 +66,8 @@ export default function RightActionDock() {
     const selectedFeatureId = useMapStore.getState().selectedFeatureId;
     const features = useMapStore.getState().features;
 
-    let text = "Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/";
+    const currentUrl = getPublicShareUrl();
+    let text = `Hi, I'm interested in your Land Project and would like to know more about the available plots. Please share more details. 👇\n${currentUrl}`;
 
     if (selectedFeatureId) {
       const feature = features.find(f => f.id === selectedFeatureId);
@@ -74,7 +75,7 @@ export default function RightActionDock() {
         const name = feature.data.name || feature.data.project || '';
         const tpFp = feature.data.tpNo ? ` (TP ${feature.data.tpNo} / FP ${feature.data.fpNo})` : '';
         if (name) {
-          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\nhttps://karma-map-editor.onrender.com/`;
+          text = `Hi, I'm interested in your Land Project for ${name}${tpFp} and would like to know more about the available plots. Please share more details. 👇\n${currentUrl}`;
         }
       }
     }
@@ -97,7 +98,7 @@ export default function RightActionDock() {
     const selectedFeature = features.find(f => f.id === selectedFeatureId);
 
     if (selectedFeature) {
-      const shareUrl = new URL(`${PUBLIC_SITE_ORIGIN}/share/${encodeURIComponent(selectedFeature.id)}`);
+      const shareUrl = new URL(getPlotShareUrl(selectedFeature.id));
       const d = selectedFeature.data || {};
       const title = d.name || d.location || `Polygon ${selectedFeature.id}`;
       const tpFp = [
@@ -143,7 +144,7 @@ export default function RightActionDock() {
     } else {
       const generalShareText = `Karma Realtors - Exclusive Land Project
 Explore our exclusive Land Project with custom filters like Sq Yard & Wingha. Choose your ideal plot based on category. Take a virtual tour now 👇
-https://karma-map-editor.onrender.com/`;
+${getPublicShareUrl()}`;
 
       if (navigator.share) {
         try {
@@ -277,7 +278,10 @@ https://karma-map-editor.onrender.com/`;
         onClick={handleShare}
         title="Share map view"
       >
-        <FaRegShareSquare size={22} />
+        <span className="mobile-cta-box">
+          <FiShare2 size={22} color="#f59e0b" />
+        </span>
+        <span className="mobile-cta-label">Share</span>
       </button>
 
       {/* Outer Dock Container Anchored at Top 38% (NO transform: translateY(-50%) so top buttons NEVER move when opening!) */}
@@ -298,13 +302,13 @@ https://karma-map-editor.onrender.com/`;
         {/* Top Floating Glass Capsule (STATIONARY - NEVER MOVES ON CLICK!) */}
         <div
           style={{
-            background: 'rgba(10, 14, 23, 0.70)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.22)',
-            borderRadius: 20,
+            background: GLASS_COLORS.panelBg,
+            backdropFilter: GLASS_BLUR,
+            WebkitBackdropFilter: GLASS_BLUR,
+            border: `1px solid ${GLASS_COLORS.border}`,
+            borderRadius: GLASS_RADIUS.panel,
             padding: '12px 10px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.65)',
+            boxShadow: GLASS_SHADOW,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -381,14 +385,14 @@ https://karma-map-editor.onrender.com/`;
           <div
             className="responsive-right-dock-popout"
             style={{
-              background: 'rgba(10, 14, 23, 0.70)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
+              background: GLASS_COLORS.panelBg,
+              backdropFilter: GLASS_BLUR,
+              WebkitBackdropFilter: GLASS_BLUR,
+              border: `1px solid ${GLASS_COLORS.border}`,
               borderRight: 'none',
-              borderRadius: '20px 0 0 20px',
+              borderRadius: `${GLASS_RADIUS.panel}px 0 0 ${GLASS_RADIUS.panel}px`,
               padding: '14px 10px',
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.65)',
+              boxShadow: GLASS_SHADOW,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -407,7 +411,7 @@ https://karma-map-editor.onrender.com/`;
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 22,
-                fontWeight: 800,
+                fontWeight: 600,
                 color: '#f59e0b',
                 display: 'flex',
                 alignItems: 'center',

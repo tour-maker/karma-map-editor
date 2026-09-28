@@ -36,6 +36,12 @@ const defaultCenter = {
   lng: 72.8311
 };
 
+const MY_REQUEST_STATUS_COLORS = {
+  pending: '#f59e0b',
+  approved: '#22c55e',
+  rejected: '#ef4444'
+};
+
 export default function MapEditor() {
   const apiKey = getGoogleMapsApiKey();
   const map = useGoogleMap();
@@ -57,6 +63,8 @@ export default function MapEditor() {
   //   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const previewSubmission = useMapStore(state => state.previewSubmission);
   const viewerUsername = useMapStore(state => state.viewerUsername);
+  const myRequestsSubmissions = useMapStore(state => state.myRequestsSubmissions);
+  const myRequestsStatusFilter = useMapStore(state => state.myRequestsStatusFilter);
 
   const isDark = theme === 'dark';
   const containerStyle = {
@@ -72,6 +80,31 @@ export default function MapEditor() {
   const [userSubmissionData, setUserSubmissionData] = useState(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showMyRequests, setShowMyRequests] = useState(false);
+  const [authIntent, setAuthIntent] = useState('account'); // 'account' | 'add'
+  const hasInitialFitRef = useRef(false);
+
+  // Fit all pins into the initial viewport once, as soon as both the map and data are ready —
+  // unless a specific plot was requested via /share/:id or ?feature=<id> (share links), which
+  // takes over below.
+  useEffect(() => {
+    if (hasInitialFitRef.current || !map || features.length === 0) return;
+    hasInitialFitRef.current = true;
+    const pathMatch = window.location.pathname.match(/\/share\/([^/?#]+)/);
+    const sharedFeatureId = pathMatch
+      ? decodeURIComponent(pathMatch[1])
+      : new URLSearchParams(window.location.search).get('feature');
+    if (sharedFeatureId) return;
+    fitAllBounds(map, features.filter(f => f.style?.visible !== false));
+  }, [map, features]);
+
+  const handleAddProperty = () => {
+    if (!useMapStore.getState().viewerUsername) {
+      setAuthIntent('add');
+      setShowAccountModal(true);
+      return;
+    }
+    drawingManagerRef.current?.startDrawing();
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
@@ -333,7 +366,7 @@ export default function MapEditor() {
           </a>
           <button
             type="button"
-            onClick={() => drawingManagerRef.current?.startDrawing()}
+            onClick={handleAddProperty}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               padding: '8px 12px', background: 'rgba(245, 158, 11, 0.12)', color: '#fde68a', border: '1px solid rgba(245, 158, 11, 0.3)',
@@ -347,7 +380,7 @@ export default function MapEditor() {
           </button>
           <button
             type="button"
-            onClick={() => viewerUsername ? setShowMyRequests(true) : setShowAccountModal(true)}
+            onClick={() => { if (viewerUsername) { setShowMyRequests(true); } else { setAuthIntent('account'); setShowAccountModal(true); } }}
             title={viewerUsername ? `Signed in as ${viewerUsername} — view your requests` : 'Sign in to submit & track your property requests'}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -387,7 +420,14 @@ export default function MapEditor() {
       {showAccountModal && (
         <UserAuthModal
           onClose={() => setShowAccountModal(false)}
-          onSuccess={() => { setShowAccountModal(false); setShowMyRequests(true); }}
+          onSuccess={() => {
+            setShowAccountModal(false);
+            if (authIntent === 'add') {
+              setTimeout(() => drawingManagerRef.current?.startDrawing(), 0);
+            } else {
+              setShowMyRequests(true);
+            }
+          }}
         />
       )}
 
@@ -451,7 +491,26 @@ export default function MapEditor() {
             />
           )}
 
-          {previewSubmission && previewSubmission.coordinates && (
+          {myRequestsSubmissions
+            .filter(sub => sub.coordinates && sub.coordinates.length > 0)
+            .filter(sub => !myRequestsStatusFilter || (sub.status || 'pending') === myRequestsStatusFilter)
+            .filter(sub => !previewSubmission || sub._id !== previewSubmission._id)
+            .map(sub => (
+              <Polygon
+                key={sub._id}
+                paths={sub.coordinates}
+                options={{
+                  fillColor: MY_REQUEST_STATUS_COLORS[sub.status] || MY_REQUEST_STATUS_COLORS.pending,
+                  fillOpacity: 0.35,
+                  strokeColor: MY_REQUEST_STATUS_COLORS[sub.status] || MY_REQUEST_STATUS_COLORS.pending,
+                  strokeWeight: 2,
+                  zIndex: 9998,
+                  clickable: false
+                }}
+              />
+            ))}
+
+          {previewSubmission && previewSubmission.coordinates && (!myRequestsStatusFilter || (previewSubmission.status || 'pending') === myRequestsStatusFilter) && (
             <Polygon
               paths={previewSubmission.coordinates}
               options={{

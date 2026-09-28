@@ -38,6 +38,20 @@ export const PROPERTY_TYPE_COLORS = {
 
 export const DEFAULT_PROPERTY_COLOR = '#38bdf8';
 
+// Category options that don't apply to a given area unit are hidden from the filter.
+const CATEGORIES_HIDDEN_FOR_YARDS = ['Industrial', 'Agriculture', 'Ready Farmhouse'];
+const CATEGORIES_HIDDEN_FOR_WINGHA = ['Commercial', 'Industrial'];
+
+export function getCategoryOptionsForUnit(areaUnit) {
+  if (areaUnit === 'yards') {
+    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_YARDS.includes(t));
+  }
+  if (areaUnit === 'wingha') {
+    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_WINGHA.includes(t));
+  }
+  return PROPERTY_TYPES;
+}
+
 export function normalizePropertyType(rawType) {
   if (!rawType) return '';
   const lower = String(rawType).trim().toLowerCase();
@@ -86,6 +100,55 @@ export function determineParentLocation(location) {
 
   // Everything else: parent location is the location itself.
   return locStr;
+}
+
+// Builds the live Location <-> Category matrix straight from real feature data —
+// no per-location config, so it stays correct as properties are added, removed or
+// recategorized. Two lookups come out of it:
+//  - byLocation: every location string that can be selected (both a primary/parent
+//    location AND each of its specific sub-locations) -> the set of categories
+//    actually present there.
+//  - byCategory: each category -> the set of PRIMARY (parent) locations that have
+//    at least one property in that category. Kept at the primary level because
+//    that's the granularity the Location dropdown itself lists.
+export function buildLocationCategoryMatrix(features = []) {
+  const byLocation = {};
+  const byCategory = {};
+
+  const addTo = (map, key, value) => {
+    if (!key || !value) return;
+    if (!map[key]) map[key] = new Set();
+    map[key].add(value);
+  };
+
+  features.forEach(f => {
+    if (f.id?.startsWith('landmark-') || f.data?.type === 'Landmark') return;
+    if (f.style?.visible === false) return;
+
+    const loc = f.data?.location;
+    if (!loc) return;
+    const parent = f.data?.parentLocation || f.data?.parent_location || determineParentLocation(loc);
+    const category = normalizePropertyType(f.data?.type);
+    if (!category) return;
+
+    addTo(byLocation, loc, category);
+    addTo(byLocation, parent, category);
+    addTo(byCategory, category, parent);
+  });
+
+  return { byLocation, byCategory };
+}
+
+// null return means "no restriction" (nothing selected yet); an array (possibly
+// empty) means only those values should be offered.
+export function getCategoriesForLocation(matrix, location) {
+  if (!location) return null;
+  return matrix.byLocation[location] ? Array.from(matrix.byLocation[location]) : [];
+}
+
+export function getLocationsForCategory(matrix, category) {
+  if (!category) return null;
+  return matrix.byCategory[category] ? Array.from(matrix.byCategory[category]) : [];
 }
 
 // Builds a live { parent: [subs...] } map from actual feature data, instead of

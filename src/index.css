@@ -80,10 +80,81 @@ body.hide-ui-for-screenshot nav {
   color: #94a3b8 !important;
 }
 
+.karma-auth-input::placeholder {
+  color: rgba(241, 245, 249, 0.4) !important;
+  opacity: 1 !important;
+}
+
+/* type="tel" inputs (Mobile Number) render their default UA placeholder color
+   through a different native styling path in some Chromium builds, so the
+   plain class rule above was losing to it. This attribute-qualified selector
+   has strictly higher specificity and pins the color for tel fields too. */
+.karma-auth-input[type="tel"]::placeholder {
+  color: rgba(241, 245, 249, 0.4) !important;
+  opacity: 1 !important;
+}
+
+/* Browsers force a white/yellow background on inputs they recognize as a saved
+   username/password (via the UA's -webkit-autofill styles), which overrides even
+   our inline styles. This is why Sign In's fields looked like plain browser
+   inputs while Sign Up's (never autofilled) looked right.
+   The inset box-shadow must be a SOLID opaque color (not our real 6%-white
+   translucent bg) — a low-alpha shadow lets the browser's actual white
+   background-color show through underneath it, which is why the previous
+   attempt still looked white. 1000px spread guarantees full coverage regardless
+   of input size. background-color/-webkit-text-fill-color also get !important
+   as a second line of defense, since some Chromium builds still honor them. */
+.karma-auth-input:-webkit-autofill,
+.karma-auth-input:-webkit-autofill:hover,
+.karma-auth-input:-webkit-autofill:focus,
+.karma-auth-input:-webkit-autofill:active,
+.karma-glass-input:-webkit-autofill,
+.karma-glass-input:-webkit-autofill:hover,
+.karma-glass-input:-webkit-autofill:focus,
+.karma-glass-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgb(30, 41, 59) inset !important;
+  box-shadow: 0 0 0 1000px rgb(30, 41, 59) inset !important;
+  background-color: rgb(30, 41, 59) !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
+  caret-color: #f1f5f9 !important;
+  border-color: rgba(253, 183, 19, 0.25) !important;
+  transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s;
+}
+
+/* Shared premium glass-input treatment: translucent surface, gold-tinted border,
+   gold glow on focus. Used across all panels/modals so form fields read as
+   "designed" rather than default browser inputs. Callers keep their own
+   sizing/padding via inline style; this class only owns surface + focus state. */
+.karma-glass-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(253, 183, 19, 0.25) !important;
+  color: #f1f5f9 !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.karma-glass-input::placeholder {
+  color: rgba(241, 245, 249, 0.4) !important;
+}
+.karma-glass-input:focus {
+  outline: none;
+  border-color: #FDB713 !important;
+  box-shadow: 0 0 0 3px rgba(253, 183, 19, 0.18);
+}
+.karma-glass-input:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #94a3b8 !important;
+  cursor: default;
+}
+
 /* Desktop Default Styles for Mobile-Specific Elements */
 .mobile-filter-dock-bar,
-.mobile-only-whatsapp-btn {
+.mobile-only-whatsapp-btn,
+.mobile-toggle-chips {
   display: none !important;
+}
+
+/* Search bar keeps the app's dark surface (the shared glass-input class is otherwise near-transparent) */
+.search-box-container input.karma-glass-input {
+  background: rgba(10, 14, 23, 0.82) !important;
 }
 
 .whatsapp-cta-button {
@@ -115,7 +186,8 @@ body.hide-ui-for-screenshot nav {
     display: none !important;
   }
 
-  .mobile-filter-dock-bar {
+  .mobile-filter-dock-bar,
+  .mobile-toggle-chips {
     display: flex !important;
   }
 
@@ -126,24 +198,27 @@ body.hide-ui-for-screenshot nav {
     display: none !important;
   }
 
-  /* 1b. Viewer Top Bar (Logo + Add Property + Sign In): keep clear of the search bar
-     and keep both buttons evenly aligned instead of overflowing off-screen */
+  /* 1b. Viewer Top Bar (Logo + Add Property + Sign In): moved below the search row and
+     allowed to wrap, so it never overflows under the search bar / opts circle, and both
+     buttons stay evenly aligned instead of overflowing off-screen */
   .viewer-top-bar {
-    top: 76px !important;
+    position: absolute !important;
+    top: 70px !important;
     left: 16px !important;
     right: 16px !important;
-    width: calc(100vw - 32px) !important;
+    width: auto !important;
     max-width: none !important;
     flex-wrap: wrap !important;
     justify-content: flex-start !important;
     align-items: center !important;
     gap: 10px !important;
     padding: 8px 10px !important;
-    z-index: 1000 !important;
+    z-index: 900 !important;
   }
 
   .viewer-top-bar img {
     height: 26px !important;
+    max-width: 130px !important;
   }
 
   .viewer-top-bar button {
@@ -157,7 +232,7 @@ body.hide-ui-for-screenshot nav {
     top: 16px !important;
     left: 16px !important;
     transform: none !important;
-    width: calc(100vw - 84px) !important; /* Leave 68px for the opts circle */
+    width: calc(100vw - 96px) !important; /* Leave room for the opts circle, with a clear gap so they never merge */
     max-width: 440px !important;
     z-index: 1100 !important;
   }
@@ -227,32 +302,72 @@ body.hide-ui-for-screenshot nav {
     display: none !important;
   }
 
+  /* Mobile Share + Contact: icon in a rounded box, label text underneath */
   .mobile-share-floating-btn {
     display: flex !important;
+    flex-direction: column !important;
     position: fixed !important;
-    bottom: 152px !important;
-    right: 20px !important;
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 50% !important;
+    bottom: 156px !important;
+    right: 16px !important;
+    width: 64px !important;
+    height: auto !important;
+    gap: 4px !important;
     background: transparent !important;
     border: none !important;
+    padding: 0 !important;
     align-items: center !important;
     justify-content: center !important;
     box-shadow: none !important;
     z-index: 1050 !important;
     cursor: pointer !important;
   }
-  
-  .mobile-share-floating-btn svg {
-    color: #f59e0b !important;
+
+  .mobile-cta-box,
+  .whatsapp-cta-button {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 14px !important;
+    background: rgba(10, 14, 23, 0.78) !important;
+    border: 1px solid rgba(253, 183, 19, 0.35) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+    filter: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .mobile-cta-box {
+    display: flex !important;
+  }
+
+  .whatsapp-cta-button svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  /* The WhatsApp glyph ships with its own dark disc; the box replaces it */
+  .whatsapp-cta-button svg path:first-child {
+    display: none;
+  }
+
+  .mobile-cta-label {
+    display: block !important;
+    color: #f1f5f9 !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   }
 
   /* Show Standalone WhatsApp wrapper on Mobile portrait (Bottom Right CTA) */
   .whatsapp-cta-wrapper {
     display: flex !important;
-    bottom: 74px !important;
+    bottom: 78px !important;
     right: 16px !important;
+    width: 64px !important;
+    gap: 4px !important;
   }
 
 
@@ -498,6 +613,7 @@ div[style*="z-index: 1000001"] { display: none !important; }
   
   /* 1. HIDE MOBILE ELEMENTS */
   .mobile-filter-dock-bar,
+  .mobile-toggle-chips,
   .mobile-projects-dock-bar {
     display: none !important;
   }
@@ -590,12 +706,14 @@ div[style*="z-index: 1000001"] { display: none !important; }
 
 /* Google Places Autocomplete Dark Theme Overrides */
 .pac-container {
+  position: fixed !important;
   background-color: #1e293b !important;
   border: 1px solid rgba(245, 158, 11, 0.4) !important;
   border-radius: 8px !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
   margin-top: 6px !important;
   font-family: Inter, system-ui, -apple-system, sans-serif !important;
+  z-index: 3500 !important;
 }
 
 .pac-item {
