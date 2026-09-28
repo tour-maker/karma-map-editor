@@ -6,12 +6,12 @@ import { Toaster } from 'react-hot-toast'
 import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
-import { initGoogleIdentity, setAccessToken, startAutoRefresh, requestLogin } from './services/googleSheets'
+import { setAccessToken } from './services/googleSheets'
 import { API_BASE_URL } from './config/api'
 
 function App() {
   useEffect(() => {
-    const { googleClientId, googleAccessToken } = useMapStore.getState();
+    const { googleAccessToken } = useMapStore.getState();
 
     // Verify admin JWT with backend on every page load
     const storedJWT = localStorage.getItem('karmaAdminJWT');
@@ -56,22 +56,21 @@ function App() {
       document.body.classList.remove('is-admin');
     }
 
-    // Google Sheets sync is an admin-only feature (it's what lets an admin save
-    // property edits back to the spreadsheet) — only attempt to sign in to
-    // Google on the admin route. Previously this ran unconditionally on every
-    // page load, including for anonymous public viewers, which meant every
-    // single visitor silently triggered a Google OAuth token request in the
-    // background. That's unnecessary exposure on its own, and on top of it the
-    // production domain isn't registered as an authorized JavaScript origin
-    // for this OAuth client, so it was failing with an origin_mismatch error
-    // that could surface as a visible "Access blocked" Google tab.
-    if (isAdminRoute) {
-      initGoogleIdentity(googleClientId, (token) => {
-        setAccessToken(token);
-        useMapStore.setState({ googleSheetsConnected: true, googleAccessToken: token });
-        startAutoRefresh();
-      });
-    }
+    // Google Sheets reads/writes now go entirely through our own backend (which
+    // uses a service account — see server/sheetsHelper.js and the backendFetch
+    // wrapper in services/googleSheets.js), not this browser-side Google OAuth
+    // token client. That migration happened a while ago, but this leftover
+    // auto sign-in call was never removed. It served no purpose any more (its
+    // token isn't read by anything) and the production domain was never
+    // registered as an authorized JavaScript origin for this OAuth client, so
+    // it silently failed with an origin_mismatch error — which, unlike a
+    // normal silent-login failure, Google renders as a real, visible "Access
+    // blocked" page instead of a console warning, so an admin loading /admin
+    // could see it via a triggered popup/tab. Removed entirely rather than
+    // registering the origin, since there's no working feature left that
+    // needs it — see initGoogleIdentity/silentLogin in services/googleSheets.js
+    // for the (now-unused) implementation if a real Sheets OAuth flow is ever
+    // needed again in the future.
 
     // Auto-switch modes on mobile based on orientation
     const handleOrientationChange = () => {
