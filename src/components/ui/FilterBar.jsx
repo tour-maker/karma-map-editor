@@ -525,12 +525,14 @@ export default function FilterBar() {
   const filterType = useMapStore(state => state.filterType);
   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const showLandmarks = useMapStore(state => state.showLandmarks);
+  const showLabels = useMapStore(state => state.showLabels);
 
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
   const setFilterSecondary = useMapStore(state => state.setFilterSecondary);
   const setFilterType = useMapStore(state => state.setFilterType);
   const setGlobalAreaUnit = useMapStore(state => state.setGlobalAreaUnit);
   const toggleLandmarks = useMapStore(state => state.toggleLandmarks);
+  const toggleLabels = useMapStore(state => state.toggleLabels);
   const setSelectedFeatureId = useMapStore(state => state.setSelectedFeatureId);
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const map = useGoogleMap();
@@ -763,6 +765,36 @@ export default function FilterBar() {
             <FiEyeOff size={16} color="#94a3b8" />
           )}
           <span className="desktop-only-text">Landmarks</span>
+        </div>
+
+        {/* 1b. Labels Toggle Button — switches the base map between satellite-only
+            and hybrid (satellite + road/place names) view. Store logic
+            (showLabels/toggleLabels) already existed and was already wired
+            into MapEditor's mapTypeId, but no button called it anywhere. */}
+        <div
+          onClick={toggleLabels}
+          title={showLabels ? "Labels On (Click to turn off)" : "Labels Off (Click to turn on)"}
+          className="filter-labels-toggle"
+          style={{
+            height: 38,
+            boxSizing: 'border-box',
+            border: showLabels ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.35)',
+            background: showLabels ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
+            borderRadius: 10,
+            padding: '0 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            fontSize: 14,
+            fontWeight: 600,
+            color: showLabels ? '#f59e0b' : '#e2e8f0',
+            whiteSpace: 'nowrap',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <FiTag size={16} color={showLabels ? '#f59e0b' : '#94a3b8'} />
+          <span className="desktop-only-text">Labels</span>
         </div>
 
         {/* Vertical Divider */}
