@@ -496,6 +496,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               </span>
             </button>
 
+            <div style={{ width: 1, alignSelf: 'stretch', marginBottom: 2, background: 'rgba(255, 255, 255, 0.12)', flexShrink: 0 }} />
+
             <button
               type="button"
               onClick={() => setActiveTab('landmarks')}
@@ -522,6 +524,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 {landmarksList.length}
               </span>
             </button>
+
+            <div style={{ width: 1, alignSelf: 'stretch', marginBottom: 2, background: 'rgba(255, 255, 255, 0.12)', flexShrink: 0 }} />
 
             <button
               type="button"
@@ -551,9 +555,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             </button>
 
             {appMode === 'edit' && (
-              <button
-                type="button"
-                onClick={() => setActiveTab('users')}
+              <>
+                <div style={{ width: 1, alignSelf: 'stretch', marginBottom: 2, background: 'rgba(255, 255, 255, 0.12)', flexShrink: 0 }} />
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('users')}
                 className="btn-hover-effect"
                 style={{
                   flex: 1, padding: '7px 0', border: 'none',
@@ -565,9 +571,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   transition: 'all 0.2s ease'
                 }}
               >
-                <FiUsers size={13} color={activeTab === 'users' ? '#f59e0b' : '#94a3b8'} />
-                Users
-              </button>
+                  <FiUsers size={13} color={activeTab === 'users' ? '#f59e0b' : '#94a3b8'} />
+                  Users
+                </button>
+              </>
             )}
           </div>
 
