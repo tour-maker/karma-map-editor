@@ -164,6 +164,19 @@ body.hide-ui-for-screenshot nav {
   cursor: default;
 }
 
+/* The <select> trigger itself picks up our light (#f1f5f9) text color from the
+   classes above, which is correct against its own dark translucent background.
+   But the dropdown POPUP list (<option>s) is rendered by the OS/browser with
+   its own white/light background regardless of the select's styling — so that
+   same light text became invisible against it (only the browser's blue
+   selected-row highlight was readable). Options get an explicit dark color so
+   they stay legible against that native white popup background. */
+.karma-auth-input option,
+.karma-glass-input option {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
 /* Desktop Default Styles for Mobile-Specific Elements */
 .mobile-filter-dock-bar,
 .mobile-only-whatsapp-btn,
