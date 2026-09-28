@@ -63,19 +63,31 @@ function App() {
       setAccessToken(googleAccessToken);
     }
 
-    initGoogleIdentity(googleClientId, (token) => {
-      setAccessToken(token);
-      useMapStore.setState({ googleSheetsConnected: true, googleAccessToken: token });
-      startAutoRefresh();
-    });
-
     // Initial routing logic
-    if (window.location.pathname.replace(/\/$/, '').endsWith('admin')) {
+    const isAdminRoute = window.location.pathname.replace(/\/$/, '').endsWith('admin');
+    if (isAdminRoute) {
       useMapStore.getState().setAppMode('edit');
       document.body.classList.add('is-admin');
     } else {
       useMapStore.getState().setAppMode('viewer');
       document.body.classList.remove('is-admin');
+    }
+
+    // Google Sheets sync is an admin-only feature (it's what lets an admin save
+    // property edits back to the spreadsheet) — only attempt to sign in to
+    // Google on the admin route. Previously this ran unconditionally on every
+    // page load, including for anonymous public viewers, which meant every
+    // single visitor silently triggered a Google OAuth token request in the
+    // background. That's unnecessary exposure on its own, and on top of it the
+    // production domain isn't registered as an authorized JavaScript origin
+    // for this OAuth client, so it was failing with an origin_mismatch error
+    // that could surface as a visible "Access blocked" Google tab.
+    if (isAdminRoute) {
+      initGoogleIdentity(googleClientId, (token) => {
+        setAccessToken(token);
+        useMapStore.setState({ googleSheetsConnected: true, googleAccessToken: token });
+        startAutoRefresh();
+      });
     }
 
     // Auto-switch modes on mobile based on orientation

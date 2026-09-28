@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST_INDEX_PATH = join(__dirname, '..', '..', 'dist', 'index.html');
 
 const SITE_ORIGIN = 'https://karmalandtour.360eye.tech';
-const GENERIC_TITLE = 'Karma Map Editor — Interactive Real Estate & Property Mapping Tool';
+const GENERIC_TITLE = 'Karma Map Editor - Interactive Real Estate & Property Mapping Tool';
 const GENERIC_DESCRIPTION = 'Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics.';
 const GENERIC_IMAGE = `${SITE_ORIGIN}/favicon.png`;
 
@@ -80,7 +80,7 @@ function buildTitleAndDescription(row) {
   const areaPart = area ? `${area} ${areaUnit}` : '';
   const locationPart = parentLocation ? `${location}, ${parentLocation}` : location;
 
-  const title = `${[areaPart, type].filter(Boolean).join(' ')} Plot — ${locationPart} | Karma Realtors`;
+  const title = `${[areaPart, type].filter(Boolean).join(' ')} Plot - ${locationPart} | Karma Realtors`;
 
   const tpFp = [
     tp ? `TP: ${tp}` : '',
@@ -95,7 +95,7 @@ function buildTitleAndDescription(row) {
   ].filter(Boolean);
 
   const description = descriptionParts.length > 0
-    ? descriptionParts.join(' — ')
+    ? descriptionParts.join(' - ')
     : GENERIC_DESCRIPTION;
 
   return { title, description };
