@@ -18,6 +18,12 @@ export const useMapStore = create(
         uiHidden: false,
         showLabels: false,
         showLandmarks: true,
+        // Whether the current map zoom is deep enough for landmarks to actually
+        // be rendered (LandmarkManager keeps this in sync with its own zoom
+        // gate). Separate from showLandmarks, which is the user's manual on/off
+        // preference — this reflects whether landmarks are visible *right now*,
+        // so the toggle button can auto-light-up once zooming reveals them.
+        landmarksZoomActive: false,
 
         filterPrimary: null,
         filterSecondary: null,
@@ -99,6 +105,9 @@ export const useMapStore = create(
         toggleUiHidden: () => set((state) => ({ uiHidden: !state.uiHidden })),
         toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
         toggleLandmarks: () => set((state) => ({ showLandmarks: !state.showLandmarks })),
+        setLandmarksZoomActive: (active) => set((state) =>
+          state.landmarksZoomActive === active ? state : { landmarksZoomActive: active }
+        ),
 
         setSelectedFeatureId: (id) => set({ selectedFeatureId: id }),
         setSelectedAreaName: (name) => set({ selectedAreaName: name }),

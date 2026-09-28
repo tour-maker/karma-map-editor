@@ -353,15 +353,19 @@ export default function LandmarkManager() {
       landmarkOverlaysRef.current.forEach(item => {
         if (item.overlay) item.overlay.setVisible(false);
       });
+      useMapStore.getState().setLandmarksZoomActive(false);
       return;
     }
 
     const zoom = map.getZoom();
-    // Landmarks should be visible on the first screen the visitor sees, not only
-    // after they zoom in further. The map's own minZoom (MapEditor.jsx) is 9, so
-    // gating landmarks at that same floor means they show at any zoom level the
-    // map can actually be at, including the default initial view.
-    const isZoomedOut = zoom != null && zoom < 9;
+    // Landmarks only render once zoomed in far enough (client wants this kept
+    // as-is, not shown from the very first/widest view). The FilterBar toggle
+    // button reflects this automatically via landmarksZoomActive below, so it
+    // lights up the moment zooming actually reveals landmarks and dims again
+    // when zooming back out — rather than just reflecting the user's manual
+    // on/off click, which stays true the whole time.
+    const isZoomedOut = zoom != null && zoom < 12;
+    useMapStore.getState().setLandmarksZoomActive(!isZoomedOut);
 
     const items = Array.from(landmarkOverlaysRef.current.values());
 
