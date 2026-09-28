@@ -851,7 +851,7 @@ export default function FilterBar() {
             height: 38,
             boxSizing: 'border-box',
             border: landmarksActuallyVisible ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
-            background: landmarksActuallyVisible ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
+            background: landmarksActuallyVisible ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.78)',
             borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
@@ -885,7 +885,7 @@ export default function FilterBar() {
             height: 38,
             boxSizing: 'border-box',
             border: showLabels ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
-            background: showLabels ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.5)',
+            background: showLabels ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.78)',
             borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
@@ -910,7 +910,7 @@ export default function FilterBar() {
         <div className="filter-dropdown-container" style={{
           height: 38,
           border: `1px solid ${GLASS_COLORS.border}`,
-          background: 'rgba(30, 41, 59, 0.5)',
+          background: 'rgba(30, 41, 59, 0.78)',
           borderRadius: 10,
           padding: 0,
           display: 'flex',
@@ -935,7 +935,7 @@ export default function FilterBar() {
             <div className="filter-dropdown-container" style={{
               height: 38,
               border: `1px solid ${GLASS_COLORS.border}`,
-              background: 'rgba(30, 41, 59, 0.5)',
+              background: 'rgba(30, 41, 59, 0.78)',
               borderRadius: 10,
               padding: 0,
               display: 'flex',
@@ -960,7 +960,7 @@ export default function FilterBar() {
         <div style={{
           height: 38,
           border: `1px solid ${GLASS_COLORS.border}`,
-          background: 'rgba(30, 41, 59, 0.5)',
+          background: 'rgba(30, 41, 59, 0.78)',
           borderRadius: 10,
           padding: '2px',
           display: 'flex',
@@ -1028,7 +1028,7 @@ export default function FilterBar() {
         <div className="filter-dropdown-container" style={{
           height: 38,
           border: `1px solid ${GLASS_COLORS.border}`,
-          background: 'rgba(30, 41, 59, 0.5)',
+          background: 'rgba(30, 41, 59, 0.78)',
           borderRadius: 10,
           padding: 0,
           display: 'flex',
