@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiEdit2 } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiEdit2, FiUsers } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
@@ -10,6 +10,7 @@ import { useGoogleMap } from '../context/GoogleMapContext';
 import { zoomToProperty, fitAllBounds } from '../services/googleMaps';
 import { cleanLandmarkTitle, resolveLandmarkLocation } from './LandmarkManager';
 import PendingSubmissionsPanel from './PendingSubmissionsPanel';
+import UsersPanel from './UsersPanel';
 
 // Inject Custom Scrollbar for Projects Panel
 if (typeof document !== 'undefined' && !document.getElementById('projects-panel-scrollbar-styles')) {
@@ -548,6 +549,26 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 {parentLocationsList.length}
               </span>
             </button>
+
+            {appMode === 'edit' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('users')}
+                className="btn-hover-effect"
+                style={{
+                  flex: 1, padding: '7px 0', border: 'none',
+                  borderBottom: activeTab === 'users' ? '2.5px solid #f59e0b' : '2.5px solid transparent',
+                  fontSize: 12, fontWeight: activeTab === 'users' ? 700 : 500, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  background: 'transparent',
+                  color: activeTab === 'users' ? '#ffffff' : '#94a3b8',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <FiUsers size={13} color={activeTab === 'users' ? '#f59e0b' : '#94a3b8'} />
+                Users
+              </button>
+            )}
           </div>
 
           {/* Desktop Action Buttons */}
@@ -791,12 +812,28 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'submissions' ? 700 : 500 }}>Requests</span>
                   </button>
                 )}
+
+                {appMode === 'edit' && (
+                  <button
+                    onClick={() => { setActiveTab('users'); setIsTabDropdownOpen(false); }}
+                    className="btn-hover-effect"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                      background: activeTab === 'users' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                      border: 'none', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                      color: activeTab === 'users' ? '#f8fafc' : '#94a3b8'
+                    }}
+                  >
+                    <FiUsers size={15} color={activeTab === 'users' ? '#f59e0b' : '#94a3b8'} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'users' ? 700 : 500 }}>Users</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           {/* Search Bar Input */}
-          {activeTab !== 'submissions' && (
+          {activeTab !== 'submissions' && activeTab !== 'users' && (
             <div style={{ position: 'relative' }}>
               <FiSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245, 158, 11, 0.75)' }} size={14} />
               <input
@@ -836,6 +873,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
         >
           {activeTab === 'submissions' ? (
             <PendingSubmissionsPanel />
+          ) : activeTab === 'users' ? (
+            <UsersPanel />
           ) : virtualRows.length === 0 ? (
             <div style={{ padding: '24px 16px', color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
               {activeTab === 'projects' ? 'No projects found.' : activeTab === 'landmarks' ? 'No landmarks found.' : 'No areas match your search.'}

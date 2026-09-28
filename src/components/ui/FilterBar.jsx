@@ -1233,26 +1233,50 @@ export default function FilterBar() {
 
             {/* Filter Controls Stack */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
-              {/* Primary Location */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
-                <div style={{
-                  height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
-                }}>
-                  <PrimaryLocationDropdown
-                    primaryCategories={primaryCategories}
-                    value={filterPrimary}
-                    onChange={(cat) => handleFilterChange({ primary: cat, secondary: null })}
-                    placeholder="All Locations"
-                    activeColor="#f59e0b"
-                    isInModal={true}
-                    forceOpen={autoExpandField === 'location'}
-                  />
+              {/* Location + Category side by side (2 columns) so the sheet doesn't
+                  need as much vertical scrolling on mobile */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {/* Primary Location */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
+                  <div style={{
+                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                    borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
+                  }}>
+                    <PrimaryLocationDropdown
+                      primaryCategories={primaryCategories}
+                      value={filterPrimary}
+                      onChange={(cat) => handleFilterChange({ primary: cat, secondary: null })}
+                      placeholder="All Locations"
+                      activeColor="#f59e0b"
+                      isInModal={true}
+                      forceOpen={autoExpandField === 'location'}
+                    />
+                  </div>
+                </div>
+
+                {/* Category */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Property Category</label>
+                  <div style={{
+                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                    borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
+                  }}>
+                    <CategoryDropdown
+                      options={categoryOptions}
+                      value={filterType}
+                      onChange={(type) => handleFilterChange({ type })}
+                      placeholder="All Categories"
+                      activeColor="#f59e0b"
+                      isInModal={true}
+                      forceOpen={autoExpandField === 'category'}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Sub Location */}
+              {/* Sub Location — full width below, since it only appears once a
+                  primary location is chosen and reads oddly squeezed into a column */}
               {showSecondaryLocationField && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
@@ -1272,25 +1296,6 @@ export default function FilterBar() {
                   </div>
                 </div>
               )}
-
-              {/* Category */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Property Category</label>
-                <div style={{
-                  height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
-                  borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
-                }}>
-                  <CategoryDropdown
-                    options={categoryOptions}
-                    value={filterType}
-                    onChange={(type) => handleFilterChange({ type })}
-                    placeholder="All Categories"
-                    activeColor="#f59e0b"
-                    isInModal={true}
-                    forceOpen={autoExpandField === 'category'}
-                  />
-                </div>
-              </div>
 
               {/* Unit Toggle & Landmarks */}
               <div style={{ display: 'flex', gap: 10 }}>

@@ -78,7 +78,7 @@ router.post('/user-login', async (req, res) => {
 
     const normalizedUsername = username.trim().toLowerCase();
     const user = await User.findOne({ username: normalizedUsername });
-    if (!user) {
+    if (!user || user.isDeleted) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 

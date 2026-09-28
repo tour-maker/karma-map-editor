@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.js';
 import documentRoutes from './routes/documents.js';
 import sheetsRoutes from './routes/sheets.js';
 import shareRoutes from './routes/share.js';
+import userRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/sheets', sheetsRoutes);
+app.use('/api/users', userRoutes);
 app.use('/share', shareRoutes);
 
 // MongoDB Connection

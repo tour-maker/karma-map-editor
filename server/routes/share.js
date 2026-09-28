@@ -12,7 +12,11 @@ const router = express.Router();
 const SITE_ORIGIN = (process.env.PUBLIC_SITE_ORIGIN || 'https://karmalandtour.360eye.tech').replace(/\/$/, '');
 const GENERIC_TITLE = 'Karma Map Editor - Interactive Real Estate & Property Mapping Tool';
 const GENERIC_DESCRIPTION = 'Interactive map editor for viewing, editing, matching, and managing real estate property polygons, landmarks, and spatial analytics.';
-const GENERIC_IMAGE = `${SITE_ORIGIN}/preview.webp`;
+// .jpg, not .webp: WhatsApp's and several other link-unfurling crawlers have
+// unreliable/no support for WebP in og:image, so a .webp preview can fail to
+// render even though the tag itself is present and correct (confirmed via curl).
+const GENERIC_IMAGE = `${SITE_ORIGIN}/preview.jpg`;
+const GENERIC_IMAGE_TYPE = 'image/jpeg';
 
 // Prefer the built frontend's index.html (correct hashed asset tags) when this
 // server is deployed alongside the frontend build; fall back to the repo's
@@ -120,6 +124,9 @@ router.get('/:id', async (req, res) => {
     `<meta property="og:title" content="${escTitle}" />`,
     `<meta property="og:description" content="${escDescription}" />`,
     `<meta property="og:image" content="${GENERIC_IMAGE}" />`,
+    `<meta property="og:image:type" content="${GENERIC_IMAGE_TYPE}" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
     `<meta property="og:url" content="${shareUrl}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${escTitle}" />`,

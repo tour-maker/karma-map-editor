@@ -357,7 +357,11 @@ export default function LandmarkManager() {
     }
 
     const zoom = map.getZoom();
-    const isZoomedOut = zoom != null && zoom < 12;
+    // Landmarks should be visible on the first screen the visitor sees, not only
+    // after they zoom in further. The map's own minZoom (MapEditor.jsx) is 9, so
+    // gating landmarks at that same floor means they show at any zoom level the
+    // map can actually be at, including the default initial view.
+    const isZoomedOut = zoom != null && zoom < 9;
 
     const items = Array.from(landmarkOverlaysRef.current.values());
 
