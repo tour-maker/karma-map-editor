@@ -467,14 +467,18 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             display: 'flex',
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
             paddingBottom: 2,
-            gap: 10
+            // Small — the divider lines between tabs do the visual separation. This gap
+            // applies between EVERY flex child including the dividers (7 children = 6 gaps),
+            // so a larger value here was pushing the row past the sidebar's fixed width and
+            // getting clipped by its overflow:hidden.
+            gap: 2
           }}>
             <button
               type="button"
               onClick={() => setActiveTab('projects')}
               className="btn-hover-effect"
               style={{
-                flex: 1, padding: '7px 0', border: 'none',
+                flex: 1, minWidth: 0, overflow: 'hidden', padding: '7px 0', border: 'none',
                 borderBottom: activeTab === 'projects' ? '2.5px solid #f59e0b' : '2.5px solid transparent',
                 fontSize: 12, fontWeight: activeTab === 'projects' ? 700 : 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -503,7 +507,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               onClick={() => setActiveTab('landmarks')}
               className="btn-hover-effect"
               style={{
-                flex: 1, padding: '7px 0', border: 'none',
+                flex: 1, minWidth: 0, overflow: 'hidden', padding: '7px 0', border: 'none',
                 borderBottom: activeTab === 'landmarks' ? '2.5px solid #f59e0b' : '2.5px solid transparent',
                 fontSize: 12, fontWeight: activeTab === 'landmarks' ? 700 : 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -532,7 +536,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               onClick={() => setActiveTab('areas')}
               className="btn-hover-effect"
               style={{
-                flex: 1, padding: '7px 0', border: 'none',
+                flex: 1, minWidth: 0, overflow: 'hidden', padding: '7px 0', border: 'none',
                 borderBottom: activeTab === 'areas' ? '2.5px solid #f59e0b' : '2.5px solid transparent',
                 fontSize: 12, fontWeight: activeTab === 'areas' ? 700 : 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -562,7 +566,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   onClick={() => setActiveTab('users')}
                 className="btn-hover-effect"
                 style={{
-                  flex: 1, padding: '7px 0', border: 'none',
+                  flex: 1, minWidth: 0, overflow: 'hidden', padding: '7px 0', border: 'none',
                   borderBottom: activeTab === 'users' ? '2.5px solid #f59e0b' : '2.5px solid transparent',
                   fontSize: 12, fontWeight: activeTab === 'users' ? 700 : 500, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
