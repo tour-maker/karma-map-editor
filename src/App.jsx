@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import './App.css'
 import MapEditor from './components/MapEditor'
 import { GoogleMapProvider } from './context/GoogleMapContext'
@@ -104,50 +104,9 @@ function App() {
 
   const appMode = useMapStore(state => state.appMode);
   const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
-  const googleSheetsConnected = useMapStore(state => state.googleSheetsConnected);
-
   return (
     <GoogleMapProvider>
       {appMode === 'edit' && !isAdminAuthenticated && <AdminAuthOverlay />}
-      {appMode === 'edit' && isAdminAuthenticated && (
-        <div style={{ position: 'fixed', top: 14, right: 16, zIndex: 1000, display: 'flex', gap: 8 }}>
-          {/* <button
-            onClick={() => requestLogin()}
-            title={googleSheetsConnected ? 'Re-authenticate with Google Sheets' : 'Connect to Google Sheets'}
-            style={{
-              background: googleSheetsConnected ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-              border: googleSheetsConnected ? '1px solid rgba(34, 197, 94, 0.5)' : '1px solid rgba(245, 158, 11, 0.5)',
-              color: googleSheetsConnected ? '#22c55e' : '#f59e0b',
-              borderRadius: 8,
-              padding: '6px 14px',
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s',
-              fontFamily: 'Inter, system-ui, sans-serif'
-            }}
-          >
-            {googleSheetsConnected ? 'Google Sheets Connected' : 'Connect Google Sheets'}
-          </button> */}
-          <span style={{
-            background: 'rgba(245, 158, 11, 0.08)',
-            border: '1px solid rgba(245, 158, 11, 0.4)',
-            color: '#f59e0b',
-            borderRadius: 12,
-            padding: '3px 9px',
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-            backdropFilter: 'blur(8px)',
-            fontFamily: 'Inter, system-ui, sans-serif'
-          }}>
-            Map Editor
-          </span>
-        </div>
-      )}
       <Toaster position="top-center" />
       <GoogleSheetsConnect />
       <MapEditor />
