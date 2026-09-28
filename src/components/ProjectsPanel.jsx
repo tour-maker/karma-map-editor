@@ -109,7 +109,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     top: 16,
     left: 16,
     zIndex: 1000,
-    width: 380,
+    // Widened from 380 so the 4-tab row (icon + label + count badge, x4, plus divider
+    // lines) has enough room to lay out without any tab's icon/text getting squeezed
+    // and clipped by the panel's own overflow:hidden.
+    width: 420,
     maxHeight: 'calc(100vh - 32px)',
     display: 'flex',
     flexDirection: 'column',

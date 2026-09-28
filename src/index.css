@@ -429,7 +429,7 @@ body.hide-ui-for-screenshot nav {
 /* TV & Ultra-wide displays */
 @media (min-width: 1920px) {
   .responsive-sidebar {
-    width: 400px !important;
+    width: 420px !important;
   }
 
   .responsive-info-panel {
