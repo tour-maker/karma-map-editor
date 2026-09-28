@@ -467,7 +467,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             display: 'flex',
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
             paddingBottom: 2,
-            gap: 4
+            gap: 10
           }}>
             <button
               type="button"
@@ -572,7 +572,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           </div>
 
           {/* Desktop Action Buttons */}
-          <div className="desktop-tabs-wrapper" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <div className="desktop-tabs-wrapper" style={{ display: 'flex', gap: 14, marginTop: 8 }}>
             {activeTab === 'projects' || activeTab === 'submissions' ? (
               <>
                 <button
