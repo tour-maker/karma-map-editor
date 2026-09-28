@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
@@ -47,6 +47,50 @@ const PushPinIcon = ({ color }) => (
   </svg>
 );
 
+// The dock's Location/Category dropdown popups used to be `position: absolute`,
+// anchored to their trigger button which itself lives inside the `position: fixed`
+// dock. That's normally fine — but on mobile, scrolling/touch-panning the popup's
+// own internal list can rubber-band the whole page along with it (iOS Safari in
+// particular briefly detaches `fixed`/`absolute` elements from their anchor during
+// that kind of scroll), so the popup visibly drifts away from its trigger instead
+// of staying put the way the search box now does. Anchoring the popup with
+// `position: fixed` and its own JS-computed screen coordinates (recalculated
+// whenever it opens or the viewport resizes) makes it track the real viewport
+// directly, the same way the search box's own `position: fixed` does, instead of
+// depending on a chain of ancestor positioning that mobile scroll can disturb.
+// Shared by all three dock dropdowns below (Location / Sub-location / Category) —
+// used only for the non-modal (dock) variant; the mobile sheet's own popup is
+// already anchored inside an already-fixed modal, so it doesn't need this.
+function useFixedDropdownPosition(triggerRef, isOpen, isInModal) {
+  const [fixedStyle, setFixedStyle] = useState(null);
+
+  useLayoutEffect(() => {
+    if (isInModal || !isOpen || !triggerRef.current) {
+      setFixedStyle(null);
+      return;
+    }
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      setFixedStyle({
+        position: 'fixed',
+        bottom: Math.max(8, window.innerHeight - rect.top + 16),
+        left: rect.left + rect.width / 2,
+        transform: 'translateX(-50%)'
+      });
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('orientationchange', updatePosition);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('orientationchange', updatePosition);
+    };
+  }, [isOpen, isInModal, triggerRef]);
+
+  return fixedStyle;
+}
+
 // ---------------------------------------------------------------------------
 // 1. Primary Location Dropdown Component
 // ---------------------------------------------------------------------------
@@ -57,6 +101,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
   const [isOpen, setIsOpen] = useState(forceOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+  const fixedPopupStyle = useFixedDropdownPosition(ref, isOpen, isInModal);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -123,6 +168,8 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           position: 'absolute',
           ...(isInModal ? {
             top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : fixedPopupStyle ? {
+            ...fixedPopupStyle, minWidth: 190, zIndex: 3000
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 190, zIndex: 1100
           }),
@@ -158,6 +205,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           <div style={{
             maxHeight: isInModal ? 180 : 240,
             overflowY: 'auto',
+            overscrollBehavior: 'contain',
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
@@ -223,6 +271,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+  const fixedPopupStyle = useFixedDropdownPosition(ref, isOpen, isInModal);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -289,6 +338,8 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           position: 'absolute',
           ...(isInModal ? {
             top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : fixedPopupStyle ? {
+            ...fixedPopupStyle, minWidth: 180, zIndex: 3000
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 180, zIndex: 1100
           }),
@@ -324,6 +375,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           <div style={{
             maxHeight: isInModal ? 180 : 240,
             overflowY: 'auto',
+            overscrollBehavior: 'contain',
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
@@ -391,6 +443,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
   // freshly mounted each time the modal sheet opens, so this only needs to run once.
   const [isOpen, setIsOpen] = useState(forceOpen);
   const ref = useRef(null);
+  const fixedPopupStyle = useFixedDropdownPosition(ref, isOpen, isInModal);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -454,6 +507,8 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
           position: 'absolute',
           ...(isInModal ? {
             top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+          } : fixedPopupStyle ? {
+            ...fixedPopupStyle, minWidth: 200, zIndex: 3000
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 200, zIndex: 1100
           }),
