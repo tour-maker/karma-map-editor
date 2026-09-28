@@ -1,12 +1,29 @@
 import { useState, useEffect } from 'react';
-import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers } from 'react-icons/fi';
+import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useMapStore } from '../store/useMapStore';
 import { API_BASE_URL } from '../config/api';
 
+const EDIT_FIELDS = [
+  { key: 'tp', label: 'TP' },
+  { key: 'op', label: 'OP' },
+  { key: 'fp', label: 'FP' },
+  { key: 'area', label: 'Area' },
+  { key: 'areaUnit', label: 'Area Unit' },
+  { key: 'location', label: 'Location' },
+  { key: 'parentLocation', label: 'Parent Location' },
+  { key: 'landmark', label: 'Landmark' },
+  { key: 'type', label: 'Type' },
+  { key: 'partyName', label: 'Party Name' },
+  { key: 'partyPhone', label: 'Party Phone' },
+  { key: 'brokerName', label: 'Broker Name' },
+  { key: 'brokerPhone', label: 'Broker Phone' },
+  { key: 'remarks', label: 'Remarks' },
+];
+
 // Admin-only panel: lists registered viewer accounts with per-user submission
-// stats, and a drill-down into that user's actual properties. Mirrors the
-// summary → detail pattern already used by PendingSubmissionsPanel so it fits
-// the same "Requests" tab UX the admin is already used to.
+// stats, and a drill-down into that user's actual properties — with full
+// details plus inline edit/delete for each specific polygon they submitted.
 export default function UsersPanel() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,17 +32,40 @@ export default function UsersPanel() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [editingSubId, setEditingSubId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmDeleteSubId, setConfirmDeleteSubId] = useState(null);
+  const [deletingSubId, setDeletingSubId] = useState(null);
+
+  const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
+
+  // Shared wrapper for every admin-authenticated call in this panel: if the
+  // token is missing/expired/invalid, the backend returns 401 — instead of
+  // just showing an error toast and dead-ending, this signs the admin back
+  // out so the login overlay reappears and a fresh token is minted on the
+  // next sign-in, rather than leaving the panel stuck failing silently.
+  const adminFetch = async (url, options = {}) => {
+    const jwt = localStorage.getItem('karmaAdminJWT');
+    const res = await fetch(url, {
+      ...options,
+      headers: { ...(options.headers || {}), 'Authorization': `Bearer ${jwt}` }
+    });
+    if (res.status === 401) {
+      localStorage.removeItem('karmaAdminJWT');
+      setIsAdminAuthenticated(false);
+      toast.error('Your admin session expired — please sign in again.');
+    }
+    return res;
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
-      const res = await fetch(`${API_BASE_URL}/api/users`, {
-        headers: { 'Authorization': `Bearer ${jwt}` }
-      });
+      const res = await adminFetch(`${API_BASE_URL}/api/users`);
       if (res.ok) {
         setUsers(await res.json());
-      } else {
+      } else if (res.status !== 401) {
         toast.error('Failed to load users');
       }
     } catch (error) {
@@ -45,13 +85,10 @@ export default function UsersPanel() {
     setSelectedUser(user);
     setDetailLoading(true);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
-      const res = await fetch(`${API_BASE_URL}/api/users/${user._id}/submissions`, {
-        headers: { 'Authorization': `Bearer ${jwt}` }
-      });
+      const res = await adminFetch(`${API_BASE_URL}/api/users/${user._id}/submissions`);
       if (res.ok) {
         setUserSubmissions(await res.json());
-      } else {
+      } else if (res.status !== 401) {
         toast.error('Failed to load this user\'s properties');
       }
     } catch (error) {
@@ -62,26 +99,77 @@ export default function UsersPanel() {
     }
   };
 
-  const handleDelete = async (userId) => {
+  const handleDeleteUser = async (userId) => {
     setDeletingId(userId);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
-      const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${jwt}` }
-      });
+      const res = await adminFetch(`${API_BASE_URL}/api/users/${userId}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('User deleted');
         setUsers(prev => prev.filter(u => u._id !== userId));
         if (selectedUser?._id === userId) setSelectedUser(null);
-      } else {
+      } else if (res.status !== 401) {
         toast.error('Failed to delete user');
       }
     } catch (error) {
+      console.error('Delete user error:', error);
       toast.error('Error deleting user');
     } finally {
       setDeletingId(null);
       setConfirmDeleteId(null);
+    }
+  };
+
+  const startEditSubmission = (sub) => {
+    setEditingSubId(sub._id);
+    const initial = {};
+    EDIT_FIELDS.forEach(({ key }) => { initial[key] = sub[key] || ''; });
+    setEditForm(initial);
+  };
+
+  const saveEditSubmission = async (subId) => {
+    setSavingEdit(true);
+    try {
+      const res = await adminFetch(`${API_BASE_URL}/api/submissions/${subId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+      if (res.ok) {
+        const { submission } = await res.json();
+        setUserSubmissions(prev => prev.map(s => s._id === subId ? submission : s));
+        toast.success('Property details updated');
+        setEditingSubId(null);
+      } else if (res.status !== 401) {
+        toast.error('Failed to update property');
+      }
+    } catch (error) {
+      console.error('Update property error:', error);
+      toast.error('Error updating property');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const deleteSubmission = async (subId) => {
+    setDeletingSubId(subId);
+    try {
+      const res = await adminFetch(`${API_BASE_URL}/api/submissions/${subId}/permanent`, { method: 'DELETE' });
+      if (res.ok) {
+        setUserSubmissions(prev => prev.filter(s => s._id !== subId));
+        setUsers(prev => prev.map(u => u._id === selectedUser?._id
+          ? { ...u, totalProperties: u.totalProperties - 1 }
+          : u
+        ));
+        toast.success('Property deleted');
+      } else if (res.status !== 401) {
+        toast.error('Failed to delete property');
+      }
+    } catch (error) {
+      console.error('Delete property error:', error);
+      toast.error('Error deleting property');
+    } finally {
+      setDeletingSubId(null);
+      setConfirmDeleteSubId(null);
     }
   };
 
@@ -104,31 +192,134 @@ export default function UsersPanel() {
         ) : userSubmissions.length === 0 ? (
           <div style={{ color: '#94a3b8', padding: 20 }}>This user hasn't submitted any properties.</div>
         ) : (
-          userSubmissions.map(sub => (
-            <div key={sub._id} style={{
-              background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16,
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{
-                  fontWeight: 'bold', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px',
-                  color: sub.status === 'approved' ? '#22c55e' : sub.status === 'rejected' ? '#ef4444' : '#f59e0b'
-                }}>
-                  {sub.status}
-                </span>
-                <span style={{ color: '#64748b', fontSize: 12 }}><FiClock /> {new Date(sub.createdAt).toLocaleDateString()}</span>
-              </div>
-              <div style={{ fontSize: 13, color: '#e2e8f0' }}>
-                <div><strong>Location:</strong> {sub.parentLocation || sub.location} {sub.location && sub.parentLocation ? `(${sub.location})` : ''}</div>
-                <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-                  <span><strong>TP:</strong> {sub.tp || '-'}</span>
-                  <span><strong>OP:</strong> {sub.op || '-'}</span>
-                  <span><strong>FP:</strong> {sub.fp || '-'}</span>
+          userSubmissions.map(sub => {
+            const isEditing = editingSubId === sub._id;
+            return (
+              <div key={sub._id} style={{
+                background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16,
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{
+                    fontWeight: 'bold', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px',
+                    color: sub.status === 'approved' ? '#22c55e' : sub.status === 'rejected' ? '#ef4444' : '#f59e0b'
+                  }}>
+                    {sub.status}
+                  </span>
+                  <span style={{ color: '#64748b', fontSize: 12 }}><FiClock /> {new Date(sub.createdAt).toLocaleDateString()}</span>
                 </div>
-                <div style={{ marginTop: 4 }}><strong>Type:</strong> {sub.type || 'N/A'}</div>
+
+                {isEditing ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {EDIT_FIELDS.map(({ key, label }) => (
+                      <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <label style={{ fontSize: 10.5, color: '#94a3b8', fontWeight: 600 }}>{label}</label>
+                        <input
+                          value={editForm[key] ?? ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, [key]: e.target.value }))}
+                          style={{
+                            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                            borderRadius: 6, padding: '6px 8px', color: '#f1f5f9', fontSize: 13, outline: 'none'
+                          }}
+                        />
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button
+                        onClick={() => saveEditSubmission(sub._id)}
+                        disabled={savingEdit}
+                        style={{
+                          flex: 1, padding: '8px', background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e',
+                          border: '1px solid rgba(34, 197, 94, 0.4)', borderRadius: 8, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          opacity: savingEdit ? 0.5 : 1, fontSize: 12, fontWeight: 700
+                        }}
+                      >
+                        <FiSave size={13} /> Save
+                      </button>
+                      <button
+                        onClick={() => setEditingSubId(null)}
+                        disabled={savingEdit}
+                        style={{
+                          flex: 1, padding: '8px', background: 'rgba(255,255,255,0.06)', color: '#94a3b8',
+                          border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12
+                        }}
+                      >
+                        <FiX size={13} /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 13, color: '#e2e8f0', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <div><strong>Location:</strong> {sub.parentLocation || sub.location || 'N/A'} {sub.location && sub.parentLocation ? `(${sub.location})` : ''}</div>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <span><strong>TP:</strong> {sub.tp || '-'}</span>
+                        <span><strong>OP:</strong> {sub.op || '-'}</span>
+                        <span><strong>FP:</strong> {sub.fp || '-'}</span>
+                      </div>
+                      <div><strong>Area:</strong> {sub.area || '-'} {sub.areaUnit || ''}</div>
+                      <div><strong>Type:</strong> {sub.type || 'N/A'}</div>
+                      {sub.landmark && <div><strong>Landmark:</strong> {sub.landmark}</div>}
+                      {sub.partyName && <div><strong>Party:</strong> {sub.partyName} {sub.partyPhone ? `(${sub.partyPhone})` : ''}</div>}
+                      {sub.brokerName && <div><strong>Broker:</strong> {sub.brokerName} {sub.brokerPhone ? `(${sub.brokerPhone})` : ''}</div>}
+                      {sub.remarks && <div><strong>Remarks:</strong> {sub.remarks}</div>}
+                      <div style={{ color: '#64748b', fontSize: 11 }}>{sub.coordinates?.length || 0} polygon points</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button
+                        onClick={() => startEditSubmission(sub)}
+                        style={{
+                          flex: 1, padding: '7px', background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b',
+                          border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 8, cursor: 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 600
+                        }}
+                      >
+                        <FiEdit2 size={12} /> Edit
+                      </button>
+                      {confirmDeleteSubId === sub._id ? (
+                        <>
+                          <button
+                            onClick={() => deleteSubmission(sub._id)}
+                            disabled={deletingSubId === sub._id}
+                            style={{
+                              flex: 1, padding: '7px', background: 'rgba(239, 68, 68, 0.25)', color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.5)', borderRadius: 8, cursor: 'pointer',
+                              fontSize: 12, fontWeight: 700, opacity: deletingSubId === sub._id ? 0.5 : 1
+                            }}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteSubId(null)}
+                            style={{
+                              flex: 1, padding: '7px', background: 'rgba(255,255,255,0.06)', color: '#94a3b8',
+                              border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, cursor: 'pointer', fontSize: 12
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteSubId(sub._id)}
+                          style={{
+                            flex: 1, padding: '7px', background: 'rgba(239, 68, 68, 0.12)', color: '#ef4444',
+                            border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 600
+                          }}
+                        >
+                          <FiTrash2 size={12} /> Delete
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     );
@@ -189,7 +380,7 @@ export default function UsersPanel() {
                 {confirmDeleteId === user._id ? (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
-                      onClick={() => handleDelete(user._id)}
+                      onClick={() => handleDeleteUser(user._id)}
                       disabled={deletingId === user._id}
                       style={{
                         flex: 1, padding: '7px', background: 'rgba(239, 68, 68, 0.25)', color: '#ef4444',

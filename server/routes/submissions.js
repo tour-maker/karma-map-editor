@@ -130,6 +130,61 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// @route   PUT /api/submissions/:id
+// @desc    Edit a submission's property details (Admin only — requires JWT).
+//          Only the descriptive fields are editable here — userId, username,
+//          coordinates and status are left alone (status changes go through
+//          the dedicated approve/reject routes above).
+router.put('/:id', requireAdmin, async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    const EDITABLE_FIELDS = [
+      'tp', 'op', 'fp', 'area', 'areaUnit', 'location', 'parentLocation',
+      'landmark', 'type', 'remarks', 'partyName', 'partyPhone', 'brokerName', 'brokerPhone'
+    ];
+    for (const field of EDITABLE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        submission[field] = req.body[field];
+      }
+    }
+
+    await submission.save();
+    res.json({ message: 'Submission updated', submission });
+  } catch (error) {
+    console.error('Edit submission error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// @route   DELETE /api/submissions/:id/permanent
+// @desc    Permanently delete a submission (Admin only — requires JWT). Unlike
+//          DELETE /:id (which rejects/soft-removes it), this actually removes
+//          the record — used from the admin Users panel to clean up a
+//          specific polygon a user submitted. If it was approved, it's also
+//          removed from the Google Sheet first.
+router.delete('/:id/permanent', requireAdmin, async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    if (submission.status === 'approved') {
+      try {
+        await removeSubmissionFromSheet(submission._id);
+      } catch (sheetErr) {
+        console.error('[Permanent Delete] Failed to remove from sheet:', sheetErr);
+      }
+    }
+
+    await submission.deleteOne();
+    res.json({ message: 'Submission permanently deleted' });
+  } catch (error) {
+    console.error('Permanent delete submission error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // @route   DELETE /api/submissions/:id/mine
 // @desc    Permanently delete the signed-in viewer's own rejected submission
 router.delete('/:id/mine', requireUser, async (req, res) => {
