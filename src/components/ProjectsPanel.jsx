@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiEdit2, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
@@ -9,6 +9,7 @@ import AddAreaModal from './AddAreaModal';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { zoomToProperty, fitAllBounds } from '../services/googleMaps';
 import { syncFeatureToSheet } from '../services/googleSheets';
+import toast from 'react-hot-toast';
 import { cleanLandmarkTitle, resolveLandmarkLocation } from './LandmarkManager';
 import PendingSubmissionsPanel from './PendingSubmissionsPanel';
 import UsersPanel from './UsersPanel';
@@ -1209,13 +1210,16 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               }}
                               className="btn-hover-effect"
                               style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                                background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.16)',
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                padding: '4px 9px', borderRadius: 999, flexShrink: 0,
+                                fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap',
+                                background: (movePanel && !movePanel.isSub && movePanel.name === row.area.name) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                                border: (movePanel && !movePanel.isSub && movePanel.name === row.area.name) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
                                 color: '#cbd5e1', cursor: 'pointer'
                               }}
                             >
                               <FiMove size={11} />
+                              Move Area
                             </button>
                             <button
                               type="button"
@@ -1230,9 +1234,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               }}
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                                background: row.area.subLocations.length > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(239,68,68,0.08)',
-                                border: row.area.subLocations.length > 0 ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(239,68,68,0.3)',
+                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                background: row.area.subLocations.length > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(239,68,68,0.07)',
+                                border: row.area.subLocations.length > 0 ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(239,68,68,0.28)',
                                 color: row.area.subLocations.length > 0 ? '#64748b' : '#ef4444',
                                 cursor: row.area.subLocations.length > 0 ? 'not-allowed' : 'pointer'
                               }}
@@ -1251,6 +1255,12 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             </span>
                           </div>
                         </div>
+
+                        {row.area.subLocations && row.area.subLocations.length > 0 && (
+                          <div style={{ fontSize: 10.5, color: '#fca5a5', marginTop: 6, paddingLeft: 32 }}>
+                            Move or merge its {row.area.subLocations.length} Sub-area{row.area.subLocations.length === 1 ? '' : 's'} out first.
+                          </div>
+                        )}
 
                         {row.area.subLocations && row.area.subLocations.length > 0 ? (
                           <div
@@ -1513,27 +1523,19 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     />
                   ) : (
                     <>
-                      <span style={{
-                        flex: 1, fontSize: 12.5, fontWeight: 600,
-                        color: isDark ? '#e2e8f0' : '#1e293b',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                      }}>
-                        {subName}
-                      </span>
-                      <button
-                        type="button"
-                        title={`Rename ${subName}`}
-                        onClick={(e) => {
+                      <span
+                        onDoubleClick={(e) => {
                           e.stopPropagation();
                           setEditingSubarea({ oldName: subName, value: subName });
                         }}
+                        title="Double-click to rename"
                         style={{
-                          background: 'transparent', border: 'none', cursor: 'pointer',
-                          color: '#94a3b8', display: 'flex', alignItems: 'center', padding: 3, flexShrink: 0
-                        }}
-                      >
-                        <FiEdit2 size={12} />
-                      </button>
+                          flex: 1, fontSize: 12.5, fontWeight: 600,
+                          color: isDark ? '#e2e8f0' : '#1e293b',
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                        }}>
+                        {subName}
+                      </span>
                       <button
                         type="button"
                         title={`Move "${subName}" into another Primary Location`}
@@ -1541,16 +1543,22 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           e.stopPropagation();
                           const rect = e.currentTarget.getBoundingClientRect();
                           setDeleteConfirm(null);
-                          setMovePanel({ isSub: true, name: subName, parentName: openSubareaDropdown.areaName, rect, target: '' });
+                          setMovePanel(prev => (prev && prev.isSub && prev.name === subName && prev.parentName === openSubareaDropdown.areaName ? null : {
+                            isSub: true, name: subName, parentName: openSubareaDropdown.areaName, rect, target: ''
+                          }));
                         }}
+                        className="btn-hover-effect"
                         style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                          background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.16)',
+                          display: 'inline-flex', alignItems: 'center', gap: 3,
+                          padding: '3px 7px', borderRadius: 999, flexShrink: 0,
+                          fontSize: 9.5, fontWeight: 700, whiteSpace: 'nowrap',
+                          background: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === openSubareaDropdown.areaName) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                          border: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === openSubareaDropdown.areaName) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
                           color: '#cbd5e1', cursor: 'pointer'
                         }}
                       >
                         <FiMove size={10} />
+                        Move Area
                       </button>
                       <button
                         type="button"
@@ -1563,12 +1571,12 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                         }}
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+                          width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                          background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.28)',
                           color: '#ef4444', cursor: 'pointer'
                         }}
                       >
-                        <FiTrash2 size={10} />
+                        <FiTrash2 size={11} />
                       </button>
                     </>
                   )}
@@ -1643,6 +1651,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   }
                   setMovePanel(null);
                   setOpenSubareaDropdown(null);
+                  toast.success('Changes saved', {
+                    style: { background: '#0f172a', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)' }
+                  });
                   // Best-effort: push the moved features' new location to the sheet.
                   try {
                     const moved = useMapStore.getState().features.filter(f => {
@@ -1699,13 +1710,16 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             }}
           >
             <div style={{ fontSize: 12, color: '#fca5a5', fontWeight: 600, marginBottom: 10 }}>
-              Delete "{deleteConfirm.name}"? Its plots move to Unassigned Plots, not deleted.
+              Delete "{deleteConfirm.name}"? This can't be undone.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
                 onClick={async () => {
                   const { isSub, name, parentName } = deleteConfirm;
+                  const beforeCount = useMapStore.getState().features.filter(f =>
+                    f.data?.location?.toLowerCase() === 'unassigned' && f.data?.parentLocation?.toLowerCase() === 'unassigned'
+                  ).length;
                   if (isSub) {
                     deleteSubLocation(parentName, name);
                   } else {
@@ -1713,11 +1727,16 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   }
                   setDeleteConfirm(null);
                   setOpenSubareaDropdown(null);
+                  const rescued = useMapStore.getState().features.filter(f =>
+                    f.data?.location?.toLowerCase() === 'unassigned' && f.data?.parentLocation?.toLowerCase() === 'unassigned'
+                  );
+                  const rescuedNow = rescued.length - beforeCount;
+                  toast.success(
+                    `"${name}" deleted` + (rescuedNow > 0 ? ` — its plots moved to Unassigned Plots` : ''),
+                    { style: { background: '#0f172a', color: '#fca5a5', border: '1px solid rgba(248, 113, 113, 0.4)' } }
+                  );
                   // Best-effort: push the rescued features' new "Unassigned" location.
                   try {
-                    const rescued = useMapStore.getState().features.filter(f =>
-                      f.data?.location?.toLowerCase() === 'unassigned' && f.data?.parentLocation?.toLowerCase() === 'unassigned'
-                    );
                     for (const f of rescued) {
                       await syncFeatureToSheet(spreadsheetId, f, 'update');
                     }
