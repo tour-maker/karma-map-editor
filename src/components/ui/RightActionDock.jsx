@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { getPublicShareUrl, getPlotShareUrl } from '../../utils/shareUrl';
+import { getPublicShareUrl } from '../../utils/shareUrl';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
@@ -117,76 +117,41 @@ export default function RightActionDock() {
     });
   };
 
+  // This is the general/floating share button (not tied to any polygon) — it
+  // always shares the plain site URL with the generic Karma Realtors preview
+  // (title/description/thumbnail come from index.html's site-wide Open Graph
+  // tags, so a normal WhatsApp-style link preview renders). It used to also
+  // check for a currently-selected polygon and share that plot's deep-link
+  // instead — that behavior belongs solely to the dedicated per-polygon Share
+  // button inside the Polygon Info card (see PropertyInfoPanel's
+  // handleSharePolygon, which already does exactly that: a plot-specific URL
+  // that zooms to and opens that polygon's info card, with the plot's id in
+  // the URL). Having two buttons do the same plot-specific thing was the bug;
+  // this one now always does the general share, regardless of selection.
   const handleShare = async () => {
-    const features = useMapStore.getState().features;
-    const selectedFeatureId = useMapStore.getState().selectedFeatureId;
-    const selectedFeature = features.find(f => f.id === selectedFeatureId);
-
-    if (selectedFeature) {
-      const shareUrl = new URL(getPlotShareUrl(selectedFeature.id));
-      const d = selectedFeature.data || {};
-      const title = d.name || d.location || `Polygon ${selectedFeature.id}`;
-      const tpFp = [
-        d.tpNo || d.tp ? `TP: ${d.tpNo || d.tp}` : '',
-        d.opNo || d.op ? `OP: ${d.opNo || d.op}` : '',
-        d.fpNo || d.fp ? `FP: ${d.fpNo || d.fp}` : ''
-      ].filter(Boolean).join(' | ');
-
-      const areaStr = d.area ? `${d.area} sq. yard` : '';
-      const locationStr = d.location ? `${d.location}${d.parentLocation ? `, ${d.parentLocation}` : ''}` : 'Surat';
-      const categoryStr = d.type ? d.type.toUpperCase() : 'LAND';
-
-      const shareText = `📍 *Karma Realtors - Selected Plot Details*\n\n` +
-        `🏢 *Title*: ${title}\n` +
-        `📍 *Location*: ${locationStr}\n` +
-        (tpFp ? `📐 *TP/OP/FP*: ${tpFp}\n` : '') +
-        (areaStr ? `📏 *Area*: ${areaStr}\n` : '') +
-        `🏷️ *Category*: ${categoryStr}\n\n` +
-        `🔗 *View on Interactive Map*:\n${shareUrl.toString()}`;
-
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: `Karma Realtors - ${title}`,
-            text: shareText,
-            url: shareUrl.toString()
-          });
-          toast.success('Polygon info shared! 🚀', {
-            style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
-          });
-          return;
-        } catch (e) {
-          if (e.name === 'AbortError') return;
-          console.warn('[Share] navigator.share failed, falling back to WhatsApp:', e);
-        }
-      }
-
-      await shareViaWhatsAppFallback(shareText, 'Opening WhatsApp with this plot\'s details & preview link! 🚀');
-    } else {
-      const generalShareUrl = getPublicShareUrl();
-      const generalShareText = `Karma Realtors - Exclusive Land Project
+    const generalShareUrl = getPublicShareUrl();
+    const generalShareText = `Karma Realtors - Exclusive Land Project
 Explore our exclusive Land Project with custom filters like Sq Yard & Wingha. Choose your ideal plot based on category. Take a virtual tour now 👇
 ${generalShareUrl}`;
 
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'Karma Realtors - Exclusive Land Project',
-            text: generalShareText,
-            url: generalShareUrl
-          });
-          toast.success('Project details & tour link shared! 🚀', {
-            style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
-          });
-          return;
-        } catch (e) {
-          if (e.name === 'AbortError') return;
-          console.warn('[Share] navigator.share failed, falling back to WhatsApp:', e);
-        }
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Karma Realtors - Exclusive Land Project',
+          text: generalShareText,
+          url: generalShareUrl
+        });
+        toast.success('Project details & tour link shared! 🚀', {
+          style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
+        });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        console.warn('[Share] navigator.share failed, falling back to WhatsApp:', e);
       }
-
-      await shareViaWhatsAppFallback(generalShareText, 'Opening WhatsApp with the tour link & preview! 🚀');
     }
+
+    await shareViaWhatsAppFallback(generalShareText, 'Opening WhatsApp with the tour link & preview! 🚀');
   };
 
   const handleToggleOpen = () => {

@@ -1201,14 +1201,16 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       >
                         {/* HEAD BOX — the only bordered "card" part, matching the approved
                             design (Sub-areas below are a flat, unboxed continuation, not
-                            nested inside another box). Sticky while its accordion is open,
-                            so scrolling through a long Sub-area list (e.g. Surat's 18) keeps
-                            this header in view above them, like the design mockup. */}
+                            nested inside another box). Deliberately NOT position:sticky —
+                            every attempt at that (across several rounds) ended up visually
+                            overlapping neighboring rows in this virtualized list (each row
+                            is its own absolutely-positioned, translateY'd box, which sticky
+                            doesn't play well with here), so a card with a long Sub-area list
+                            (e.g. Surat's 18) just scrolls normally like every other card. */}
                         <div
                           className="project-card-interactive"
                           style={{
-                            position: isExpanded ? 'sticky' : 'relative',
-                            top: isExpanded ? 0 : 'auto',
+                            position: 'relative',
                             zIndex: isExpanded ? 5 : 1,
                             flexShrink: 0,
                             padding: '10px 14px 10px 16px',
