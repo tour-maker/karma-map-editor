@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2, FiEye } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
@@ -406,6 +406,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const AREA_PLOT_ROW = 44;           // one plot row inside an expanded sub-area
   const AREA_NO_PLOTS_ROW = 26;       // "No plots marked here yet." row
   const AREA_NOTE_ROW = 20;           // "No Sub-areas here — showing plots directly." note line
+  const AREA_VIEWALL_ROW = 26;        // "View/Hide all plots in X" aggregate toggle row
 
   const getItemSize = useCallback((index) => {
     const row = virtualRows[index];
@@ -429,7 +430,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           subsHeight += plotCount > 0 ? plotCount * AREA_PLOT_ROW : AREA_NO_PLOTS_ROW;
         }
       });
-      return AREA_ROW_HEADER_ONLY + subsHeight + AREA_ACCORDION_PADDING;
+      return AREA_ROW_HEADER_ONLY + AREA_VIEWALL_ROW + subsHeight + AREA_ACCORDION_PADDING;
     }
     return 66;
   }, [virtualRows, expandedPrimaries, expandedSubs]);
@@ -1383,9 +1384,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           </div>
                         </div>
 
-                        {/* UNBOXED ACCORDION — the flat, unboxed Sub-area list itself,
-                            matching the approved design ("no nested box around each
-                            individual Sub-area row"). */}
+                        {/* No Sub-areas under this Primary — show its own plots directly,
+                            matching the mockup's p.noSubs branch. */}
                         {isExpanded && !hasSubs && (
                           <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', marginBottom: 2 }}>
@@ -1471,6 +1471,44 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             individual Sub-area row"). */}
                         {isExpanded && hasSubs && (
                           <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {/* "View/Hide all plots in X" — expands or collapses every one
+                                of this Primary's Sub-area rows at once, matching the
+                                mockup's aggregate toggleAllPlotsPanel. */}
+                            {(() => {
+                              const allSubsOpen = row.area.subLocations.every(subName => !!expandedSubs[row.area.name + '::' + subName]);
+                              return (
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedSubs(prev => {
+                                      const next = { ...prev };
+                                      row.area.subLocations.forEach(subName => {
+                                        next[row.area.name + '::' + subName] = !allSubsOpen;
+                                      });
+                                      return next;
+                                    });
+                                  }}
+                                  className="btn-hover-effect"
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    cursor: 'pointer', marginBottom: 4
+                                  }}
+                                >
+                                  <div style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                    background: 'rgba(56, 189, 248, 0.06)',
+                                    border: '1px solid rgba(56, 189, 248, 0.22)',
+                                    color: '#38bdf8'
+                                  }}>
+                                    <FiEye size={11} />
+                                  </div>
+                                  <span style={{ fontSize: 11.5, fontWeight: 700, color: '#38bdf8' }}>
+                                    {allSubsOpen ? 'Hide' : 'View'} all plots in {row.area.name}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             {row.area.subLocations.map((subName, subIdx) => {
                               const subKey = row.area.name + '::' + subName;
                               const isEditingThis = editingSubarea?.oldName === subName && editingSubarea?.parentName === row.area.name;
