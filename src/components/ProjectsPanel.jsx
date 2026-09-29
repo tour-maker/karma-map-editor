@@ -405,6 +405,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const AREA_ACCORDION_PADDING = 10;
   const AREA_PLOT_ROW = 44;           // one plot row inside an expanded sub-area
   const AREA_NO_PLOTS_ROW = 26;       // "No plots marked here yet." row
+  const AREA_NOTE_ROW = 20;           // "No Sub-areas here — showing plots directly." note line
 
   const getItemSize = useCallback((index) => {
     const row = virtualRows[index];
@@ -412,8 +413,13 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     if (row.type === 'header') return 44;
     if (row.itemType === 'area') {
       const hasSubs = row.area.subLocations && row.area.subLocations.length > 0;
-      if (!hasSubs) return AREA_ROW_BASE;
       const isExpanded = !!expandedPrimaries[row.area.name];
+      if (!hasSubs) {
+        if (!isExpanded) return AREA_ROW_BASE;
+        const plotCount = row.area.features.length;
+        const plotsHeight = plotCount > 0 ? plotCount * AREA_PLOT_ROW : AREA_NO_PLOTS_ROW;
+        return AREA_ROW_BASE + AREA_NOTE_ROW + plotsHeight + AREA_ACCORDION_PADDING;
+      }
       if (!isExpanded) return AREA_ROW_WITH_SUBS_COLLAPSED;
       let subsHeight = 0;
       row.area.subLocations.forEach(subName => {
@@ -1164,7 +1170,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   const subLocsText = hasSubs
                     ? row.area.subLocations.join(', ')
                     : `All plots in ${row.area.name}`;
-                  const isExpanded = hasSubs && !!expandedPrimaries[row.area.name];
+                  const isExpanded = !!expandedPrimaries[row.area.name];
 
                   return (
                     <div
@@ -1191,7 +1197,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           }
                         }}
                         title={`Click to filter map by ${row.area.name}`}
-                        style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+                        style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}
                       >
                         {/* HEAD BOX — the only bordered "card" part, matching the approved
                             design (Sub-areas below are a flat, unboxed continuation, not
@@ -1339,7 +1345,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                 background: isSelected ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.10)',
                                 border: isSelected ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(245, 158, 11, 0.25)',
                                 padding: '2px 8px', borderRadius: 8, flexShrink: 0,
-                                whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'
+                                whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
+                                minWidth: 54, textAlign: 'center'
                               }}>
                                 {row.area.count} {row.area.count === 1 ? 'plot' : 'plots'}
                               </span>
@@ -1349,23 +1356,22 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (!hasSubs) return;
                               setEditingSubarea(null);
                               setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
                             }}
-                            title={hasSubs ? (isExpanded ? 'Hide sub-areas' : 'View & edit sub-areas') : undefined}
-                            className={hasSubs ? 'btn-hover-effect' : ''}
+                            title={isExpanded ? 'Hide' : (hasSubs ? 'View & edit sub-areas' : 'View this Area\'s plots')}
+                            className="btn-hover-effect"
                             style={{
                               display: 'flex', alignItems: 'center', gap: 5,
-                              fontSize: 11, fontWeight: hasSubs ? 600 : 400,
-                              opacity: hasSubs ? 0.85 : 0.7,
+                              fontSize: 11, fontWeight: hasSubs ? 600 : 500,
+                              opacity: 0.85,
                               color: hasSubs ? (isDark ? '#d9a74a' : '#b45309') : (isDark ? '#94a3b8' : '#64748b'),
-                              paddingLeft: 32, cursor: hasSubs ? 'pointer' : 'default'
+                              paddingLeft: 32, cursor: 'pointer'
                             }}
                           >
-                            {hasSubs && (isExpanded
+                            {isExpanded
                               ? <FiChevronDown size={12} style={{ flexShrink: 0 }} />
-                              : <FiChevronRight size={12} style={{ flexShrink: 0 }} />)}
+                              : <FiChevronRight size={12} style={{ flexShrink: 0 }} />}
                             <span style={{
                               whiteSpace: hasSubs ? 'nowrap' : 'normal',
                               overflow: 'hidden', textOverflow: 'ellipsis'
@@ -1380,15 +1386,103 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                         {/* UNBOXED ACCORDION — the flat, unboxed Sub-area list itself,
                             matching the approved design ("no nested box around each
                             individual Sub-area row"). */}
-                        {isExpanded && (
+                        {isExpanded && !hasSubs && (
                           <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {row.area.subLocations.map(subName => {
+                            <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', marginBottom: 2 }}>
+                              No Sub-areas here — showing this Area's plots directly.
+                            </div>
+                            {row.area.features.length > 0 ? row.area.features.map(feature => {
+                              const plotParts = getProjectDisplayParts(feature);
+                              const plotTypeColor = getPropertyTypeColor(feature?.data?.type);
+                              const plotSelected = selectedFeatureId === feature.id;
+                              return (
+                                <div
+                                  key={feature.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const state = useMapStore.getState();
+                                    if (state.isInfoPanelOpen && state.selectedFeatureId !== feature.id) {
+                                      setIsInfoPanelOpen(false);
+                                      setTimeout(() => {
+                                        setSelectedFeatureId(feature.id);
+                                        setIsInfoPanelOpen(true);
+                                        if (map) zoomToProperty(map, feature);
+                                      }, 250);
+                                    } else {
+                                      setSelectedFeatureId(feature.id);
+                                      setIsInfoPanelOpen(true);
+                                      if (map) zoomToProperty(map, feature);
+                                    }
+                                  }}
+                                  className="btn-hover-effect"
+                                  style={{
+                                    position: 'relative',
+                                    padding: '7px 9px 7px 12px',
+                                    borderRadius: 8,
+                                    cursor: 'pointer',
+                                    background: plotSelected
+                                      ? (isDark ? 'rgba(245, 158, 11, 0.14)' : '#fffbe6')
+                                      : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
+                                    border: plotSelected
+                                      ? '1px solid rgba(245, 158, 11, 0.4)'
+                                      : (isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0')
+                                  }}
+                                >
+                                  <div style={{
+                                    position: 'absolute', left: 3, top: 6, bottom: 6, width: 3,
+                                    borderRadius: 3, background: plotSelected ? '#f59e0b' : (plotTypeColor || '#d9a74a'),
+                                    opacity: plotSelected ? 1 : 0.5
+                                  }} />
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                                    <span style={{
+                                      fontSize: 11.5, fontWeight: 600,
+                                      color: plotSelected ? '#f59e0b' : (isDark ? '#e2e8f0' : '#1e293b'),
+                                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                    }}>
+                                      {plotParts.areaTitle && plotParts.areaTitle !== '_' ? plotParts.areaTitle : plotParts.locationTitle} ↗
+                                    </span>
+                                    {feature?.data?.type && (
+                                      <span style={{
+                                        fontSize: 9.5, fontWeight: 700,
+                                        color: plotTypeColor || '#94a3b8',
+                                        background: (plotTypeColor || '#94a3b8') + '22',
+                                        border: `1px solid ${(plotTypeColor || '#94a3b8')}55`,
+                                        padding: '1.5px 6px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap'
+                                      }}>
+                                        {feature.data.type}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
+                                    {plotParts.tpOpFpTitle}
+                                  </div>
+                                </div>
+                              );
+                            }) : (
+                              <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', fontStyle: 'italic', padding: '4px 2px' }}>
+                                No plots marked here yet.
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* UNBOXED ACCORDION — the flat, unboxed Sub-area list itself,
+                            matching the approved design ("no nested box around each
+                            individual Sub-area row"). */}
+                        {isExpanded && hasSubs && (
+                          <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {row.area.subLocations.map((subName, subIdx) => {
                               const subKey = row.area.name + '::' + subName;
                               const isEditingThis = editingSubarea?.oldName === subName && editingSubarea?.parentName === row.area.name;
                               const subFeatures = row.area.features.filter(f => f.data?.location === subName);
                               const subOpen = !!expandedSubs[subKey];
+                              const isLastSub = subIdx === row.area.subLocations.length - 1;
                               return (
-                                <div key={subName}>
+                                <div key={subName} style={{
+                                  borderBottom: isLastSub ? 'none' : (isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(15,23,42,0.06)'),
+                                  paddingBottom: isLastSub ? 0 : 4,
+                                  marginBottom: isLastSub ? 0 : 2
+                                }}>
                                   <div
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -1507,7 +1601,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                         <span style={{
                                           fontSize: 10, fontWeight: 700, color: isDark ? '#d9a74a' : '#b45309',
                                           background: 'rgba(245, 158, 11, 0.10)', border: '1px solid rgba(245, 158, 11, 0.25)',
-                                          padding: '2px 7px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap'
+                                          padding: '2px 7px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap',
+                                          minWidth: 48, textAlign: 'center'
                                         }}>
                                           {subFeatures.length} {subFeatures.length === 1 ? 'plot' : 'plots'}
                                         </span>
