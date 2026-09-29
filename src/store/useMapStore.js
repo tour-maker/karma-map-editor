@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
-import { getCategoryOptionsForUnit } from '../config/categories';
+import { getCategoryOptionsForUnit, CATEGORY_MAP } from '../config/categories';
+
+// Plots rescued from a deleted Primary/Sub-area land here instead of disappearing —
+// it's a normal location value like any other, so it shows up in the Areas tab
+// through the same feature-driven list-building ProjectsPanel already does.
+export const UNASSIGNED_LOCATION = 'Unassigned';
 
 export const useMapStore = create(
   persist(
@@ -51,17 +56,25 @@ export const useMapStore = create(
           const trimmedOld = oldName?.trim();
           const trimmedNew = newName?.trim();
           if (!trimmedOld || !trimmedNew || trimmedOld === trimmedNew) return state;
-          
+
           // update customAreas
-          const customAreas = (state.customAreas || []).map(a => 
+          const customAreas = (state.customAreas || []).map(a =>
              a.toLowerCase() === trimmedOld.toLowerCase() ? trimmedNew : a
           );
-          
+
+          // A hardcoded CATEGORY_MAP default (e.g. "Surat") is runtime-mutable, same
+          // as AddAreaModal already treats it — rename its key too so the new name
+          // is what reappears in the Areas tab, not the old one.
+          if (CATEGORY_MAP[trimmedOld] !== undefined) {
+            CATEGORY_MAP[trimmedNew] = CATEGORY_MAP[trimmedOld];
+            delete CATEGORY_MAP[trimmedOld];
+          }
+
           // update all features with this location or parentLocation
           const features = state.features.map(f => {
              let changed = false;
              const newData = { ...f.data };
-             
+
              if (newData.location?.toLowerCase() === trimmedOld.toLowerCase()) {
                 newData.location = trimmedNew;
                 changed = true;
@@ -70,23 +83,140 @@ export const useMapStore = create(
                 newData.parentLocation = trimmedNew;
                 changed = true;
              }
-             
+
              if (changed) {
                 return { ...f, data: newData };
              }
              return f;
           });
-          
+
           return { customAreas, features, selectedAreaName: trimmedNew };
         }),
-        
+
+        // Deletes a Primary Location. Never destroys its plots: every feature that
+        // still points at it (only its own — Sub-areas must be moved/merged out
+        // first, enforced by the UI) is rescued into the Unassigned bucket rather
+        // than vanishing. Works for both a customArea and a hardcoded CATEGORY_MAP
+        // default — the default's key is removed too so it actually stops
+        // reappearing, matching how renameArea already treats CATEGORY_MAP as
+        // runtime-mutable.
         deleteArea: (areaName) => set((state) => {
           const trimmed = areaName?.trim();
           if (!trimmed) return state;
-          
+
           const customAreas = (state.customAreas || []).filter(a => a.toLowerCase() !== trimmed.toLowerCase());
-          
-          return { customAreas, selectedAreaName: null };
+
+          if (CATEGORY_MAP[trimmed] !== undefined) {
+            delete CATEGORY_MAP[trimmed];
+          }
+
+          const features = state.features.map(f => {
+            const par = f.data?.parentLocation;
+            if (par && par.toLowerCase() === trimmed.toLowerCase()) {
+              return { ...f, data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
+            }
+            return f;
+          });
+
+          return { customAreas, features, selectedAreaName: null };
+        }),
+
+        // Deletes a Sub-area. Sub-locations are purely feature-derived (see
+        // buildDynamicLocationMap) — there's no config key to clean up — so rescuing
+        // every matching feature into Unassigned is enough for it to stop appearing.
+        deleteSubLocation: (parentName, subName) => set((state) => {
+          const trimmedParent = parentName?.trim();
+          const trimmedSub = subName?.trim();
+          if (!trimmedParent || !trimmedSub) return state;
+
+          const features = state.features.map(f => {
+            const loc = f.data?.location;
+            const par = f.data?.parentLocation;
+            if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedParent.toLowerCase()) {
+              return { ...f, data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
+            }
+            return f;
+          });
+
+          return { features };
+        }),
+
+        // Moves a whole Primary Location to become a Sub-area of a different
+        // Primary. If the source itself had Sub-areas, they come along flattened
+        // (they keep their own `location`, only their `parentLocation` changes) —
+        // matches the agreed design behavior.
+        mergeAreaIntoPrimary: (sourceName, targetName) => set((state) => {
+          const trimmedSource = sourceName?.trim();
+          const trimmedTarget = targetName?.trim();
+          if (!trimmedSource || !trimmedTarget || trimmedSource.toLowerCase() === trimmedTarget.toLowerCase()) return state;
+
+          const customAreas = (state.customAreas || []).filter(a => a.toLowerCase() !== trimmedSource.toLowerCase());
+
+          if (CATEGORY_MAP[trimmedSource] !== undefined) {
+            delete CATEGORY_MAP[trimmedSource];
+          }
+
+          const features = state.features.map(f => {
+            const par = f.data?.parentLocation;
+            if (par && par.toLowerCase() === trimmedSource.toLowerCase()) {
+              return { ...f, data: { ...f.data, parentLocation: trimmedTarget } };
+            }
+            return f;
+          });
+
+          return { customAreas, features, selectedAreaName: trimmedTarget };
+        }),
+
+        // Moves a Sub-area out from under its current parent into a different
+        // Primary Location — it stays a Sub-area, just relocated.
+        moveSubArea: (subName, oldParentName, newParentName) => set((state) => {
+          const trimmedSub = subName?.trim();
+          const trimmedOldParent = oldParentName?.trim();
+          const trimmedNewParent = newParentName?.trim();
+          if (!trimmedSub || !trimmedOldParent || !trimmedNewParent) return state;
+
+          const features = state.features.map(f => {
+            const loc = f.data?.location;
+            const par = f.data?.parentLocation;
+            if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedOldParent.toLowerCase()) {
+              return { ...f, data: { ...f.data, parentLocation: trimmedNewParent } };
+            }
+            return f;
+          });
+
+          return { features };
+        }),
+
+        // Promotes a Sub-area to stand on its own as a new Primary Location.
+        promoteSubToPrimary: (subName, oldParentName) => set((state) => {
+          const trimmedSub = subName?.trim();
+          const trimmedOldParent = oldParentName?.trim();
+          if (!trimmedSub || !trimmedOldParent) return state;
+
+          const exists = (state.customAreas || []).some(a => a.toLowerCase() === trimmedSub.toLowerCase());
+          const customAreas = exists ? state.customAreas : [...(state.customAreas || []), trimmedSub];
+
+          const features = state.features.map(f => {
+            const loc = f.data?.location;
+            const par = f.data?.parentLocation;
+            if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedOldParent.toLowerCase()) {
+              return { ...f, data: { ...f.data, parentLocation: trimmedSub } };
+            }
+            return f;
+          });
+
+          return { customAreas, features };
+        }),
+
+        // Manually re-homes one or more rescued Unassigned plots into a chosen
+        // location (a Primary with no Sub-areas, or a specific Sub-area).
+        reassignFeaturesTo: (featureIds, newLocation, newParentLocation) => set((state) => {
+          const idSet = new Set(featureIds);
+          const features = state.features.map(f => {
+            if (!idSet.has(f.id)) return f;
+            return { ...f, data: { ...f.data, location: newLocation, parentLocation: newParentLocation } };
+          });
+          return { features };
         }),
 
         googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID?.replace(/["']/g, '') || '752087917175-92ui9g4v2mct86k9eqgr11kki843v2pe.apps.googleusercontent.com',

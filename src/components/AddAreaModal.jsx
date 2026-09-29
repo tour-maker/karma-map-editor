@@ -5,9 +5,17 @@ import { FiGlobe, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { syncAreaToSheet } from '../services/googleSheets';
 
-export default function AddAreaModal({ onClose, onSaved }) {
+export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = [] }) {
+  // 'primary' = brand-new Primary Location (optionally with its own Sub-locations
+  // typed in at the same time); 'sub' = a new Sub-location inside an EXISTING
+  // Primary. Both funnel through the same submit path below — a Sub-location add
+  // is just a Primary-location add whose name already exists, which the existing
+  // CATEGORY_MAP-merge logic already handles.
+  const [mode, setMode] = useState('primary');
   const [areaName, setAreaName] = useState('');
   const [subLocations, setSubLocations] = useState('');
+  const [subParent, setSubParent] = useState(existingPrimaryNames[0] || '');
+  const [subName, setSubName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const addCustomArea = useMapStore(state => state.addCustomArea);
@@ -16,9 +24,14 @@ export default function AddAreaModal({ onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const name = areaName.trim();
+
+    const name = mode === 'sub' ? subParent.trim() : areaName.trim();
     if (!name) {
-      toast.error('Please enter a Parent Location name');
+      toast.error(mode === 'sub' ? 'Please choose a Primary Location' : 'Please enter a Parent Location name');
+      return;
+    }
+    if (mode === 'sub' && !subName.trim()) {
+      toast.error('Please enter a Sub-location name');
       return;
     }
 
@@ -28,7 +41,9 @@ export default function AddAreaModal({ onClose, onSaved }) {
     addCustomArea(name);
 
     // Add sub-locations to CATEGORY_MAP in runtime memory if provided
-    const subs = subLocations.trim() ? subLocations.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const subs = mode === 'sub'
+      ? [subName.trim()]
+      : (subLocations.trim() ? subLocations.split(',').map(s => s.trim()).filter(Boolean) : []);
     if (subs.length > 0) {
       if (!CATEGORY_MAP[name]) {
         CATEGORY_MAP[name] = subs;
@@ -45,7 +60,10 @@ export default function AddAreaModal({ onClose, onSaved }) {
     // Sync only this new area to the "Areas" tab — never touch the Polygons sheet here.
     try {
       await syncAreaToSheet(name, subs, spreadsheetId);
-      toast.success(`Parent Location "${name}" added successfully! 📍`, {
+      const successMsg = mode === 'sub'
+        ? `Sub-location "${subs[0]}" added to "${name}"! 📍`
+        : `Parent Location "${name}" added successfully! 📍`;
+      toast.success(successMsg, {
         style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
       });
     } catch (err) {
@@ -99,42 +117,120 @@ export default function AddAreaModal({ onClose, onSaved }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
-              Parent Location Name *
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Vapi, Bardoli, Ankleshwar"
-              value={areaName}
-              onChange={(e) => setAreaName(e.target.value)}
-              autoFocus
+          {/* Mode toggle: a brand-new Primary Location, or a new Sub-location inside
+              one that already exists. */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => setMode('primary')}
               style={{
-                width: '100%', padding: '10px 12px', borderRadius: 10,
-                background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
-                color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box',
-                boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
+                flex: 1, padding: '7px 0', borderRadius: 8, textAlign: 'center', cursor: 'pointer',
+                fontSize: 11.5, fontWeight: 700,
+                background: mode === 'primary' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                border: mode === 'primary' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(255, 255, 255, 0.14)',
+                color: mode === 'primary' ? '#f59e0b' : '#94a3b8'
               }}
-            />
+            >
+              New Primary Location
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('sub')}
+              disabled={existingPrimaryNames.length === 0}
+              style={{
+                flex: 1, padding: '7px 0', borderRadius: 8, textAlign: 'center',
+                cursor: existingPrimaryNames.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: 11.5, fontWeight: 700,
+                background: mode === 'sub' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                border: mode === 'sub' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(255, 255, 255, 0.14)',
+                color: mode === 'sub' ? '#f59e0b' : '#94a3b8',
+                opacity: existingPrimaryNames.length === 0 ? 0.5 : 1
+              }}
+            >
+              New Sub-area
+            </button>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
-              Sub-locations (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="Comma separated (e.g. Station Road, Ten, Dhamdod)"
-              value={subLocations}
-              onChange={(e) => setSubLocations(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 10,
-                background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
-                color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box',
-                boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
-              }}
-            />
-          </div>
+          {mode === 'primary' ? (
+            <>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
+                  Parent Location Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Vapi, Bardoli, Ankleshwar"
+                  value={areaName}
+                  onChange={(e) => setAreaName(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 10,
+                    background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
+                    color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                    boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
+                  Sub-locations (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Comma separated (e.g. Station Road, Ten, Dhamdod)"
+                  value={subLocations}
+                  onChange={(e) => setSubLocations(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 10,
+                    background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
+                    color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                    boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
+                  Inside which Primary Location? *
+                </label>
+                <select
+                  value={subParent}
+                  onChange={(e) => setSubParent(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 10,
+                    background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
+                    color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box'
+                  }}
+                >
+                  {existingPrimaryNames.map(n => (
+                    <option key={n} value={n} style={{ color: '#0f172a' }}>{n}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
+                  Sub-location Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Station Road"
+                  value={subName}
+                  onChange={(e) => setSubName(e.target.value)}
+                  autoFocus
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 10,
+                    background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
+                    color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                    boxShadow: 'inset 0 1.5px 3px rgba(0, 0, 0, 0.4)'
+                  }}
+                />
+              </div>
+            </>
+          )}
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>

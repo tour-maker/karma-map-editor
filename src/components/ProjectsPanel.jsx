@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiEdit2, FiUsers } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiEdit2, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
@@ -8,6 +8,7 @@ import GoogleSheetsConnect from './GoogleSheetsConnect';
 import AddAreaModal from './AddAreaModal';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { zoomToProperty, fitAllBounds } from '../services/googleMaps';
+import { syncFeatureToSheet } from '../services/googleSheets';
 import { cleanLandmarkTitle, resolveLandmarkLocation } from './LandmarkManager';
 import PendingSubmissionsPanel from './PendingSubmissionsPanel';
 import UsersPanel from './UsersPanel';
@@ -138,12 +139,27 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
   const setFilterSecondary = useMapStore(state => state.setFilterSecondary);
   const renameArea = useMapStore(state => state.renameArea);
+  const deleteArea = useMapStore(state => state.deleteArea);
+  const deleteSubLocation = useMapStore(state => state.deleteSubLocation);
+  const mergeAreaIntoPrimary = useMapStore(state => state.mergeAreaIntoPrimary);
+  const moveSubArea = useMapStore(state => state.moveSubArea);
+  const promoteSubToPrimary = useMapStore(state => state.promoteSubToPrimary);
+  const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const [isAddingArea, setIsAddingArea] = useState(false);
 
   // Sub-area dropdown (Areas tab): which area's sub-locations are currently shown,
   // captured at open-time so the floating panel isn't tied to the virtualized row.
   const [openSubareaDropdown, setOpenSubareaDropdown] = useState(null); // { areaName, subLocations, features, rect } | null
   const [editingSubarea, setEditingSubarea] = useState(null); // { oldName, value } | null
+  const [editingPrimary, setEditingPrimary] = useState(null); // { oldName, value } | null
+
+  // Move panel: a small floating dropdown ("Move into…") anchored to whichever
+  // Move icon was clicked, for a Primary Area or a Sub-area.
+  const [movePanel, setMovePanel] = useState(null); // { isSub, name, parentName, rect, target } | null
+  // Delete confirm: same floating-anchor pattern, staged — nothing deletes until
+  // "Confirm Delete" is actually clicked, and plots are always rescued into
+  // Unassigned rather than lost.
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { isSub, name, parentName, rect } | null
 
   // Show all visible features in the panel, filtered by global map filters
   const polygons = useMemo(() => {
@@ -266,6 +282,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     }));
 
     list.sort((a, b) => {
+      // Unassigned (rescued plots waiting to be re-homed) always sorts last.
+      const aUnassigned = a.name.toLowerCase() === 'unassigned';
+      const bUnassigned = b.name.toLowerCase() === 'unassigned';
+      if (aUnassigned && !bUnassigned) return 1;
+      if (bUnassigned && !aUnassigned) return -1;
       if (a.name.toLowerCase() === 'surat') return -1;
       if (b.name.toLowerCase() === 'surat') return 1;
       return a.name.localeCompare(b.name);
@@ -1133,24 +1154,102 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             }}>
                               <FiGlobe size={12} strokeWidth={2.5} />
                             </div>
+                            {editingPrimary?.oldName === row.area.name ? (
+                              <input
+                                autoFocus
+                                value={editingPrimary.value}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => setEditingPrimary(prev => ({ ...prev, value: e.target.value }))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') e.currentTarget.blur();
+                                  if (e.key === 'Escape') setEditingPrimary(null);
+                                }}
+                                onBlur={() => {
+                                  const newName = editingPrimary.value.trim();
+                                  if (newName && newName !== editingPrimary.oldName) {
+                                    renameArea(editingPrimary.oldName, newName);
+                                  }
+                                  setEditingPrimary(null);
+                                }}
+                                style={{
+                                  flex: 1, fontSize: 13, fontWeight: 700, padding: '3px 6px', borderRadius: 6,
+                                  border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                                  background: isDark ? 'rgba(30, 41, 59, 0.9)' : '#fff',
+                                  color: isDark ? '#f8fafc' : '#0f172a', outline: 'none', minWidth: 0
+                                }}
+                              />
+                            ) : (
+                              <span
+                                onDoubleClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingPrimary({ oldName: row.area.name, value: row.area.name });
+                                }}
+                                title="Double-click to rename"
+                                style={{
+                                  fontSize: 13, fontWeight: 700, letterSpacing: '0.2px',
+                                  color: isSelected ? '#f59e0b' : (isDark ? '#f8fafc' : '#0f172a'),
+                                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                }}>
+                                {row.area.name}
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              title={`Move "${row.area.name}" into another Primary Location`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setDeleteConfirm(null);
+                                setMovePanel(prev => (prev && !prev.isSub && prev.name === row.area.name ? null : {
+                                  isSub: false, name: row.area.name, parentName: null, rect, target: ''
+                                }));
+                              }}
+                              className="btn-hover-effect"
+                              style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.16)',
+                                color: '#cbd5e1', cursor: 'pointer'
+                              }}
+                            >
+                              <FiMove size={11} />
+                            </button>
+                            <button
+                              type="button"
+                              title={row.area.subLocations.length > 0 ? 'Move or merge its Sub-areas out first' : `Delete "${row.area.name}"`}
+                              disabled={row.area.subLocations.length > 0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (row.area.subLocations.length > 0) return;
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setMovePanel(null);
+                                setDeleteConfirm({ isSub: false, name: row.area.name, parentName: null, rect });
+                              }}
+                              style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                background: row.area.subLocations.length > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(239,68,68,0.08)',
+                                border: row.area.subLocations.length > 0 ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(239,68,68,0.3)',
+                                color: row.area.subLocations.length > 0 ? '#64748b' : '#ef4444',
+                                cursor: row.area.subLocations.length > 0 ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              <FiTrash2 size={11} />
+                            </button>
                             <span style={{
-                              fontSize: 13, fontWeight: 700, letterSpacing: '0.2px',
-                              color: isSelected ? '#f59e0b' : (isDark ? '#f8fafc' : '#0f172a'),
-                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                              fontSize: 11, fontWeight: 700,
+                              color: isSelected ? '#f59e0b' : (isDark ? '#d9a74a' : '#b45309'),
+                              background: isSelected ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.10)',
+                              border: isSelected ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(245, 158, 11, 0.25)',
+                              padding: '2px 8px', borderRadius: 8, flexShrink: 0,
+                              whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'
                             }}>
-                              {row.area.name}
+                              {row.area.count} {row.area.count === 1 ? 'plot' : 'plots'}
                             </span>
                           </div>
-                          <span style={{
-                            fontSize: 11, fontWeight: 700,
-                            color: isSelected ? '#f59e0b' : (isDark ? '#d9a74a' : '#b45309'),
-                            background: isSelected ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.10)',
-                            border: isSelected ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(245, 158, 11, 0.25)',
-                            padding: '2px 8px', borderRadius: 8, flexShrink: 0,
-                            whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'
-                          }}>
-                            {row.area.count} {row.area.count === 1 ? 'plot' : 'plots'}
-                          </span>
                         </div>
 
                         {row.area.subLocations && row.area.subLocations.length > 0 ? (
@@ -1308,6 +1407,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
         {isAddingArea && (
           <AddAreaModal
             onClose={() => setIsAddingArea(false)}
+            existingPrimaryNames={parentLocationsList.map(a => a.name)}
           />
         )}
 
@@ -1434,11 +1534,212 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       >
                         <FiEdit2 size={12} />
                       </button>
+                      <button
+                        type="button"
+                        title={`Move "${subName}" into another Primary Location`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setDeleteConfirm(null);
+                          setMovePanel({ isSub: true, name: subName, parentName: openSubareaDropdown.areaName, rect, target: '' });
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                          background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.16)',
+                          color: '#cbd5e1', cursor: 'pointer'
+                        }}
+                      >
+                        <FiMove size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        title={`Delete "${subName}"`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setMovePanel(null);
+                          setDeleteConfirm({ isSub: true, name: subName, parentName: openSubareaDropdown.areaName, rect });
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
+                          color: '#ef4444', cursor: 'pointer'
+                        }}
+                      >
+                        <FiTrash2 size={10} />
+                      </button>
                     </>
                   )}
                 </div>
               );
             })}
+          </div>
+        </>
+      )}
+
+      {/* MOVE PANEL: "Move into…" for either a Primary Location or a Sub-area,
+          floated the same way as the sub-area dropdown. Nothing moves until Save
+          is clicked. */}
+      {movePanel && (
+        <>
+          <div onClick={() => setMovePanel(null)} style={{ position: 'fixed', inset: 0, zIndex: 2500 }} />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: movePanel.rect.bottom + 6,
+              left: Math.min(movePanel.rect.left, window.innerWidth - 260),
+              width: 240,
+              zIndex: 2501,
+              background: isDark ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
+              border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid #e2e8f0',
+              borderRadius: 12,
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)',
+              padding: 12
+            }}
+          >
+            <div style={{ fontSize: 12, fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b', marginBottom: 8 }}>
+              Move "{movePanel.name}"
+            </div>
+            <select
+              value={movePanel.target}
+              onChange={(e) => setMovePanel(prev => ({ ...prev, target: e.target.value }))}
+              style={{
+                width: '100%', padding: '8px 10px', borderRadius: 8, marginBottom: 10,
+                background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.18)',
+                color: isDark ? '#f8fafc' : '#0f172a', fontSize: 12.5, outline: 'none'
+              }}
+            >
+              <option value="">
+                {movePanel.isSub ? `Keep inside ${movePanel.parentName}` : 'Keep as a Primary Area'}
+              </option>
+              {movePanel.isSub && (
+                <option value="__promote__">Make it a Primary Area</option>
+              )}
+              {parentLocationsList
+                .filter(a => a.name !== movePanel.name && (!movePanel.isSub || a.name !== movePanel.parentName))
+                .map(a => (
+                  <option key={a.name} value={a.name}>
+                    Move into {a.name}
+                  </option>
+                ))}
+            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!movePanel.target) { setMovePanel(null); return; }
+                  if (movePanel.isSub) {
+                    if (movePanel.target === '__promote__') {
+                      promoteSubToPrimary(movePanel.name, movePanel.parentName);
+                    } else {
+                      moveSubArea(movePanel.name, movePanel.parentName, movePanel.target);
+                    }
+                  } else {
+                    mergeAreaIntoPrimary(movePanel.name, movePanel.target);
+                  }
+                  setMovePanel(null);
+                  setOpenSubareaDropdown(null);
+                  // Best-effort: push the moved features' new location to the sheet.
+                  try {
+                    const moved = useMapStore.getState().features.filter(f => {
+                      const loc = f.data?.location;
+                      const par = f.data?.parentLocation;
+                      return movePanel.isSub
+                        ? loc?.toLowerCase() === movePanel.name.toLowerCase()
+                        : par?.toLowerCase() === movePanel.name.toLowerCase();
+                    });
+                    for (const f of moved) {
+                      await syncFeatureToSheet(spreadsheetId, f, 'update');
+                    }
+                  } catch (err) {
+                    console.warn('Move: sheet sync failed (kept locally):', err);
+                  }
+                }}
+                style={{
+                  flex: 1, padding: '7px 0', borderRadius: 8, border: 'none',
+                  background: '#38bdf8', color: '#001018', fontSize: 12, fontWeight: 800, cursor: 'pointer'
+                }}
+              >
+                💾 Save changes
+              </button>
+              <button
+                type="button"
+                onClick={() => setMovePanel(null)}
+                style={{ padding: '7px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* DELETE CONFIRM: staged — plots are always rescued into "Unassigned"
+          rather than deleted, so nothing with real survey data on it is lost. */}
+      {deleteConfirm && (
+        <>
+          <div onClick={() => setDeleteConfirm(null)} style={{ position: 'fixed', inset: 0, zIndex: 2500 }} />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: deleteConfirm.rect.bottom + 6,
+              left: Math.min(deleteConfirm.rect.left, window.innerWidth - 260),
+              width: 240,
+              zIndex: 2501,
+              background: isDark ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: 12,
+              boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)',
+              padding: 12
+            }}
+          >
+            <div style={{ fontSize: 12, color: '#fca5a5', fontWeight: 600, marginBottom: 10 }}>
+              Delete "{deleteConfirm.name}"? Its plots move to Unassigned Plots, not deleted.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { isSub, name, parentName } = deleteConfirm;
+                  if (isSub) {
+                    deleteSubLocation(parentName, name);
+                  } else {
+                    deleteArea(name);
+                  }
+                  setDeleteConfirm(null);
+                  setOpenSubareaDropdown(null);
+                  // Best-effort: push the rescued features' new "Unassigned" location.
+                  try {
+                    const rescued = useMapStore.getState().features.filter(f =>
+                      f.data?.location?.toLowerCase() === 'unassigned' && f.data?.parentLocation?.toLowerCase() === 'unassigned'
+                    );
+                    for (const f of rescued) {
+                      await syncFeatureToSheet(spreadsheetId, f, 'update');
+                    }
+                  } catch (err) {
+                    console.warn('Delete: sheet sync failed (kept locally):', err);
+                  }
+                }}
+                style={{
+                  flex: 1, padding: '7px 0', borderRadius: 8, border: 'none',
+                  background: '#ef4444', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer'
+                }}
+              >
+                🗑 Confirm Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                style={{ padding: '7px 10px', borderRadius: 8, border: 'none', background: 'transparent', color: '#94a3b8', fontSize: 12, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </>
       )}
