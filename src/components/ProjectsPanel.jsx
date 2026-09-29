@@ -1346,17 +1346,6 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             </div>
                           </div>
 
-                          {/* Warning + Sub-area summary/toggle line stay INSIDE the same
-                              bordered head box as the header — reads as one continuous
-                              card instead of the warning text floating disconnected below
-                              it. Only the actual accordion (the Sub-area rows themselves)
-                              sits outside, unboxed. */}
-                          {hasSubs && (
-                            <div style={{ fontSize: 10.5, color: '#fca5a5', paddingLeft: 32 }}>
-                              Move or merge its {row.area.subLocations.length} Sub-area{row.area.subLocations.length === 1 ? '' : 's'} out first.
-                            </div>
-                          )}
-
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
