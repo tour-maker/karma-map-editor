@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2, FiEye } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
@@ -439,22 +439,20 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     return 66;
   }, [virtualRows, expandedPrimaries, expandedSubs]);
 
+  // Area rows no longer rely on hand-computed pixel budgets to avoid clipping or
+  // overlap (three rounds of that game were enough — every fix for one screenshot
+  // broke another). getItemSize below is now only the INITIAL guess used before a
+  // row has been painted; each row's DOM node is measured for real via
+  // rowVirtualizer.measureElement (a ResizeObserver ref, attached to every row
+  // wrapper further down), so the virtualizer self-corrects to whatever the actual
+  // rendered height is — including every future edge case, not just the ones a
+  // screenshot happened to catch.
   const rowVirtualizer = useVirtualizer({
     count: virtualRows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: getItemSize,
     overscan: 5,
   });
-
-  // The virtualizer caches each row's measured size the first time it's laid out;
-  // getItemSize alone changing identity doesn't retroactively resize already-cached
-  // rows, so force a re-measure whenever a Primary card's accordion opens/closes —
-  // otherwise an expanded card's extra sub-area rows get clipped/overlapped by
-  // whatever the virtualizer renders next, the exact bug the "Move or merge…"
-  // warning line hit before its row height was accounted for.
-  useEffect(() => {
-    rowVirtualizer.measure();
-  }, [expandedPrimaries, expandedSubs]);
 
   return (
     <>
@@ -1019,10 +1017,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   return (
                     <div
                       key={`header-${row.groupName}`}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualRow.index}
                       style={{
                         position: 'absolute',
                         top: 0, left: 0, width: '100%',
-                        height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`,
                         padding: '4px 10px 2px 10px'
                       }}
@@ -1039,7 +1038,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             ? '1px solid rgba(245, 158, 11, 0.25)'
                             : '1px solid transparent',
                           cursor: 'pointer', userSelect: 'none', transition: 'all 0.2s ease',
-                          height: '100%', boxSizing: 'border-box'
+                          boxSizing: 'border-box'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -1180,10 +1179,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   return (
                     <div
                       key={`area-${row.area.name}`}
+                      ref={rowVirtualizer.measureElement}
+                      data-index={virtualRow.index}
                       style={{
                         position: 'absolute',
                         top: 0, left: 0, width: '100%',
-                        height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`,
                         padding: '6px 14px 6px 16px'
                       }}
@@ -1202,7 +1202,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           }
                         }}
                         title={`Click to filter map by ${row.area.name}`}
-                        style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}
+                        style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}
                       >
                         {/* HEAD BOX — the only bordered "card" part, matching the approved
                             design (Sub-areas below are a flat, unboxed continuation, not
@@ -1749,10 +1749,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 return (
                   <div
                     key={`item-${row.feature.id}`}
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
                     style={{
                       position: 'absolute',
                       top: 0, left: 0, width: '100%',
-                      height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                       padding: '3px 14px 3px 16px'
                     }}
@@ -1777,7 +1778,6 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       className="project-card-interactive"
                       style={{
                         position: 'relative',
-                        height: '100%',
                         padding: '9px 12px 9px 14px',
                         borderRadius: 10,
                         cursor: 'pointer',
