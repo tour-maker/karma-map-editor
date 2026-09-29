@@ -393,9 +393,13 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   // clips content (as happened with the warning line above); a little extra blank
   // space below a card is far less visible than the next card overlapping it, so
   // these lean generous on purpose.
-  const AREA_ROW_BASE = 68;           // Primary card, no sub-areas
-  const AREA_ROW_WITH_SUBS_COLLAPSED = 100; // + warning line + "N sub-areas: …" trigger row
-  const AREA_ROW_HEADER_ONLY = 78;    // header + warning line, no trigger/accordion below it
+  // +6 over the old values on these three — matches the wrapper's own top+bottom
+  // padding going from 3px/3px to 6px/6px, so consecutive Primary cards get real
+  // breathing room between them instead of touching (Surat's sub-areas line was
+  // butting directly against the next card, e.g. "Aat").
+  const AREA_ROW_BASE = 74;           // Primary card, no sub-areas
+  const AREA_ROW_WITH_SUBS_COLLAPSED = 106; // + warning line + "N sub-areas: …" trigger row
+  const AREA_ROW_HEADER_ONLY = 84;    // header + warning line, no trigger/accordion below it
   // Actual rendered height of one collapsed sub-area row is ~6px+6px padding plus a
   // ~20-22px content line (chevron/pin/name/Move pill/Delete circle), so ~34px —
   // AREA_SUB_ROW was previously 50, which left a large empty gap under every
@@ -1181,7 +1185,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                         top: 0, left: 0, width: '100%',
                         height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`,
-                        padding: '3px 14px 3px 16px'
+                        padding: '6px 14px 6px 16px'
                       }}
                     >
                       <div
