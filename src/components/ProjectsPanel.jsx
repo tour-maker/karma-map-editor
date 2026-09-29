@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
@@ -153,9 +153,6 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   // { [primaryName]: true }. Row height for an expanded card is computed in
   // getItemSize below, since @tanstack/react-virtual supports a per-row size fn.
   const [expandedPrimaries, setExpandedPrimaries] = useState({});
-  // Second level, matching the mockup's per-sub "view plots" toggle — key is
-  // `${primaryName}::${subName}`, value true = that sub's plot list is shown.
-  const [expandedSubs, setExpandedSubs] = useState({});
   const [editingSubarea, setEditingSubarea] = useState(null); // { oldName, value } | null
   const [editingPrimary, setEditingPrimary] = useState(null); // { oldName, value } | null
 
@@ -400,17 +397,12 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const AREA_ROW_BASE = 74;           // Primary card, no sub-areas
   const AREA_ROW_WITH_SUBS_COLLAPSED = 106; // + warning line + "N sub-areas: …" trigger row
   const AREA_ROW_HEADER_ONLY = 84;    // header + warning line, no trigger/accordion below it
-  // Actual rendered height of one collapsed sub-area row is ~6px+6px padding plus a
-  // ~20-22px content line (chevron/pin/name/Move pill/Delete circle), so ~34px —
-  // AREA_SUB_ROW was previously 50, which left a large empty gap under every
-  // expanded Primary (visible as dead space before the next card, worse the more
-  // sub-areas a Primary has — Surat's 18 made it obvious).
-  const AREA_SUB_ROW = 34;
+  // Sub-area rows no longer expand to show a plot list (the Projects tab already
+  // covers every plot — showing them again here was redundant and was the actual
+  // source of the clipping/overlap bugs), so each one is just a flat, roomier row:
+  // pin + name + Move/Delete + plot-count chip, ~46px including its own padding.
+  const AREA_SUB_ROW = 46;
   const AREA_ACCORDION_PADDING = 10;
-  const AREA_PLOT_ROW = 44;           // one plot row inside an expanded sub-area
-  const AREA_NO_PLOTS_ROW = 26;       // "No plots marked here yet." row
-  const AREA_NOTE_ROW = 20;           // "No Sub-areas here — showing plots directly." note line
-  const AREA_VIEWALL_ROW = 26;        // "View/Hide all plots in X" aggregate toggle row
 
   const getItemSize = useCallback((index) => {
     const row = virtualRows[index];
@@ -418,26 +410,13 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     if (row.type === 'header') return 44;
     if (row.itemType === 'area') {
       const hasSubs = row.area.subLocations && row.area.subLocations.length > 0;
+      if (!hasSubs) return AREA_ROW_BASE;
       const isExpanded = !!expandedPrimaries[row.area.name];
-      if (!hasSubs) {
-        if (!isExpanded) return AREA_ROW_BASE;
-        const plotCount = row.area.features.length;
-        const plotsHeight = plotCount > 0 ? plotCount * AREA_PLOT_ROW : AREA_NO_PLOTS_ROW;
-        return AREA_ROW_BASE + AREA_NOTE_ROW + plotsHeight + AREA_ACCORDION_PADDING;
-      }
       if (!isExpanded) return AREA_ROW_WITH_SUBS_COLLAPSED;
-      let subsHeight = 0;
-      row.area.subLocations.forEach(subName => {
-        subsHeight += AREA_SUB_ROW;
-        if (expandedSubs[row.area.name + '::' + subName]) {
-          const plotCount = row.area.features.filter(f => f.data?.location === subName).length;
-          subsHeight += plotCount > 0 ? plotCount * AREA_PLOT_ROW : AREA_NO_PLOTS_ROW;
-        }
-      });
-      return AREA_ROW_HEADER_ONLY + AREA_VIEWALL_ROW + subsHeight + AREA_ACCORDION_PADDING;
+      return AREA_ROW_HEADER_ONLY + (row.area.subLocations.length * AREA_SUB_ROW) + AREA_ACCORDION_PADDING;
     }
     return 66;
-  }, [virtualRows, expandedPrimaries, expandedSubs]);
+  }, [virtualRows, expandedPrimaries]);
 
   // Area rows no longer rely on hand-computed pixel budgets to avoid clipping or
   // overlap (three rounds of that game were enough — every fix for one screenshot
@@ -447,10 +426,26 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   // wrapper further down), so the virtualizer self-corrects to whatever the actual
   // rendered height is — including every future edge case, not just the ones a
   // screenshot happened to catch.
+  // Measured heights are cached by key, not by row index — without a stable key,
+  // switching tabs (Areas -> Landmarks etc) reuses the same index for completely
+  // different content, so a row can silently inherit another tab's already-measured
+  // height instead of its own (this is what broke the Landmarks tab's sizing after
+  // the switch to real DOM measurement above).
+  const getItemKey = useCallback((index) => {
+    const row = virtualRows[index];
+    if (!row) return index;
+    if (row.type === 'header') return `header-${row.groupName}`;
+    if (row.itemType === 'landmark') return `landmark-${row.landmark.id}`;
+    if (row.itemType === 'area') return `area-${row.area.name}`;
+    if (row.itemType === 'project') return `project-${row.feature.id}`;
+    return index;
+  }, [virtualRows]);
+
   const rowVirtualizer = useVirtualizer({
     count: virtualRows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: getItemSize,
+    getItemKey,
     overscan: 5,
   });
 
@@ -1361,22 +1356,23 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (!hasSubs) return;
                               setEditingSubarea(null);
                               setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
                             }}
-                            title={isExpanded ? 'Hide' : (hasSubs ? 'View & edit sub-areas' : 'View this Area\'s plots')}
-                            className="btn-hover-effect"
+                            title={hasSubs ? (isExpanded ? 'Hide sub-areas' : 'View & edit sub-areas') : undefined}
+                            className={hasSubs ? 'btn-hover-effect' : ''}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 5,
-                              fontSize: 11, fontWeight: hasSubs ? 600 : 500,
-                              opacity: 0.85,
+                              fontSize: 11, fontWeight: hasSubs ? 600 : 400,
+                              opacity: hasSubs ? 0.85 : 0.7,
                               color: hasSubs ? (isDark ? '#d9a74a' : '#b45309') : (isDark ? '#94a3b8' : '#64748b'),
-                              paddingLeft: 32, cursor: 'pointer'
+                              paddingLeft: 32, cursor: hasSubs ? 'pointer' : 'default'
                             }}
                           >
-                            {isExpanded
+                            {hasSubs && (isExpanded
                               ? <FiChevronDown size={12} style={{ flexShrink: 0 }} />
-                              : <FiChevronRight size={12} style={{ flexShrink: 0 }} />}
+                              : <FiChevronRight size={12} style={{ flexShrink: 0 }} />)}
                             <span style={{
                               whiteSpace: hasSubs ? 'nowrap' : 'normal',
                               overflow: 'hidden', textOverflow: 'ellipsis'
@@ -1388,175 +1384,45 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           </div>
                         </div>
 
-                        {/* No Sub-areas under this Primary — show its own plots directly,
-                            matching the mockup's p.noSubs branch. */}
-                        {isExpanded && !hasSubs && (
-                          <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', marginBottom: 2 }}>
-                              No Sub-areas here — showing this Area's plots directly.
-                            </div>
-                            {row.area.features.length > 0 ? row.area.features.map(feature => {
-                              const plotParts = getProjectDisplayParts(feature);
-                              const plotTypeColor = getPropertyTypeColor(feature?.data?.type);
-                              const plotSelected = selectedFeatureId === feature.id;
-                              return (
-                                <div
-                                  key={feature.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const state = useMapStore.getState();
-                                    if (state.isInfoPanelOpen && state.selectedFeatureId !== feature.id) {
-                                      setIsInfoPanelOpen(false);
-                                      setTimeout(() => {
-                                        setSelectedFeatureId(feature.id);
-                                        setIsInfoPanelOpen(true);
-                                        if (map) zoomToProperty(map, feature);
-                                      }, 250);
-                                    } else {
-                                      setSelectedFeatureId(feature.id);
-                                      setIsInfoPanelOpen(true);
-                                      if (map) zoomToProperty(map, feature);
-                                    }
-                                  }}
-                                  className="btn-hover-effect"
-                                  style={{
-                                    position: 'relative',
-                                    padding: '7px 9px 7px 12px',
-                                    borderRadius: 8,
-                                    cursor: 'pointer',
-                                    background: plotSelected
-                                      ? (isDark ? 'rgba(245, 158, 11, 0.14)' : '#fffbe6')
-                                      : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
-                                    border: plotSelected
-                                      ? '1px solid rgba(245, 158, 11, 0.4)'
-                                      : (isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0')
-                                  }}
-                                >
-                                  <div style={{
-                                    position: 'absolute', left: 3, top: 6, bottom: 6, width: 3,
-                                    borderRadius: 3, background: plotSelected ? '#f59e0b' : (plotTypeColor || '#d9a74a'),
-                                    opacity: plotSelected ? 1 : 0.5
-                                  }} />
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                                    <span style={{
-                                      fontSize: 11.5, fontWeight: 600,
-                                      color: plotSelected ? '#f59e0b' : (isDark ? '#e2e8f0' : '#1e293b'),
-                                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                    }}>
-                                      {plotParts.areaTitle && plotParts.areaTitle !== '_' ? plotParts.areaTitle : plotParts.locationTitle} ↗
-                                    </span>
-                                    {feature?.data?.type && (
-                                      <span style={{
-                                        fontSize: 9.5, fontWeight: 700,
-                                        color: plotTypeColor || '#94a3b8',
-                                        background: (plotTypeColor || '#94a3b8') + '22',
-                                        border: `1px solid ${(plotTypeColor || '#94a3b8')}55`,
-                                        padding: '1.5px 6px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap'
-                                      }}>
-                                        {feature.data.type}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div style={{ fontSize: 10, color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
-                                    {plotParts.tpOpFpTitle}
-                                  </div>
-                                </div>
-                              );
-                            }) : (
-                              <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', fontStyle: 'italic', padding: '4px 2px' }}>
-                                No plots marked here yet.
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* UNBOXED ACCORDION — the flat, unboxed Sub-area list itself,
-                            matching the approved design ("no nested box around each
-                            individual Sub-area row"). */}
+                        {/* Flat Sub-area list — no per-row expand or embedded plot list
+                            any more. The Projects tab already lists every plot, so showing
+                            them again here was redundant, and it was also the actual source
+                            of the clipping/overlap bugs (a plot list's real height rarely
+                            matched its estimated one). Each row is just: pin, name,
+                            Move/Delete, plot-count chip — clicking it filters + zooms the
+                            map to that Sub-area, same as the old expand-to-navigate did. */}
                         {isExpanded && hasSubs && (
-                          <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {/* "View/Hide all plots in X" — expands or collapses every one
-                                of this Primary's Sub-area rows at once, matching the
-                                mockup's aggregate toggleAllPlotsPanel. */}
-                            {(() => {
-                              const allSubsOpen = row.area.subLocations.every(subName => !!expandedSubs[row.area.name + '::' + subName]);
-                              return (
-                                <div
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedSubs(prev => {
-                                      const next = { ...prev };
-                                      row.area.subLocations.forEach(subName => {
-                                        next[row.area.name + '::' + subName] = !allSubsOpen;
-                                      });
-                                      return next;
-                                    });
-                                  }}
-                                  className="btn-hover-effect"
-                                  style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    cursor: 'pointer', marginBottom: 4
-                                  }}
-                                >
-                                  <div style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                                    background: 'rgba(56, 189, 248, 0.06)',
-                                    border: '1px solid rgba(56, 189, 248, 0.22)',
-                                    color: '#38bdf8'
-                                  }}>
-                                    <FiEye size={11} />
-                                  </div>
-                                  <span style={{ fontSize: 11.5, fontWeight: 700, color: '#38bdf8' }}>
-                                    {allSubsOpen ? 'Hide' : 'View'} all plots in {row.area.name}
-                                  </span>
-                                </div>
-                              );
-                            })()}
+                          <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {row.area.subLocations.map((subName, subIdx) => {
                               const subKey = row.area.name + '::' + subName;
                               const isEditingThis = editingSubarea?.oldName === subName && editingSubarea?.parentName === row.area.name;
                               const subFeatures = row.area.features.filter(f => f.data?.location === subName);
-                              const subOpen = !!expandedSubs[subKey];
                               const isLastSub = subIdx === row.area.subLocations.length - 1;
                               return (
-                                <div key={subName} style={{
+                                <div key={subKey} style={{
                                   borderBottom: isLastSub ? 'none' : (isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(15,23,42,0.06)'),
-                                  paddingBottom: isLastSub ? 0 : 4,
-                                  marginBottom: isLastSub ? 0 : 2
+                                  paddingBottom: isLastSub ? 0 : 6
                                 }}>
                                   <div
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (isEditingThis) return;
-                                      const willOpen = !subOpen;
-                                      setExpandedSubs(prev => ({ ...prev, [subKey]: willOpen }));
-                                      // Opening a Sub-area also filters the map to it, same as
-                                      // the old click-to-navigate behavior this replaced.
-                                      if (willOpen) {
-                                        setFilterPrimary(row.area.name);
-                                        setFilterSecondary(subName);
-                                        if (map && subFeatures.length > 0) {
-                                          if (subFeatures.length === 1) zoomToProperty(map, subFeatures[0]);
-                                          else fitAllBounds(map, subFeatures);
-                                        }
+                                      setFilterPrimary(row.area.name);
+                                      setFilterSecondary(subName);
+                                      if (map && subFeatures.length > 0) {
+                                        if (subFeatures.length === 1) zoomToProperty(map, subFeatures[0]);
+                                        else fitAllBounds(map, subFeatures);
                                       }
                                     }}
                                     className={isEditingThis ? '' : 'btn-hover-effect'}
+                                    title={`Filter & zoom the map to "${subName}"`}
                                     style={{
-                                      display: 'flex', alignItems: 'center', gap: 6,
-                                      padding: '6px 8px', borderRadius: 8,
+                                      display: 'flex', alignItems: 'center', gap: 7,
+                                      padding: '9px 8px', borderRadius: 8,
                                       cursor: isEditingThis ? 'default' : 'pointer'
                                     }}
                                   >
-                                    {isEditingThis ? (
-                                      <span style={{ width: 11, flexShrink: 0 }} />
-                                    ) : subOpen ? (
-                                      <FiChevronDown size={11} color={isDark ? '#94a3b8' : '#64748b'} style={{ flexShrink: 0 }} />
-                                    ) : (
-                                      <FiChevronRight size={11} color={isDark ? '#94a3b8' : '#64748b'} style={{ flexShrink: 0 }} />
-                                    )}
-                                    <FiMapPin size={11} color="#f59e0b" style={{ flexShrink: 0 }} />
+                                    <FiMapPin size={12} color="#f59e0b" style={{ flexShrink: 0 }} />
                                     {isEditingThis ? (
                                       <input
                                         autoFocus
@@ -1575,7 +1441,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                           setEditingSubarea(null);
                                         }}
                                         style={{
-                                          flex: 1, fontSize: 12, fontWeight: 600, padding: '3px 6px', borderRadius: 6,
+                                          flex: 1, fontSize: 13, fontWeight: 600, padding: '4px 7px', borderRadius: 6,
                                           border: '1px solid rgba(245, 158, 11, 0.5)',
                                           background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff',
                                           color: isDark ? '#f8fafc' : '#0f172a', outline: 'none'
@@ -1589,7 +1455,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                         }}
                                         title="Double-click to rename"
                                         style={{
-                                          flex: 1, fontSize: 12, fontWeight: 600,
+                                          flex: 1, fontSize: 13, fontWeight: 600,
                                           color: isDark ? '#e2e8f0' : '#1e293b',
                                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                                         }}>
@@ -1612,8 +1478,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                           className="btn-hover-effect"
                                           style={{
                                             display: 'inline-flex', alignItems: 'center', gap: 3,
-                                            padding: '3px 7px', borderRadius: 999, flexShrink: 0,
-                                            fontSize: 9.5, fontWeight: 700, whiteSpace: 'nowrap',
+                                            padding: '4px 8px', borderRadius: 999, flexShrink: 0,
+                                            fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap',
                                             background: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === row.area.name) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
                                             border: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === row.area.name) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
                                             color: '#cbd5e1', cursor: 'pointer'
@@ -1633,7 +1499,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                           }}
                                           style={{
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                            width: 23, height: 23, borderRadius: '50%', flexShrink: 0,
                                             background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.28)',
                                             color: '#ef4444', cursor: 'pointer'
                                           }}
@@ -1641,96 +1507,16 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                           <FiTrash2 size={11} />
                                         </button>
                                         <span style={{
-                                          fontSize: 10, fontWeight: 700, color: isDark ? '#d9a74a' : '#b45309',
+                                          fontSize: 10.5, fontWeight: 700, color: isDark ? '#d9a74a' : '#b45309',
                                           background: 'rgba(245, 158, 11, 0.10)', border: '1px solid rgba(245, 158, 11, 0.25)',
-                                          padding: '2px 7px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap',
-                                          minWidth: 48, textAlign: 'center'
+                                          padding: '3px 8px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap',
+                                          minWidth: 50, textAlign: 'center'
                                         }}>
                                           {subFeatures.length} {subFeatures.length === 1 ? 'plot' : 'plots'}
                                         </span>
                                       </>
                                     )}
                                   </div>
-
-                                  {/* This Sub-area's own plots — clickable exactly like a
-                                      Projects-tab row: selects the polygon, zooms to it and
-                                      opens Polygon Info. */}
-                                  {subOpen && (
-                                    <div style={{ marginLeft: 17, marginTop: 2, marginBottom: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                      {subFeatures.length > 0 ? subFeatures.map(feature => {
-                                        const plotParts = getProjectDisplayParts(feature);
-                                        const plotTypeColor = getPropertyTypeColor(feature?.data?.type);
-                                        const plotSelected = selectedFeatureId === feature.id;
-                                        return (
-                                          <div
-                                            key={feature.id}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              const state = useMapStore.getState();
-                                              if (state.isInfoPanelOpen && state.selectedFeatureId !== feature.id) {
-                                                setIsInfoPanelOpen(false);
-                                                setTimeout(() => {
-                                                  setSelectedFeatureId(feature.id);
-                                                  setIsInfoPanelOpen(true);
-                                                  if (map) zoomToProperty(map, feature);
-                                                }, 250);
-                                              } else {
-                                                setSelectedFeatureId(feature.id);
-                                                setIsInfoPanelOpen(true);
-                                                if (map) zoomToProperty(map, feature);
-                                              }
-                                            }}
-                                            className="btn-hover-effect"
-                                            style={{
-                                              position: 'relative',
-                                              padding: '7px 9px 7px 12px',
-                                              borderRadius: 8,
-                                              cursor: 'pointer',
-                                              background: plotSelected
-                                                ? (isDark ? 'rgba(245, 158, 11, 0.14)' : '#fffbe6')
-                                                : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
-                                              border: plotSelected
-                                                ? '1px solid rgba(245, 158, 11, 0.4)'
-                                                : (isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0')
-                                            }}
-                                          >
-                                            <div style={{
-                                              position: 'absolute', left: 3, top: 6, bottom: 6, width: 3,
-                                              borderRadius: 3, background: plotSelected ? '#f59e0b' : (plotTypeColor || '#d9a74a'),
-                                              opacity: plotSelected ? 1 : 0.5
-                                            }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                                              <span style={{
-                                                fontSize: 11.5, fontWeight: 600,
-                                                color: plotSelected ? '#f59e0b' : (isDark ? '#e2e8f0' : '#1e293b'),
-                                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                              }}>
-                                                {plotParts.areaTitle && plotParts.areaTitle !== '_' ? plotParts.areaTitle : plotParts.locationTitle} ↗
-                                              </span>
-                                              {feature?.data?.type && (
-                                                <span style={{
-                                                  fontSize: 9.5, fontWeight: 700,
-                                                  color: plotTypeColor || '#94a3b8',
-                                                  background: (plotTypeColor || '#94a3b8') + '22',
-                                                  border: `1px solid ${(plotTypeColor || '#94a3b8')}55`,
-                                                  padding: '1.5px 6px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap'
-                                                }}>
-                                                  {feature.data.type}
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div style={{ fontSize: 10, color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
-                                              {plotParts.tpOpFpTitle}
-                                            </div>
-                                          </div>
-                                        );
-                                      }) : (
-                                        <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', fontStyle: 'italic', padding: '4px 2px' }}>
-                                          No plots marked here yet.
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
                                 </div>
                               );
                             })}
