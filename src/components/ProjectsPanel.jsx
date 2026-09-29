@@ -153,6 +153,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   // { [primaryName]: true }. Row height for an expanded card is computed in
   // getItemSize below, since @tanstack/react-virtual supports a per-row size fn.
   const [expandedPrimaries, setExpandedPrimaries] = useState({});
+  // Second level, matching the mockup's per-sub "view plots" toggle — key is
+  // `${primaryName}::${subName}`, value true = that sub's plot list is shown.
+  const [expandedSubs, setExpandedSubs] = useState({});
   const [editingSubarea, setEditingSubarea] = useState(null); // { oldName, value } | null
   const [editingPrimary, setEditingPrimary] = useState(null); // { oldName, value } | null
 
@@ -393,8 +396,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const AREA_ROW_BASE = 68;           // Primary card, no sub-areas
   const AREA_ROW_WITH_SUBS_COLLAPSED = 100; // + warning line + "N sub-areas: …" trigger row
   const AREA_ROW_HEADER_ONLY = 78;    // header + warning line, no trigger/accordion below it
-  const AREA_SUB_ROW = 50;            // one inline sub-area row inside the accordion
+  const AREA_SUB_ROW = 50;            // one inline sub-area row inside the accordion (collapsed)
   const AREA_ACCORDION_PADDING = 16;
+  const AREA_PLOT_ROW = 54;           // one plot row inside an expanded sub-area
+  const AREA_NO_PLOTS_ROW = 30;       // "No plots marked here yet." row
 
   const getItemSize = useCallback((index) => {
     const row = virtualRows[index];
@@ -405,10 +410,18 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       if (!hasSubs) return AREA_ROW_BASE;
       const isExpanded = !!expandedPrimaries[row.area.name];
       if (!isExpanded) return AREA_ROW_WITH_SUBS_COLLAPSED;
-      return AREA_ROW_HEADER_ONLY + (row.area.subLocations.length * AREA_SUB_ROW) + AREA_ACCORDION_PADDING;
+      let subsHeight = 0;
+      row.area.subLocations.forEach(subName => {
+        subsHeight += AREA_SUB_ROW;
+        if (expandedSubs[row.area.name + '::' + subName]) {
+          const plotCount = row.area.features.filter(f => f.data?.location === subName).length;
+          subsHeight += plotCount > 0 ? plotCount * AREA_PLOT_ROW : AREA_NO_PLOTS_ROW;
+        }
+      });
+      return AREA_ROW_HEADER_ONLY + subsHeight + AREA_ACCORDION_PADDING;
     }
     return 66;
-  }, [virtualRows, expandedPrimaries]);
+  }, [virtualRows, expandedPrimaries, expandedSubs]);
 
   const rowVirtualizer = useVirtualizer({
     count: virtualRows.length,
@@ -425,7 +438,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   // warning line hit before its row height was accounted for.
   useEffect(() => {
     rowVirtualizer.measure();
-  }, [expandedPrimaries]);
+  }, [expandedPrimaries, expandedSubs]);
 
   return (
     <>
@@ -1142,9 +1155,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 // Area Card Rendering
                 if (row.itemType === 'area') {
                   const isSelected = filterPrimary?.toLowerCase() === row.area.name.toLowerCase();
-                  const subLocsText = (row.area.subLocations && row.area.subLocations.length > 0)
+                  const hasSubs = row.area.subLocations && row.area.subLocations.length > 0;
+                  const subLocsText = hasSubs
                     ? row.area.subLocations.join(', ')
                     : `All plots in ${row.area.name}`;
+                  const isExpanded = hasSubs && !!expandedPrimaries[row.area.name];
 
                   return (
                     <div
@@ -1171,317 +1186,417 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           }
                         }}
                         title={`Click to filter map by ${row.area.name}`}
-                        className="project-card-interactive"
-                        style={{
-                          position: 'relative',
-                          height: '100%',
-                          padding: '10px 14px 10px 16px',
-                          borderRadius: 12,
-                          cursor: 'pointer',
-                          background: isSelected
-                            ? (isDark ? 'linear-gradient(145deg, rgba(245, 158, 11, 0.16) 0%, rgba(15, 23, 42, 0.8) 100%)' : 'linear-gradient(145deg, #fffbe6, #ffffff)')
-                            : (isDark ? 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.4))' : '#ffffff'),
-                          border: isSelected
-                            ? '1px solid rgba(245, 158, 11, 0.5)'
-                            : (isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(226, 232, 240, 0.8)'),
-                          boxShadow: isSelected
-                            ? (isDark ? '0 8px 24px -4px rgba(245, 158, 11, 0.25)' : '0 8px 24px -4px rgba(245, 158, 11, 0.15)')
-                            : (isDark ? '0 4px 12px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.04)'),
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'flex-start',
-                          gap: 4,
-                          boxSizing: 'border-box',
-                          overflow: 'hidden'
-                        }}
+                        style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}
                       >
-                        <div className="card-accent-stripe" style={{
-                          position: 'absolute', left: 0, top: '15%', bottom: '15%', width: 4,
-                          borderRadius: '0 4px 4px 0',
-                          background: 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)',
-                          opacity: isSelected ? 1 : 0.4,
-                          boxShadow: isSelected ? '0 0 8px rgba(245, 158, 11, 0.6)' : 'none',
-                          transition: 'all 0.2s ease'
-                        }} />
+                        {/* HEAD BOX — the only bordered "card" part, matching the approved
+                            design (Sub-areas below are a flat, unboxed continuation, not
+                            nested inside another box). Sticky while its accordion is open,
+                            so scrolling through a long Sub-area list (e.g. Surat's 18) keeps
+                            this header in view above them, like the design mockup. */}
+                        <div
+                          className="project-card-interactive"
+                          style={{
+                            position: isExpanded ? 'sticky' : 'relative',
+                            top: isExpanded ? 0 : 'auto',
+                            zIndex: isExpanded ? 5 : 1,
+                            flexShrink: 0,
+                            padding: '10px 14px 10px 16px',
+                            borderRadius: 12,
+                            cursor: 'pointer',
+                            background: isSelected
+                              ? (isDark ? 'linear-gradient(145deg, rgba(245, 158, 11, 0.16) 0%, rgba(15, 23, 42, 0.8) 100%)' : 'linear-gradient(145deg, #fffbe6, #ffffff)')
+                              : (isDark ? 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.4))' : '#ffffff'),
+                            border: isSelected
+                              ? '1px solid rgba(245, 158, 11, 0.5)'
+                              : (isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(226, 232, 240, 0.8)'),
+                            boxShadow: isExpanded
+                              ? '0 6px 16px rgba(0, 0, 0, 0.35)'
+                              : (isSelected
+                                ? (isDark ? '0 8px 24px -4px rgba(245, 158, 11, 0.25)' : '0 8px 24px -4px rgba(245, 158, 11, 0.15)')
+                                : (isDark ? '0 4px 12px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(0, 0, 0, 0.04)')),
+                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <div className="card-accent-stripe" style={{
+                            position: 'absolute', left: 0, top: '15%', bottom: '15%', width: 4,
+                            borderRadius: '0 4px 4px 0',
+                            background: 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)',
+                            opacity: isSelected ? 1 : 0.4,
+                            boxShadow: isSelected ? '0 0 8px rgba(245, 158, 11, 0.6)' : 'none',
+                            transition: 'all 0.2s ease'
+                          }} />
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-                            <div style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              width: 22, height: 22, borderRadius: 6,
-                              background: isSelected ? 'rgba(245, 158, 11, 0.2)' : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.04)'),
-                              color: isSelected ? '#f59e0b' : '#94a3b8'
-                            }}>
-                              <FiGlobe size={12} strokeWidth={2.5} />
-                            </div>
-                            {editingPrimary?.oldName === row.area.name ? (
-                              <input
-                                autoFocus
-                                value={editingPrimary.value}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => setEditingPrimary(prev => ({ ...prev, value: e.target.value }))}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') e.currentTarget.blur();
-                                  if (e.key === 'Escape') setEditingPrimary(null);
-                                }}
-                                onBlur={() => {
-                                  const newName = editingPrimary.value.trim();
-                                  if (newName && newName !== editingPrimary.oldName) {
-                                    renameArea(editingPrimary.oldName, newName);
-                                  }
-                                  setEditingPrimary(null);
-                                }}
-                                style={{
-                                  flex: 1, fontSize: 13, fontWeight: 700, padding: '3px 6px', borderRadius: 6,
-                                  border: '1.5px solid rgba(245, 158, 11, 0.5)',
-                                  background: isDark ? 'rgba(30, 41, 59, 0.9)' : '#fff',
-                                  color: isDark ? '#f8fafc' : '#0f172a', outline: 'none', minWidth: 0
-                                }}
-                              />
-                            ) : (
-                              <span
-                                onDoubleClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingPrimary({ oldName: row.area.name, value: row.area.name });
-                                }}
-                                title="Double-click to rename"
-                                style={{
-                                  fontSize: 13, fontWeight: 700, letterSpacing: '0.2px',
-                                  color: isSelected ? '#f59e0b' : (isDark ? '#f8fafc' : '#0f172a'),
-                                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                }}>
-                                {row.area.name}
-                              </span>
-                            )}
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                            <button
-                              type="button"
-                              title={`Move "${row.area.name}" into another Primary Location`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setDeleteConfirm(null);
-                                setMovePanel(prev => (prev && !prev.isSub && prev.name === row.area.name ? null : {
-                                  isSub: false, name: row.area.name, parentName: null, rect, target: ''
-                                }));
-                              }}
-                              className="btn-hover-effect"
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 4,
-                                padding: '4px 9px', borderRadius: 999, flexShrink: 0,
-                                fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap',
-                                background: (movePanel && !movePanel.isSub && movePanel.name === row.area.name) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
-                                border: (movePanel && !movePanel.isSub && movePanel.name === row.area.name) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
-                                color: '#cbd5e1', cursor: 'pointer'
-                              }}
-                            >
-                              <FiMove size={11} />
-                              Move Area
-                            </button>
-                            <button
-                              type="button"
-                              title={row.area.subLocations.length > 0 ? 'Move or merge its Sub-areas out first' : `Delete "${row.area.name}"`}
-                              disabled={row.area.subLocations.length > 0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (row.area.subLocations.length > 0) return;
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setMovePanel(null);
-                                setDeleteConfirm({ isSub: false, name: row.area.name, parentName: null, rect });
-                              }}
-                              style={{
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                              <div style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-                                background: row.area.subLocations.length > 0 ? 'rgba(255,255,255,0.03)' : 'rgba(239,68,68,0.07)',
-                                border: row.area.subLocations.length > 0 ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(239,68,68,0.28)',
-                                color: row.area.subLocations.length > 0 ? '#64748b' : '#ef4444',
-                                cursor: row.area.subLocations.length > 0 ? 'not-allowed' : 'pointer'
-                              }}
-                            >
-                              <FiTrash2 size={11} />
-                            </button>
-                            <span style={{
-                              fontSize: 11, fontWeight: 700,
-                              color: isSelected ? '#f59e0b' : (isDark ? '#d9a74a' : '#b45309'),
-                              background: isSelected ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.10)',
-                              border: isSelected ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(245, 158, 11, 0.25)',
-                              padding: '2px 8px', borderRadius: 8, flexShrink: 0,
-                              whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'
-                            }}>
-                              {row.area.count} {row.area.count === 1 ? 'plot' : 'plots'}
-                            </span>
+                                width: 22, height: 22, borderRadius: 6,
+                                background: isSelected ? 'rgba(245, 158, 11, 0.2)' : (isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.04)'),
+                                color: isSelected ? '#f59e0b' : '#94a3b8'
+                              }}>
+                                <FiGlobe size={12} strokeWidth={2.5} />
+                              </div>
+                              {editingPrimary?.oldName === row.area.name ? (
+                                <input
+                                  autoFocus
+                                  value={editingPrimary.value}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => setEditingPrimary(prev => ({ ...prev, value: e.target.value }))}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') e.currentTarget.blur();
+                                    if (e.key === 'Escape') setEditingPrimary(null);
+                                  }}
+                                  onBlur={() => {
+                                    const newName = editingPrimary.value.trim();
+                                    if (newName && newName !== editingPrimary.oldName) {
+                                      renameArea(editingPrimary.oldName, newName);
+                                    }
+                                    setEditingPrimary(null);
+                                  }}
+                                  style={{
+                                    flex: 1, fontSize: 13, fontWeight: 700, padding: '3px 6px', borderRadius: 6,
+                                    border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                                    background: isDark ? 'rgba(30, 41, 59, 0.9)' : '#fff',
+                                    color: isDark ? '#f8fafc' : '#0f172a', outline: 'none', minWidth: 0
+                                  }}
+                                />
+                              ) : (
+                                <span
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingPrimary({ oldName: row.area.name, value: row.area.name });
+                                  }}
+                                  title="Double-click to rename"
+                                  style={{
+                                    fontSize: 13, fontWeight: 700, letterSpacing: '0.2px',
+                                    color: isSelected ? '#f59e0b' : (isDark ? '#f8fafc' : '#0f172a'),
+                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                  }}>
+                                  {row.area.name}
+                                </span>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                              <button
+                                type="button"
+                                title={`Move "${row.area.name}" into another Primary Location`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setDeleteConfirm(null);
+                                  setMovePanel(prev => (prev && !prev.isSub && prev.name === row.area.name ? null : {
+                                    isSub: false, name: row.area.name, parentName: null, rect, target: ''
+                                  }));
+                                }}
+                                className="btn-hover-effect"
+                                style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  padding: '4px 9px', borderRadius: 999, flexShrink: 0,
+                                  fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap',
+                                  background: (movePanel && !movePanel.isSub && movePanel.name === row.area.name) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                                  border: (movePanel && !movePanel.isSub && movePanel.name === row.area.name) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
+                                  color: '#cbd5e1', cursor: 'pointer'
+                                }}
+                              >
+                                <FiMove size={11} />
+                                Move Area
+                              </button>
+                              <button
+                                type="button"
+                                title={hasSubs ? 'Move or merge its Sub-areas out first' : `Delete "${row.area.name}"`}
+                                disabled={hasSubs}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (hasSubs) return;
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setMovePanel(null);
+                                  setDeleteConfirm({ isSub: false, name: row.area.name, parentName: null, rect });
+                                }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                                  background: hasSubs ? 'rgba(255,255,255,0.03)' : 'rgba(239,68,68,0.07)',
+                                  border: hasSubs ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(239,68,68,0.28)',
+                                  color: hasSubs ? '#64748b' : '#ef4444',
+                                  cursor: hasSubs ? 'not-allowed' : 'pointer'
+                                }}
+                              >
+                                <FiTrash2 size={11} />
+                              </button>
+                              <span style={{
+                                fontSize: 11, fontWeight: 700,
+                                color: isSelected ? '#f59e0b' : (isDark ? '#d9a74a' : '#b45309'),
+                                background: isSelected ? 'rgba(245, 158, 11, 0.22)' : 'rgba(245, 158, 11, 0.10)',
+                                border: isSelected ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(245, 158, 11, 0.25)',
+                                padding: '2px 8px', borderRadius: 8, flexShrink: 0,
+                                whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'
+                              }}>
+                                {row.area.count} {row.area.count === 1 ? 'plot' : 'plots'}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {row.area.subLocations && row.area.subLocations.length > 0 && (
-                          <div style={{ fontSize: 10.5, color: '#fca5a5', marginTop: 6, paddingLeft: 32 }}>
+                        {/* UNBOXED BODY — flat continuation below the head box, matching
+                            the approved design ("no nested box around Sub-areas"). */}
+                        {hasSubs && (
+                          <div style={{ fontSize: 10.5, color: '#fca5a5', marginTop: 6, paddingLeft: 32, flexShrink: 0 }}>
                             Move or merge its {row.area.subLocations.length} Sub-area{row.area.subLocations.length === 1 ? '' : 's'} out first.
                           </div>
                         )}
 
-                        {row.area.subLocations && row.area.subLocations.length > 0 ? (
-                          <>
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingSubarea(null);
-                                setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
-                              }}
-                              title={expandedPrimaries[row.area.name] ? 'Hide sub-areas' : 'View & edit sub-areas'}
-                              className="btn-hover-effect"
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 5,
-                                fontSize: 11, fontWeight: 600, opacity: 0.85,
-                                color: isDark ? '#d9a74a' : '#b45309',
-                                overflow: 'hidden', marginTop: 1, paddingLeft: 32, cursor: 'pointer'
-                              }}
-                            >
-                              {expandedPrimaries[row.area.name]
-                                ? <FiChevronDown size={12} style={{ flexShrink: 0 }} />
-                                : <FiChevronRight size={12} style={{ flexShrink: 0 }} />}
-                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {row.area.subLocations.length} sub-area{row.area.subLocations.length === 1 ? '' : 's'}: {subLocsText}
-                              </span>
-                            </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!hasSubs) return;
+                            setEditingSubarea(null);
+                            setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
+                          }}
+                          title={hasSubs ? (isExpanded ? 'Hide sub-areas' : 'View & edit sub-areas') : undefined}
+                          className={hasSubs ? 'btn-hover-effect' : ''}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            fontSize: 11, fontWeight: hasSubs ? 600 : 400,
+                            opacity: hasSubs ? 0.85 : 0.7,
+                            color: hasSubs ? (isDark ? '#d9a74a' : '#b45309') : (isDark ? '#94a3b8' : '#64748b'),
+                            marginTop: 2, paddingLeft: 32, cursor: hasSubs ? 'pointer' : 'default', flexShrink: 0
+                          }}
+                        >
+                          {hasSubs && (isExpanded
+                            ? <FiChevronDown size={12} style={{ flexShrink: 0 }} />
+                            : <FiChevronRight size={12} style={{ flexShrink: 0 }} />)}
+                          <span style={{
+                            whiteSpace: hasSubs ? 'nowrap' : 'normal',
+                            overflow: 'hidden', textOverflow: 'ellipsis'
+                          }}>
+                            {hasSubs
+                              ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}: ${subLocsText}`
+                              : subLocsText}
+                          </span>
+                        </div>
 
-                            {expandedPrimaries[row.area.name] && (
-                              <div style={{ marginTop: 6, paddingLeft: 32, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {row.area.subLocations.map(subName => {
-                                  const isEditingThis = editingSubarea?.oldName === subName && editingSubarea?.parentName === row.area.name;
-                                  const subCount = row.area.features.filter(f => f.data?.location === subName).length;
-                                  return (
-                                    <div
-                                      key={subName}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (isEditingThis) return;
-                                        const subFeatures = row.area.features.filter(f => f.data?.location === subName);
+                        {isExpanded && (
+                          <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {row.area.subLocations.map(subName => {
+                              const subKey = row.area.name + '::' + subName;
+                              const isEditingThis = editingSubarea?.oldName === subName && editingSubarea?.parentName === row.area.name;
+                              const subFeatures = row.area.features.filter(f => f.data?.location === subName);
+                              const subOpen = !!expandedSubs[subKey];
+                              return (
+                                <div key={subName}>
+                                  <div
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (isEditingThis) return;
+                                      const willOpen = !subOpen;
+                                      setExpandedSubs(prev => ({ ...prev, [subKey]: willOpen }));
+                                      // Opening a Sub-area also filters the map to it, same as
+                                      // the old click-to-navigate behavior this replaced.
+                                      if (willOpen) {
+                                        setFilterPrimary(row.area.name);
+                                        setFilterSecondary(subName);
                                         if (map && subFeatures.length > 0) {
                                           if (subFeatures.length === 1) zoomToProperty(map, subFeatures[0]);
                                           else fitAllBounds(map, subFeatures);
                                         }
-                                        setFilterPrimary(row.area.name);
-                                        setFilterSecondary(subName);
-                                      }}
-                                      className={isEditingThis ? '' : 'btn-hover-effect'}
-                                      style={{
-                                        display: 'flex', alignItems: 'center', gap: 6,
-                                        padding: '6px 8px', borderRadius: 8,
-                                        cursor: isEditingThis ? 'default' : 'pointer'
-                                      }}
-                                    >
-                                      <FiMapPin size={11} color="#f59e0b" style={{ flexShrink: 0 }} />
-                                      {isEditingThis ? (
-                                        <input
-                                          autoFocus
-                                          value={editingSubarea.value}
-                                          onChange={(e) => setEditingSubarea(prev => ({ ...prev, value: e.target.value }))}
-                                          onClick={(e) => e.stopPropagation()}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') e.currentTarget.blur();
-                                            if (e.key === 'Escape') setEditingSubarea(null);
-                                          }}
-                                          onBlur={() => {
-                                            const newName = editingSubarea.value.trim();
-                                            if (newName && newName !== editingSubarea.oldName) {
-                                              renameArea(editingSubarea.oldName, newName);
-                                            }
-                                            setEditingSubarea(null);
-                                          }}
-                                          style={{
-                                            flex: 1, fontSize: 12, fontWeight: 600, padding: '3px 6px', borderRadius: 6,
-                                            border: '1px solid rgba(245, 158, 11, 0.5)',
-                                            background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff',
-                                            color: isDark ? '#f8fafc' : '#0f172a', outline: 'none'
-                                          }}
-                                        />
-                                      ) : (
-                                        <span
-                                          onDoubleClick={(e) => {
+                                      }
+                                    }}
+                                    className={isEditingThis ? '' : 'btn-hover-effect'}
+                                    style={{
+                                      display: 'flex', alignItems: 'center', gap: 6,
+                                      padding: '6px 8px', borderRadius: 8,
+                                      cursor: isEditingThis ? 'default' : 'pointer'
+                                    }}
+                                  >
+                                    {isEditingThis ? (
+                                      <span style={{ width: 11, flexShrink: 0 }} />
+                                    ) : subOpen ? (
+                                      <FiChevronDown size={11} color={isDark ? '#94a3b8' : '#64748b'} style={{ flexShrink: 0 }} />
+                                    ) : (
+                                      <FiChevronRight size={11} color={isDark ? '#94a3b8' : '#64748b'} style={{ flexShrink: 0 }} />
+                                    )}
+                                    <FiMapPin size={11} color="#f59e0b" style={{ flexShrink: 0 }} />
+                                    {isEditingThis ? (
+                                      <input
+                                        autoFocus
+                                        value={editingSubarea.value}
+                                        onChange={(e) => setEditingSubarea(prev => ({ ...prev, value: e.target.value }))}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') e.currentTarget.blur();
+                                          if (e.key === 'Escape') setEditingSubarea(null);
+                                        }}
+                                        onBlur={() => {
+                                          const newName = editingSubarea.value.trim();
+                                          if (newName && newName !== editingSubarea.oldName) {
+                                            renameArea(editingSubarea.oldName, newName);
+                                          }
+                                          setEditingSubarea(null);
+                                        }}
+                                        style={{
+                                          flex: 1, fontSize: 12, fontWeight: 600, padding: '3px 6px', borderRadius: 6,
+                                          border: '1px solid rgba(245, 158, 11, 0.5)',
+                                          background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff',
+                                          color: isDark ? '#f8fafc' : '#0f172a', outline: 'none'
+                                        }}
+                                      />
+                                    ) : (
+                                      <span
+                                        onDoubleClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingSubarea({ oldName: subName, value: subName, parentName: row.area.name });
+                                        }}
+                                        title="Double-click to rename"
+                                        style={{
+                                          flex: 1, fontSize: 12, fontWeight: 600,
+                                          color: isDark ? '#e2e8f0' : '#1e293b',
+                                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                        }}>
+                                        {subName}
+                                      </span>
+                                    )}
+                                    {!isEditingThis && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          title={`Move "${subName}" into another Primary Location`}
+                                          onClick={(e) => {
                                             e.stopPropagation();
-                                            setEditingSubarea({ oldName: subName, value: subName, parentName: row.area.name });
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setDeleteConfirm(null);
+                                            setMovePanel(prev => (prev && prev.isSub && prev.name === subName && prev.parentName === row.area.name ? null : {
+                                              isSub: true, name: subName, parentName: row.area.name, rect, target: ''
+                                            }));
                                           }}
-                                          title="Double-click to rename"
+                                          className="btn-hover-effect"
                                           style={{
-                                            flex: 1, fontSize: 12, fontWeight: 600,
-                                            color: isDark ? '#e2e8f0' : '#1e293b',
-                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                                          }}>
-                                          {subName}
+                                            display: 'inline-flex', alignItems: 'center', gap: 3,
+                                            padding: '3px 7px', borderRadius: 999, flexShrink: 0,
+                                            fontSize: 9.5, fontWeight: 700, whiteSpace: 'nowrap',
+                                            background: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === row.area.name) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+                                            border: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === row.area.name) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
+                                            color: '#cbd5e1', cursor: 'pointer'
+                                          }}
+                                        >
+                                          <FiMove size={10} />
+                                          Move Area
+                                        </button>
+                                        <button
+                                          type="button"
+                                          title={`Delete "${subName}"`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setMovePanel(null);
+                                            setDeleteConfirm({ isSub: true, name: subName, parentName: row.area.name, rect });
+                                          }}
+                                          style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                                            background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.28)',
+                                            color: '#ef4444', cursor: 'pointer'
+                                          }}
+                                        >
+                                          <FiTrash2 size={11} />
+                                        </button>
+                                        <span style={{
+                                          fontSize: 10, fontWeight: 700, color: isDark ? '#d9a74a' : '#b45309',
+                                          background: 'rgba(245, 158, 11, 0.10)', border: '1px solid rgba(245, 158, 11, 0.25)',
+                                          padding: '2px 7px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap'
+                                        }}>
+                                          {subFeatures.length} {subFeatures.length === 1 ? 'plot' : 'plots'}
                                         </span>
-                                      )}
-                                      {!isEditingThis && (
-                                        <>
-                                          <button
-                                            type="button"
-                                            title={`Move "${subName}" into another Primary Location`}
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* This Sub-area's own plots — clickable exactly like a
+                                      Projects-tab row: selects the polygon, zooms to it and
+                                      opens Polygon Info. */}
+                                  {subOpen && (
+                                    <div style={{ marginLeft: 17, marginTop: 2, marginBottom: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                      {subFeatures.length > 0 ? subFeatures.map(feature => {
+                                        const plotParts = getProjectDisplayParts(feature);
+                                        const plotTypeColor = getPropertyTypeColor(feature?.data?.type);
+                                        const plotSelected = selectedFeatureId === feature.id;
+                                        return (
+                                          <div
+                                            key={feature.id}
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              const rect = e.currentTarget.getBoundingClientRect();
-                                              setDeleteConfirm(null);
-                                              setMovePanel(prev => (prev && prev.isSub && prev.name === subName && prev.parentName === row.area.name ? null : {
-                                                isSub: true, name: subName, parentName: row.area.name, rect, target: ''
-                                              }));
+                                              const state = useMapStore.getState();
+                                              if (state.isInfoPanelOpen && state.selectedFeatureId !== feature.id) {
+                                                setIsInfoPanelOpen(false);
+                                                setTimeout(() => {
+                                                  setSelectedFeatureId(feature.id);
+                                                  setIsInfoPanelOpen(true);
+                                                  if (map) zoomToProperty(map, feature);
+                                                }, 250);
+                                              } else {
+                                                setSelectedFeatureId(feature.id);
+                                                setIsInfoPanelOpen(true);
+                                                if (map) zoomToProperty(map, feature);
+                                              }
                                             }}
                                             className="btn-hover-effect"
                                             style={{
-                                              display: 'inline-flex', alignItems: 'center', gap: 3,
-                                              padding: '3px 7px', borderRadius: 999, flexShrink: 0,
-                                              fontSize: 9.5, fontWeight: 700, whiteSpace: 'nowrap',
-                                              background: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === row.area.name) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.06)',
-                                              border: (movePanel && movePanel.isSub && movePanel.name === subName && movePanel.parentName === row.area.name) ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.16)',
-                                              color: '#cbd5e1', cursor: 'pointer'
+                                              position: 'relative',
+                                              padding: '7px 9px 7px 12px',
+                                              borderRadius: 8,
+                                              cursor: 'pointer',
+                                              background: plotSelected
+                                                ? (isDark ? 'rgba(245, 158, 11, 0.14)' : '#fffbe6')
+                                                : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#f8fafc'),
+                                              border: plotSelected
+                                                ? '1px solid rgba(245, 158, 11, 0.4)'
+                                                : (isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid #e2e8f0')
                                             }}
                                           >
-                                            <FiMove size={10} />
-                                            Move Area
-                                          </button>
-                                          <button
-                                            type="button"
-                                            title={`Delete "${subName}"`}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              const rect = e.currentTarget.getBoundingClientRect();
-                                              setMovePanel(null);
-                                              setDeleteConfirm({ isSub: true, name: subName, parentName: row.area.name, rect });
-                                            }}
-                                            style={{
-                                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                              width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                                              background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.28)',
-                                              color: '#ef4444', cursor: 'pointer'
-                                            }}
-                                          >
-                                            <FiTrash2 size={11} />
-                                          </button>
-                                          <span style={{
-                                            fontSize: 10, fontWeight: 700, color: isDark ? '#d9a74a' : '#b45309',
-                                            background: 'rgba(245, 158, 11, 0.10)', border: '1px solid rgba(245, 158, 11, 0.25)',
-                                            padding: '2px 7px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap'
-                                          }}>
-                                            {subCount} {subCount === 1 ? 'plot' : 'plots'}
-                                          </span>
-                                        </>
+                                            <div style={{
+                                              position: 'absolute', left: 3, top: 6, bottom: 6, width: 3,
+                                              borderRadius: 3, background: plotSelected ? '#f59e0b' : (plotTypeColor || '#d9a74a'),
+                                              opacity: plotSelected ? 1 : 0.5
+                                            }} />
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                                              <span style={{
+                                                fontSize: 11.5, fontWeight: 600,
+                                                color: plotSelected ? '#f59e0b' : (isDark ? '#e2e8f0' : '#1e293b'),
+                                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                              }}>
+                                                {plotParts.areaTitle && plotParts.areaTitle !== '_' ? plotParts.areaTitle : plotParts.locationTitle} ↗
+                                              </span>
+                                              {feature?.data?.type && (
+                                                <span style={{
+                                                  fontSize: 9.5, fontWeight: 700,
+                                                  color: plotTypeColor || '#94a3b8',
+                                                  background: (plotTypeColor || '#94a3b8') + '22',
+                                                  border: `1px solid ${(plotTypeColor || '#94a3b8')}55`,
+                                                  padding: '1.5px 6px', borderRadius: 999, flexShrink: 0, whiteSpace: 'nowrap'
+                                                }}>
+                                                  {feature.data.type}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div style={{ fontSize: 10, color: isDark ? '#94a3b8' : '#64748b', marginTop: 2 }}>
+                                              {plotParts.tpOpFpTitle}
+                                            </div>
+                                          </div>
+                                        );
+                                      }) : (
+                                        <div style={{ fontSize: 10.5, color: isDark ? '#64748b' : '#94a3b8', fontStyle: 'italic', padding: '4px 2px' }}>
+                                          No plots marked here yet.
+                                        </div>
                                       )}
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div style={{
-                            fontSize: 11, fontWeight: 400, opacity: 0.7,
-                            color: isDark ? '#94a3b8' : '#64748b',
-                            display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            marginTop: 1,
-                            paddingLeft: 32
-                          }}>
-                            {subLocsText}
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
