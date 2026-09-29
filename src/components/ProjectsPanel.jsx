@@ -1378,7 +1378,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               overflow: 'hidden', textOverflow: 'ellipsis'
                             }}>
                               {hasSubs
-                                ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}: ${subLocsText}`
+                                ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}`
                                 : subLocsText}
                             </span>
                           </div>
