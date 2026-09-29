@@ -144,7 +144,13 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
               onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
               style={{
-                background: 'rgba(255,255,255,0.06)',
+                // Was a distinctly lighter rgba(255,255,255,0.06) wash, which made
+                // the search box look like a different, more-opaque surface than
+                // the "All Locations" row and list right below it. Transparent lets
+                // it sit on the (now much more opaque) panel background as one
+                // continuous surface, same as the rows — the border still marks it
+                // out as a field.
+                background: 'transparent',
                 border: '1px solid rgba(253,183,19,0.25)',
                 borderRadius: GLASS_RADIUS.control,
                 padding: '6px 10px',
@@ -317,7 +323,9 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
               onFocus={(e) => { e.target.style.borderColor = '#FDB713'; e.target.style.boxShadow = '0 0 0 3px rgba(253,183,19,0.18)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'rgba(253,183,19,0.25)'; e.target.style.boxShadow = 'none'; }}
               style={{
-                background: 'rgba(255,255,255,0.06)',
+                // Same fix as the Primary Location search box — a flat wash made it
+                // read as a different-opacity surface than the rows below it.
+                background: 'transparent',
                 border: '1px solid rgba(253,183,19,0.25)',
                 borderRadius: GLASS_RADIUS.control,
                 padding: '6px 10px',

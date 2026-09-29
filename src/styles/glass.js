@@ -4,7 +4,12 @@
 // standardizes blur, edges, shadows and type treatment.
 
 export const GLASS_COLORS = {
-  panelBg: 'rgba(15, 23, 42, 0.75)',
+  // 0.75 -> 0.95 (~+40%, capped shy of fully solid so the backdrop blur still
+  // reads at the edges) — the map/photo behind a floating panel (location
+  // filter, property info, etc) was showing through too strongly, making the
+  // panel look washed out next to its own more opaque inner elements (e.g. the
+  // search input's own background) instead of one consistent surface.
+  panelBg: 'rgba(15, 23, 42, 0.95)',
   border: 'rgba(245, 158, 11, 0.25)',
   borderActive: '#f59e0b',
 };
