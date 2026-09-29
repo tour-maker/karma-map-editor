@@ -396,10 +396,15 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const AREA_ROW_BASE = 68;           // Primary card, no sub-areas
   const AREA_ROW_WITH_SUBS_COLLAPSED = 100; // + warning line + "N sub-areas: …" trigger row
   const AREA_ROW_HEADER_ONLY = 78;    // header + warning line, no trigger/accordion below it
-  const AREA_SUB_ROW = 50;            // one inline sub-area row inside the accordion (collapsed)
-  const AREA_ACCORDION_PADDING = 16;
-  const AREA_PLOT_ROW = 54;           // one plot row inside an expanded sub-area
-  const AREA_NO_PLOTS_ROW = 30;       // "No plots marked here yet." row
+  // Actual rendered height of one collapsed sub-area row is ~6px+6px padding plus a
+  // ~20-22px content line (chevron/pin/name/Move pill/Delete circle), so ~34px —
+  // AREA_SUB_ROW was previously 50, which left a large empty gap under every
+  // expanded Primary (visible as dead space before the next card, worse the more
+  // sub-areas a Primary has — Surat's 18 made it obvious).
+  const AREA_SUB_ROW = 34;
+  const AREA_ACCORDION_PADDING = 10;
+  const AREA_PLOT_ROW = 44;           // one plot row inside an expanded sub-area
+  const AREA_NO_PLOTS_ROW = 26;       // "No plots marked here yet." row
 
   const getItemSize = useCallback((index) => {
     const row = virtualRows[index];
@@ -1186,7 +1191,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           }
                         }}
                         title={`Click to filter map by ${row.area.name}`}
-                        style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}
+                        style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                       >
                         {/* HEAD BOX — the only bordered "card" part, matching the approved
                             design (Sub-areas below are a flat, unboxed continuation, not
@@ -1340,46 +1345,52 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               </span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* UNBOXED BODY — flat continuation below the head box, matching
-                            the approved design ("no nested box around Sub-areas"). */}
-                        {hasSubs && (
-                          <div style={{ fontSize: 10.5, color: '#fca5a5', marginTop: 6, paddingLeft: 32, flexShrink: 0 }}>
-                            Move or merge its {row.area.subLocations.length} Sub-area{row.area.subLocations.length === 1 ? '' : 's'} out first.
+                          {/* Warning + Sub-area summary/toggle line stay INSIDE the same
+                              bordered head box as the header — reads as one continuous
+                              card instead of the warning text floating disconnected below
+                              it. Only the actual accordion (the Sub-area rows themselves)
+                              sits outside, unboxed. */}
+                          {hasSubs && (
+                            <div style={{ fontSize: 10.5, color: '#fca5a5', paddingLeft: 32 }}>
+                              Move or merge its {row.area.subLocations.length} Sub-area{row.area.subLocations.length === 1 ? '' : 's'} out first.
+                            </div>
+                          )}
+
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!hasSubs) return;
+                              setEditingSubarea(null);
+                              setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
+                            }}
+                            title={hasSubs ? (isExpanded ? 'Hide sub-areas' : 'View & edit sub-areas') : undefined}
+                            className={hasSubs ? 'btn-hover-effect' : ''}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 5,
+                              fontSize: 11, fontWeight: hasSubs ? 600 : 400,
+                              opacity: hasSubs ? 0.85 : 0.7,
+                              color: hasSubs ? (isDark ? '#d9a74a' : '#b45309') : (isDark ? '#94a3b8' : '#64748b'),
+                              paddingLeft: 32, cursor: hasSubs ? 'pointer' : 'default'
+                            }}
+                          >
+                            {hasSubs && (isExpanded
+                              ? <FiChevronDown size={12} style={{ flexShrink: 0 }} />
+                              : <FiChevronRight size={12} style={{ flexShrink: 0 }} />)}
+                            <span style={{
+                              whiteSpace: hasSubs ? 'nowrap' : 'normal',
+                              overflow: 'hidden', textOverflow: 'ellipsis'
+                            }}>
+                              {hasSubs
+                                ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}: ${subLocsText}`
+                                : subLocsText}
+                            </span>
                           </div>
-                        )}
-
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!hasSubs) return;
-                            setEditingSubarea(null);
-                            setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
-                          }}
-                          title={hasSubs ? (isExpanded ? 'Hide sub-areas' : 'View & edit sub-areas') : undefined}
-                          className={hasSubs ? 'btn-hover-effect' : ''}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 5,
-                            fontSize: 11, fontWeight: hasSubs ? 600 : 400,
-                            opacity: hasSubs ? 0.85 : 0.7,
-                            color: hasSubs ? (isDark ? '#d9a74a' : '#b45309') : (isDark ? '#94a3b8' : '#64748b'),
-                            marginTop: 2, paddingLeft: 32, cursor: hasSubs ? 'pointer' : 'default', flexShrink: 0
-                          }}
-                        >
-                          {hasSubs && (isExpanded
-                            ? <FiChevronDown size={12} style={{ flexShrink: 0 }} />
-                            : <FiChevronRight size={12} style={{ flexShrink: 0 }} />)}
-                          <span style={{
-                            whiteSpace: hasSubs ? 'nowrap' : 'normal',
-                            overflow: 'hidden', textOverflow: 'ellipsis'
-                          }}>
-                            {hasSubs
-                              ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}: ${subLocsText}`
-                              : subLocsText}
-                          </span>
                         </div>
 
+                        {/* UNBOXED ACCORDION — the flat, unboxed Sub-area list itself,
+                            matching the approved design ("no nested box around each
+                            individual Sub-area row"). */}
                         {isExpanded && (
                           <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {row.area.subLocations.map(subName => {
