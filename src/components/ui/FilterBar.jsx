@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
@@ -47,6 +47,44 @@ const PushPinIcon = ({ color }) => (
   </svg>
 );
 
+// Keeps an in-modal dropdown panel fully inside the visible viewport (which
+// shrinks when the on-screen keyboard opens, e.g. while typing in the search
+// box) by measuring the trigger's live position and clamping the panel's
+// available height to whatever room is actually left below it, instead of a
+// fixed 180px that can run off-screen and get visually cut off.
+function useViewportFitPanel(triggerRef, isOpen, isInModal) {
+  const [rect, setRect] = useState(null);
+
+  useLayoutEffect(() => {
+    // Stale `rect` while closed is harmless — the panel this feeds is only
+    // rendered while isOpen is true, so nothing reads it in between.
+    if (!isOpen || !isInModal) return;
+    function update() {
+      if (!triggerRef.current) return;
+      const box = triggerRef.current.getBoundingClientRect();
+      const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const spaceBelow = viewportHeight - box.bottom - 12;
+      setRect({
+        left: box.left,
+        width: box.width,
+        top: box.bottom + 6,
+        maxHeight: Math.max(120, Math.min(260, spaceBelow))
+      });
+    }
+    update();
+    window.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('scroll', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('scroll', update);
+    };
+  }, [isOpen, isInModal, triggerRef]);
+
+  return rect;
+}
+
 // ---------------------------------------------------------------------------
 // 1. Primary Location Dropdown Component
 // ---------------------------------------------------------------------------
@@ -57,6 +95,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
   const [isOpen, setIsOpen] = useState(forceOpen);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+  const viewportPanel = useViewportFitPanel(ref, isOpen, isInModal);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -120,9 +159,19 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
       {isOpen && (
         <div style={{
           ...glassPanelStyle,
-          position: 'absolute',
+          position: isInModal ? 'fixed' : 'absolute',
           ...(isInModal ? {
-            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+            // Anchored via measured viewport-relative coordinates (useViewportFitPanel)
+            // instead of top:100% so it can never run off the bottom of the visible
+            // viewport — critical on mobile where the on-screen keyboard shrinks the
+            // visible area but doesn't resize this fixed sheet.
+            left: viewportPanel?.left ?? 0,
+            top: viewportPanel?.top ?? 0,
+            width: viewportPanel?.width ?? '100%',
+            maxHeight: viewportPanel?.maxHeight ?? 260,
+            zIndex: 3000,
+            boxSizing: 'border-box',
+            overflow: 'hidden'
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 190, zIndex: 1100
           }),
@@ -186,7 +235,10 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
           </div>
 
           <div style={{
-            maxHeight: isInModal ? 180 : 240,
+            // In-modal: the outer panel already clamps total height to the measured
+            // viewport space, so this just takes whatever's left below the fixed
+            // header rather than a second, independently-guessed cap.
+            ...(isInModal ? { flex: '1 1 auto', minHeight: 0 } : { maxHeight: 240 }),
             overflowY: 'auto',
             overscrollBehavior: 'contain',
             display: 'flex',
@@ -413,6 +465,7 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
   // freshly mounted each time the modal sheet opens, so this only needs to run once.
   const [isOpen, setIsOpen] = useState(forceOpen);
   const ref = useRef(null);
+  const viewportPanel = useViewportFitPanel(ref, isOpen, isInModal);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -473,9 +526,19 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
       {isOpen && (
         <div style={{
           ...glassPanelStyle,
-          position: 'absolute',
+          position: isInModal ? 'fixed' : 'absolute',
           ...(isInModal ? {
-            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+            // Anchored via measured viewport-relative coordinates (useViewportFitPanel)
+            // instead of top:100% so it can never run off the bottom of the visible
+            // viewport — critical on mobile where the on-screen keyboard shrinks the
+            // visible area but doesn't resize this fixed sheet.
+            left: viewportPanel?.left ?? 0,
+            top: viewportPanel?.top ?? 0,
+            width: viewportPanel?.width ?? '100%',
+            maxHeight: viewportPanel?.maxHeight ?? 260,
+            zIndex: 3000,
+            boxSizing: 'border-box',
+            overflow: 'hidden'
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 200, zIndex: 1100
           }),
@@ -484,9 +547,12 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
           flexDirection: 'column'
         }}>
           {/* Scrollable, like Location/Sub-location — previously had no maxHeight/overflow
-              at all, so a long category list just overflowed with nothing to scroll. */}
+              at all, so a long category list just overflowed with nothing to scroll.
+              In-modal: the outer panel already clamps total height to the measured
+              viewport space, so this just fills whatever's left instead of a second,
+              independently-guessed cap. */}
           <div style={{
-            maxHeight: isInModal ? 180 : 240,
+            ...(isInModal ? { flex: '1 1 auto', minHeight: 0 } : { maxHeight: 240 }),
             overflowY: 'auto',
             overscrollBehavior: 'contain',
             display: 'flex',
