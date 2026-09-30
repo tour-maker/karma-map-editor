@@ -30,6 +30,16 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
   const dblClickListenerRef = useRef(null)
   const pathListenerRefs = useRef([])
   const suppressNextClickRef = useRef(false)
+  // Small clickable dots at each already-placed vertex while actively
+  // drawing (not the same as the editable drag-handles Google shows after
+  // the polygon is completed) — hover highlights them red, click removes
+  // that specific point, so a misplaced point doesn't require cancelling
+  // and redrawing the whole shape.
+  const vertexMarkersRef = useRef([])
+  // Index of the vertex dot currently under the cursor (or null), so the
+  // Delete/Backspace key can remove that specific point without needing a
+  // click.
+  const hoveredVertexIndexRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     startDrawing: () => {
@@ -46,6 +56,12 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
       window.google?.maps.event.removeListener(listener)
     })
     pathListenerRefs.current = []
+  }, [])
+
+  const clearVertexMarkers = useCallback(() => {
+    vertexMarkersRef.current.forEach((marker) => marker.setMap(null))
+    vertexMarkersRef.current = []
+    hoveredVertexIndexRef.current = null
   }, [])
 
   const removeMapListeners = useCallback(() => {
@@ -68,6 +84,7 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
   const clearActivePolygon = useCallback((shouldRemoveFromMap = false) => {
     const polygon = activePolygonRef.current
     removeActivePolygonListeners()
+    clearVertexMarkers()
 
     if (polygon) {
       if (shouldRemoveFromMap && polygon.getMap()) {
@@ -77,7 +94,7 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
     }
 
     suppressNextClickRef.current = false
-  }, [removeActivePolygonListeners])
+  }, [removeActivePolygonListeners, clearVertexMarkers])
 
   const finishPolygon = useCallback(() => {
     const polygon = activePolygonRef.current
@@ -95,6 +112,7 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
     }
 
     removePathListeners()
+    clearVertexMarkers()
     polygon.isCompleted = true
     polygon.setEditable(false)
 
@@ -115,7 +133,101 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
     onPolygonComplete?.(polygon)
     setIsDrawing(false)
     suppressNextClickRef.current = false
-  }, [clearActivePolygon, onPolygonComplete, removePathListeners, appMode])
+  }, [clearActivePolygon, onPolygonComplete, removePathListeners, clearVertexMarkers, appMode])
+
+  // Redraws the small hover-to-delete dots at every current vertex — called
+  // whenever the in-progress path changes (a point added, undone, or
+  // deleted), so the markers always match what's actually on the map.
+  // Rebuilding from scratch each time (rather than diffing) is simple and
+  // cheap at the vertex counts a plot polygon actually has.
+  const rebuildVertexMarkers = useCallback(() => {
+    const polygon = activePolygonRef.current
+    const googleMaps = window.google?.maps
+    if (!polygon || !googleMaps || polygon.isCompleted || !map) {
+      clearVertexMarkers()
+      return
+    }
+
+    clearVertexMarkers()
+
+    const path = polygon.getPath()
+    const length = path.getLength()
+    const dotIcon = (highlighted) => ({
+      path: googleMaps.SymbolPath.CIRCLE,
+      scale: highlighted ? 8 : 6,
+      fillColor: highlighted ? '#ef4444' : '#ffffff',
+      fillOpacity: 1,
+      strokeColor: highlighted ? '#ffffff' : '#2563eb',
+      strokeWeight: 2
+    })
+
+    for (let i = 0; i < length; i++) {
+      const isFirstVertex = i === 0
+      const marker = new googleMaps.Marker({
+        position: path.getAt(i),
+        map,
+        clickable: true,
+        cursor: 'pointer',
+        zIndex: 1000,
+        icon: dotIcon(false),
+        title: isFirstVertex && length >= MIN_VERTICES_BEFORE_CLOSE
+          ? 'Click to close the shape (or hover + press Delete to remove this point)'
+          : 'Click, or hover + press Delete/Backspace, to remove this point'
+      })
+
+      marker.addListener('mouseover', () => {
+        hoveredVertexIndexRef.current = i
+        marker.setIcon(dotIcon(true))
+      })
+      marker.addListener('mouseout', () => {
+        if (hoveredVertexIndexRef.current === i) hoveredVertexIndexRef.current = null
+        marker.setIcon(dotIcon(false))
+      })
+      marker.addListener('click', () => {
+        const currentPolygon = activePolygonRef.current
+        if (!currentPolygon || currentPolygon.isCompleted) return
+        const currentPath = currentPolygon.getPath()
+
+        // Clicking the very first vertex's dot closes the loop — the same
+        // gesture that clicking the map near it already triggered, now with
+        // an actual target to click since a marker sits there.
+        if (isFirstVertex && currentPath.getLength() >= MIN_VERTICES_BEFORE_CLOSE) {
+          finishPolygon()
+          return
+        }
+
+        if (i < currentPath.getLength()) {
+          currentPath.removeAt(i)
+        }
+      })
+
+      vertexMarkersRef.current.push(marker)
+    }
+  }, [map, clearVertexMarkers, finishPolygon])
+
+  // Ctrl/Cmd+Z while drawing removes the most recently placed point instead
+  // of the whole shape, so one wrong click doesn't mean cancelling and
+  // starting over.
+  const undoLastPoint = useCallback(() => {
+    const polygon = activePolygonRef.current
+    if (!polygon || polygon.isCompleted) return
+    const path = polygon.getPath()
+    if (path.getLength() === 0) return
+    path.removeAt(path.getLength() - 1)
+  }, [])
+
+  // Delete/Backspace while hovering a vertex dot removes that specific
+  // point, no click needed — an alternative to clicking the dot directly.
+  const deleteHoveredVertex = useCallback(() => {
+    const index = hoveredVertexIndexRef.current
+    if (index === null) return false
+    const polygon = activePolygonRef.current
+    if (!polygon || polygon.isCompleted) return false
+    const path = polygon.getPath()
+    if (index >= path.getLength()) return false
+    path.removeAt(index)
+    return true
+  }, [])
 
   useEffect(() => {
     if (!map || !isDrawing) {
@@ -133,6 +245,15 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
     polygon.setMap(map)
     polygon.isCompleted = false
     activePolygonRef.current = polygon
+
+    // Keeps the hover-to-delete vertex dots in sync with the path for every
+    // point added, undone (Ctrl/Cmd+Z), or deleted by clicking a dot.
+    const initialPath = polygon.getPath()
+    pathListenerRefs.current = [
+      googleMaps.event.addListener(initialPath, 'insert_at', rebuildVertexMarkers),
+      googleMaps.event.addListener(initialPath, 'remove_at', rebuildVertexMarkers),
+      googleMaps.event.addListener(initialPath, 'set_at', rebuildVertexMarkers)
+    ]
 
     const clickListener = googleMaps.event.addListener(map, 'click', (event) => {
       const activePolygon = activePolygonRef.current
@@ -183,6 +304,7 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
 
     return () => {
       removeMapListeners()
+      clearVertexMarkers()
       if (activePolygonRef.current && !activePolygonRef.current.isCompleted) {
         removePathListeners()
         activePolygonRef.current.setMap(null)
@@ -190,18 +312,55 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
       activePolygonRef.current = null
       suppressNextClickRef.current = false
     }
-  }, [clearActivePolygon, finishPolygon, isDrawing, map, removeMapListeners, removePathListeners, appMode])
+  }, [clearActivePolygon, finishPolygon, isDrawing, map, removeMapListeners, removePathListeners, clearVertexMarkers, rebuildVertexMarkers, appMode])
 
   useEffect(() => {
     return () => {
       removeActivePolygonListeners()
+      clearVertexMarkers()
       if (activePolygonRef.current) {
         activePolygonRef.current.setMap(null)
       }
       activePolygonRef.current = null
       suppressNextClickRef.current = false
     }
-  }, [removeActivePolygonListeners])
+  }, [removeActivePolygonListeners, clearVertexMarkers])
+
+  // Ctrl/Cmd+Z removes the last placed point instead of the browser's own
+  // undo. Delete/Backspace while hovering a vertex dot removes that specific
+  // point instead (falls through to the same last-point undo if nothing's
+  // currently hovered, since Delete/Backspace with no target selected is a
+  // reasonable "undo the last thing I did" too).
+  useEffect(() => {
+    if (!isDrawing) return undefined
+
+    function handleKeyDown(event) {
+      const isUndoCombo = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z'
+      const isDeleteKey = event.key === 'Delete' || event.key === 'Backspace'
+      if (!isUndoCombo && !isDeleteKey) return
+
+      // Don't hijack these while the user is actually typing somewhere
+      // (e.g. renaming something in a text field left open elsewhere) —
+      // Backspace in particular needs this guard, since it's a normal
+      // editing key everywhere else on the page.
+      const activeTag = document.activeElement?.tagName
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || document.activeElement?.isContentEditable) return
+
+      if (isUndoCombo) {
+        event.preventDefault()
+        undoLastPoint()
+        return
+      }
+
+      // isDeleteKey: remove the hovered point if there is one, otherwise
+      // behave like Ctrl/Cmd+Z and undo the last placed point.
+      event.preventDefault()
+      if (!deleteHoveredVertex()) undoLastPoint()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isDrawing, undoLastPoint, deleteHoveredVertex])
 
   if (!isDrawing) return null;
 
@@ -226,6 +385,17 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
     >
       <span style={{ fontSize: 14, fontWeight: 500, color: '#0f172a' }}>Drawing Mode</span>
       <div style={{ width: 1, height: 16, background: '#cbd5e1' }} />
+      <button
+        type="button"
+        onClick={undoLastPoint}
+        title="Undo last point (Ctrl/Cmd+Z) — or click any dot on the shape to remove that point"
+        style={{
+          background: 'transparent', border: 'none', color: '#64748b', fontSize: 13,
+          fontWeight: 500, cursor: 'pointer', padding: '4px 8px', borderRadius: 4
+        }}
+      >
+        Undo Point
+      </button>
       <button
         type="button"
         onClick={() => {
