@@ -281,6 +281,13 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
 
     const list = Array.from(parentMap.values()).map(item => ({
       ...item,
+      // Only list sub-areas that actually have at least one property in them —
+      // dynamicLocationMap includes every known sub-area name regardless of
+      // whether anything's been added to it yet, which cluttered the trigger
+      // ("N sub-areas") and the expanded list with empty entries.
+      subLocations: (item.subLocations || []).filter(sub =>
+        item.features.some(f => f.data?.location === sub)
+      ),
       count: item.features.length
     }));
 

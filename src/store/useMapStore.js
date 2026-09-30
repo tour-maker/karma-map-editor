@@ -387,7 +387,8 @@ export const useMapStore = create(
           spreadsheetId: state.spreadsheetId,
           customAreas: state.customAreas,
           syncedAreas: state.syncedAreas,
-          isAdminAuthenticated: state.isAdminAuthenticated,
+          // Deliberately not persisted — App.jsx forces this back to false on
+          // every load/reload so the admin has to sign back in each time.
           googleAccessToken: state.googleAccessToken,
         };
       }

@@ -18,6 +18,39 @@ const GENERIC_DESCRIPTION = 'Interactive map editor for viewing, editing, matchi
 const GENERIC_IMAGE = `${SITE_ORIGIN}/preview.jpg`;
 const GENERIC_IMAGE_TYPE = 'image/jpeg';
 
+// Server-side key for the Maps Static API, used to render a real per-plot
+// satellite screenshot for the link-preview image below. Separate from the
+// frontend's VITE_GOOGLE_MAPS_API_KEY (that one ships in the client bundle
+// and is restricted to browser/JS Maps use) — falls back to it only so this
+// keeps working if just one key happens to be set with both APIs enabled,
+// but the Google Cloud Console key restrictions should normally differ for
+// a server-side key. Requires the "Maps Static API" to be enabled for
+// whichever key is used.
+const GOOGLE_STATIC_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
+
+// Builds a satellite screenshot of the plot's exact polygon (path auto-fits
+// the view, no manual center/zoom needed) instead of the one generic image
+// every shared link previously showed. Returns null when there's no key
+// configured or no usable polygon, so callers can fall back to GENERIC_IMAGE.
+function buildPlotImageUrl(coordinates) {
+  if (!GOOGLE_STATIC_MAPS_API_KEY) return null;
+  if (!Array.isArray(coordinates) || coordinates.length < 3) return null;
+
+  const pathPoints = coordinates.map(c => `${c.lat},${c.lng}`).join('|');
+  // Same gold used for selected-polygon chrome elsewhere in the app
+  // (activeColor '#f59e0b'), so the preview reads as "this app's" plot outline.
+  const pathParam = `color:0xf59e0bff|weight:3|fillcolor:0xf59e0b4d|${pathPoints}`;
+
+  const params = new URLSearchParams({
+    size: '1200x630',
+    maptype: 'satellite',
+    format: 'jpg',
+    key: GOOGLE_STATIC_MAPS_API_KEY,
+  });
+
+  return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}&path=${encodeURIComponent(pathParam)}`;
+}
+
 // Prefer the built frontend's index.html (correct hashed asset tags) when this
 // server is deployed alongside the frontend build; fall back to the repo's
 // source template otherwise (dev, or the two are hosted separately).
@@ -86,10 +119,18 @@ router.get('/:id', async (req, res) => {
 
   let title = GENERIC_TITLE;
   let description = GENERIC_DESCRIPTION;
+  let ogImage = GENERIC_IMAGE;
+  let ogImageType = GENERIC_IMAGE_TYPE;
 
   try {
     const property = await findPropertyById(id);
     ({ title, description } = buildTitleAndDescription(property));
+
+    const plotImage = buildPlotImageUrl(property?.coordinates);
+    if (plotImage) {
+      ogImage = plotImage;
+      ogImageType = 'image/jpeg';
+    }
   } catch (error) {
     // Bad/old id, sheet unreachable, etc. — fall back to the generic tags
     // rather than failing the request.
@@ -123,15 +164,15 @@ router.get('/:id', async (req, res) => {
     `<meta property="og:site_name" content="Karma Realtors" />`,
     `<meta property="og:title" content="${escTitle}" />`,
     `<meta property="og:description" content="${escDescription}" />`,
-    `<meta property="og:image" content="${GENERIC_IMAGE}" />`,
-    `<meta property="og:image:type" content="${GENERIC_IMAGE_TYPE}" />`,
+    `<meta property="og:image" content="${ogImage}" />`,
+    `<meta property="og:image:type" content="${ogImageType}" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:url" content="${shareUrl}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${escTitle}" />`,
     `<meta name="twitter:description" content="${escDescription}" />`,
-    `<meta name="twitter:image" content="${GENERIC_IMAGE}" />`,
+    `<meta name="twitter:image" content="${ogImage}" />`,
   ].join('\n    ');
 
   html = html.includes('<head>')

@@ -44,6 +44,7 @@ export async function findPropertyById(rawId) {
   const areaUnitIdx = indexOf(headers, 'area unit', 17);
   const landmarkIdx = indexOf(headers, 'landmark', 7);
   const remarksIdx = indexOf(headers, 'remarks', 9);
+  const coordsIdx = indexOf(headers, 'coordinates', 14);
 
   let byTpFp = null;
   for (let i = 1; i < rows.length; i++) {
@@ -57,6 +58,23 @@ export async function findPropertyById(rawId) {
     const matchesTpFp = !matchesId && (tp || fp) && `${tp}_${fp}` === id;
     if (!matchesId && !matchesTpFp) continue;
 
+    // Parsed for the per-plot link-preview map image (see routes/share.js) —
+    // same JSON-array-of-{lat,lng} format the client writes/reads for this
+    // column (see syncFeatureToSheet in src/services/googleSheets.js).
+    let coordinates = null;
+    const rawCoords = cell(row, coordsIdx);
+    if (rawCoords) {
+      try {
+        const parsed = JSON.parse(rawCoords);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter(c => c && typeof c.lat !== 'undefined' && typeof c.lng !== 'undefined');
+          if (valid.length >= 3) coordinates = valid;
+        }
+      } catch {
+        // Malformed/legacy cell — leave coordinates null, callers fall back accordingly.
+      }
+    }
+
     const property = {
       id: rowId || id,
       tp,
@@ -69,6 +87,7 @@ export async function findPropertyById(rawId) {
       type: cell(row, catIdx),
       landmark: cell(row, landmarkIdx),
       remarks: cell(row, remarksIdx),
+      coordinates,
     };
 
     if (matchesId) return property; // exact id match wins outright

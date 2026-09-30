@@ -159,18 +159,24 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
       {isOpen && (
         <div style={{
           ...glassPanelStyle,
-          position: isInModal ? 'fixed' : 'absolute',
+          // Always absolute, anchored to this trigger's own relatively-positioned
+          // wrapper — NOT position:fixed with viewport coordinates. The mobile
+          // sheet this renders inside is CSS-animated with a transform
+          // (slideUpSheet), and any ancestor with an active transform becomes
+          // the containing block for position:fixed descendants, which threw
+          // off fixed top/left entirely (panel rendered off-screen/invisible —
+          // the chevron still flipped since that's separate state, giving the
+          // "arrow moves but nothing opens" symptom). Absolute positioning is
+          // immune to that since it's relative to the nearest positioned
+          // ancestor (this trigger's own wrapper) regardless of transforms
+          // elsewhere in the tree.
+          position: 'absolute',
           ...(isInModal ? {
-            // Anchored via measured viewport-relative coordinates (useViewportFitPanel)
-            // instead of top:100% so it can never run off the bottom of the visible
-            // viewport — critical on mobile where the on-screen keyboard shrinks the
-            // visible area but doesn't resize this fixed sheet.
-            left: viewportPanel?.left ?? 0,
-            top: viewportPanel?.top ?? 0,
-            width: viewportPanel?.width ?? '100%',
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box',
+            // Still clamped to whatever room is actually left in the visible
+            // viewport (tracks the on-screen keyboard via useViewportFitPanel)
+            // so it can't run off the bottom of the screen.
             maxHeight: viewportPanel?.maxHeight ?? 260,
-            zIndex: 3000,
-            boxSizing: 'border-box',
             overflow: 'hidden'
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 190, zIndex: 1100
@@ -526,18 +532,13 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
       {isOpen && (
         <div style={{
           ...glassPanelStyle,
-          position: isInModal ? 'fixed' : 'absolute',
+          // Always absolute, anchored to this trigger's own relatively-positioned
+          // wrapper — see the matching comment in PrimaryLocationDropdown for why
+          // position:fixed broke inside the CSS-animated (transform) mobile sheet.
+          position: 'absolute',
           ...(isInModal ? {
-            // Anchored via measured viewport-relative coordinates (useViewportFitPanel)
-            // instead of top:100% so it can never run off the bottom of the visible
-            // viewport — critical on mobile where the on-screen keyboard shrinks the
-            // visible area but doesn't resize this fixed sheet.
-            left: viewportPanel?.left ?? 0,
-            top: viewportPanel?.top ?? 0,
-            width: viewportPanel?.width ?? '100%',
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box',
             maxHeight: viewportPanel?.maxHeight ?? 260,
-            zIndex: 3000,
-            boxSizing: 'border-box',
             overflow: 'hidden'
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 200, zIndex: 1100

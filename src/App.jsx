@@ -7,34 +7,19 @@ import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { setAccessToken } from './services/googleSheets'
-import { API_BASE_URL } from './config/api'
 
 function App() {
   useEffect(() => {
     const { googleAccessToken } = useMapStore.getState();
 
-    // Verify admin JWT with backend on every page load
-    const storedJWT = localStorage.getItem('karmaAdminJWT');
-    if (storedJWT) {
-      fetch(`${API_BASE_URL}/api/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: storedJWT })
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.valid) {
-            useMapStore.getState().setIsAdminAuthenticated(true);
-          } else {
-            localStorage.removeItem('karmaAdminJWT');
-            useMapStore.getState().setIsAdminAuthenticated(false);
-          }
-        })
-        .catch(() => {
-          // If server unreachable, don't grant access
-          useMapStore.getState().setIsAdminAuthenticated(false);
-        });
-    }
+    // Admin accounts do not survive a page refresh either — same as viewer
+    // accounts below: every fresh load/reload starts signed out, so the
+    // admin has to log back in rather than picking up an old JWT. Previously
+    // this verified the stored JWT with the backend and silently
+    // re-authenticated if it was still valid, which meant refreshing the
+    // admin page never actually signed anyone out.
+    localStorage.removeItem('karmaAdminJWT');
+    useMapStore.getState().setIsAdminAuthenticated(false);
 
     // Viewer accounts do not survive a page refresh: every fresh load starts signed out,
     // and Map Labels always starts OFF (stale values from older persisted storage are reset too).
