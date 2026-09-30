@@ -1279,9 +1279,8 @@ export default function FilterBar() {
 
             {/* Filter Controls Stack */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
-              {/* Location + Category side by side (2 columns) so the sheet doesn't
-                  need as much vertical scrolling on mobile */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {/* Location + Category stacked full-width, one per row */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Primary Location */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
