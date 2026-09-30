@@ -22,12 +22,13 @@ export const useMapStore = create(
         theme: 'dark',
         uiHidden: false,
         showLabels: false,
-        showLandmarks: true,
+        // Off by default — landmarks only show once the user explicitly turns
+        // this on, rather than being on for everyone from the first load.
+        showLandmarks: false,
         // Whether the current map zoom is deep enough for landmarks to actually
         // be rendered (LandmarkManager keeps this in sync with its own zoom
         // gate). Separate from showLandmarks, which is the user's manual on/off
-        // preference — this reflects whether landmarks are visible *right now*,
-        // so the toggle button can auto-light-up once zooming reveals them.
+        // preference.
         landmarksZoomActive: false,
 
         filterPrimary: null,
@@ -235,6 +236,11 @@ export const useMapStore = create(
         toggleUiHidden: () => set((state) => ({ uiHidden: !state.uiHidden })),
         toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
         toggleLandmarks: () => set((state) => ({ showLandmarks: !state.showLandmarks })),
+        // Used by LandmarkManager's zoom-based auto-enable — separate from
+        // toggleLandmarks (a plain flip) so it can set an exact value.
+        setShowLandmarks: (show) => set((state) =>
+          state.showLandmarks === show ? state : { showLandmarks: show }
+        ),
         setLandmarksZoomActive: (active) => set((state) =>
           state.landmarksZoomActive === active ? state : { landmarksZoomActive: active }
         ),

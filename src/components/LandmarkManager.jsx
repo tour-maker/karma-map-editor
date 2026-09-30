@@ -349,22 +349,31 @@ export default function LandmarkManager() {
   // Perform 2D AABB bounding box collision detection & adaptive mode / occlusion hiding
   const updateOverlaysState = useCallback(() => {
     if (!map) return;
+
+    const zoom = map.getZoom();
+    const isZoomedOut = zoom != null && zoom < 12;
+
     if (!useMapStore.getState().showLandmarks) {
-      landmarkOverlaysRef.current.forEach(item => {
-        if (item.overlay) item.overlay.setVisible(false);
-      });
-      useMapStore.getState().setLandmarksZoomActive(false);
+      // Auto-turn-on: zooming in far enough reveals landmarks even if the
+      // toggle is currently off, so the user doesn't have to click it first.
+      // This only ever turns it ON — zooming back out never auto-turns it
+      // off again, so a manual "on" (by this auto-enable or by clicking)
+      // stays on until the user explicitly clicks it off.
+      if (!isZoomedOut) {
+        useMapStore.getState().setShowLandmarks(true);
+      } else {
+        landmarkOverlaysRef.current.forEach(item => {
+          if (item.overlay) item.overlay.setVisible(false);
+        });
+        useMapStore.getState().setLandmarksZoomActive(false);
+      }
       return;
     }
 
-    const zoom = map.getZoom();
     // Landmarks only render once zoomed in far enough (client wants this kept
-    // as-is, not shown from the very first/widest view). The FilterBar toggle
-    // button reflects this automatically via landmarksZoomActive below, so it
-    // lights up the moment zooming actually reveals landmarks and dims again
-    // when zooming back out — rather than just reflecting the user's manual
-    // on/off click, which stays true the whole time.
-    const isZoomedOut = zoom != null && zoom < 12;
+    // as-is, not shown from the very first/widest view). landmarksZoomActive
+    // tracks that for the tooltip ("zoom in to see them"); the toggle
+    // button's own on/off look is driven by showLandmarks above, not this.
     useMapStore.getState().setLandmarksZoomActive(!isZoomedOut);
 
     const items = Array.from(landmarkOverlaysRef.current.values());
