@@ -480,7 +480,14 @@ export default function PropertyInfoPanel() {
       if (navigator.share) {
         navigator.share({
           title: `Karma Realtors - Selected Plot Details`,
-          text: shareText
+          text: shareText,
+          // Missing before: without a separate `url`, the OS share sheet (and
+          // apps like Outlook/Teams that specifically look for a link to copy
+          // or attach) had nothing to grab — the plot's link only existed
+          // buried inside the free-text `text` string, which those targets
+          // don't parse a URL out of. Every plot's share now actually carries
+          // its own link, same as the general share button already did.
+          url: shareUrl.toString()
         }).then(() => {
           import('react-hot-toast').then(m => m.default.success('Polygon info shared! 🚀', {
             style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
