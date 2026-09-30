@@ -30,6 +30,13 @@ export const useMapStore = create(
         // gate). Separate from showLandmarks, which is the user's manual on/off
         // preference.
         landmarksZoomActive: false,
+        // Once true, LandmarkManager's automatic zoom-in-turns-on /
+        // zoom-out-turns-off behavior stops adjusting showLandmarks — the
+        // user's own click is treated as an explicit, sticky choice that
+        // zooming should no longer override. Reset to false on every fresh
+        // load (not persisted), so automatic behavior is back to normal next
+        // time the page is opened.
+        landmarksManualOverride: false,
 
         filterPrimary: null,
         filterSecondary: null,
@@ -235,9 +242,16 @@ export const useMapStore = create(
         setUiHidden: (hidden) => set({ uiHidden: Boolean(hidden) }),
         toggleUiHidden: () => set((state) => ({ uiHidden: !state.uiHidden })),
         toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
-        toggleLandmarks: () => set((state) => ({ showLandmarks: !state.showLandmarks })),
-        // Used by LandmarkManager's zoom-based auto-enable — separate from
-        // toggleLandmarks (a plain flip) so it can set an exact value.
+        // A manual click is a sticky, explicit choice — it marks
+        // landmarksManualOverride so LandmarkManager's automatic zoom-based
+        // on/off stops touching showLandmarks from here on (for this load).
+        toggleLandmarks: () => set((state) => ({
+          showLandmarks: !state.showLandmarks,
+          landmarksManualOverride: true
+        })),
+        // Used by LandmarkManager's automatic zoom-based on/off — separate
+        // from toggleLandmarks (a manual, sticky flip) so it can set an exact
+        // value without marking it as a manual override.
         setShowLandmarks: (show) => set((state) =>
           state.showLandmarks === show ? state : { showLandmarks: show }
         ),
