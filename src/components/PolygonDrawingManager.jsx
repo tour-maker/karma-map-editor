@@ -40,6 +40,14 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
   // Delete/Backspace key can remove that specific point without needing a
   // click.
   const hoveredVertexIndexRef = useRef(null)
+  // True while a vertex dot is being drag-repositioned. The dots sit exactly
+  // on top of each vertex (so they can also be hovered/clicked to delete),
+  // which otherwise blocks Google's own editable drag-handles underneath —
+  // so the dots themselves are made draggable and drive the path directly.
+  // While a drag is in progress we skip the usual "rebuild all dots on any
+  // path change" reaction, since destroying/recreating the marker mid-drag
+  // would cancel the browser's drag gesture.
+  const isDraggingVertexRef = useRef(false)
 
   useImperativeHandle(ref, () => ({
     startDrawing: () => {
@@ -167,12 +175,13 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
         position: path.getAt(i),
         map,
         clickable: true,
+        draggable: true,
         cursor: 'pointer',
         zIndex: 1000,
         icon: dotIcon(false),
         title: isFirstVertex && length >= MIN_VERTICES_BEFORE_CLOSE
-          ? 'Click to close the shape (or hover + press Delete to remove this point)'
-          : 'Click, or hover + press Delete/Backspace, to remove this point'
+          ? 'Drag to move, click to close the shape (or hover + press Delete to remove this point)'
+          : 'Drag to move, click, or hover + press Delete/Backspace, to remove this point'
       })
 
       marker.addListener('mouseover', () => {
@@ -199,6 +208,28 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
         if (i < currentPath.getLength()) {
           currentPath.removeAt(i)
         }
+      })
+
+      // Dragging the dot repositions this exact vertex. Updating the path
+      // live on every 'drag' tick keeps the polygon's shape following the
+      // cursor; the rebuild-on-path-change reaction is suppressed for the
+      // duration (see isDraggingVertexRef) so this marker isn't torn down
+      // mid-gesture, then explicitly resynced once the drag ends.
+      marker.addListener('dragstart', () => {
+        isDraggingVertexRef.current = true
+        hoveredVertexIndexRef.current = i
+      })
+      marker.addListener('drag', (event) => {
+        const currentPolygon = activePolygonRef.current
+        if (!currentPolygon || currentPolygon.isCompleted) return
+        const currentPath = currentPolygon.getPath()
+        if (i < currentPath.getLength()) {
+          currentPath.setAt(i, event.latLng)
+        }
+      })
+      marker.addListener('dragend', () => {
+        isDraggingVertexRef.current = false
+        rebuildVertexMarkers()
       })
 
       vertexMarkersRef.current.push(marker)
@@ -249,10 +280,14 @@ const PolygonDrawingManager = forwardRef(function PolygonDrawingManager(
     // Keeps the hover-to-delete vertex dots in sync with the path for every
     // point added, undone (Ctrl/Cmd+Z), or deleted by clicking a dot.
     const initialPath = polygon.getPath()
+    const rebuildUnlessDragging = () => {
+      if (isDraggingVertexRef.current) return
+      rebuildVertexMarkers()
+    }
     pathListenerRefs.current = [
-      googleMaps.event.addListener(initialPath, 'insert_at', rebuildVertexMarkers),
-      googleMaps.event.addListener(initialPath, 'remove_at', rebuildVertexMarkers),
-      googleMaps.event.addListener(initialPath, 'set_at', rebuildVertexMarkers)
+      googleMaps.event.addListener(initialPath, 'insert_at', rebuildUnlessDragging),
+      googleMaps.event.addListener(initialPath, 'remove_at', rebuildUnlessDragging),
+      googleMaps.event.addListener(initialPath, 'set_at', rebuildUnlessDragging)
     ]
 
     const clickListener = googleMaps.event.addListener(map, 'click', (event) => {
