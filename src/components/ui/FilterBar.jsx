@@ -621,10 +621,6 @@ export default function FilterBar() {
   const globalAreaUnit = useMapStore(state => state.globalAreaUnit);
   const showLandmarks = useMapStore(state => state.showLandmarks);
   const landmarksZoomActive = useMapStore(state => state.landmarksZoomActive);
-  // The toggle button lights up only once landmarks are actually on screen —
-  // i.e. the user has them enabled AND the current zoom is deep enough to
-  // render them — rather than just reflecting the user's manual preference.
-  const landmarksActuallyVisible = showLandmarks && landmarksZoomActive;
   const showLabels = useMapStore(state => state.showLabels);
 
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
@@ -909,8 +905,13 @@ export default function FilterBar() {
           </button>
         )}
 
-        {/* 1. Landmarks Toggle Button — lights up automatically once landmarks are
-            actually visible (enabled + zoomed in enough), not just on manual click */}
+        {/* 1. Landmarks Toggle Button — reflects the user's own on/off choice
+            (showLandmarks) so clicking it lights it up immediately and it stays
+            lit while zoomed out, instead of auto-following the zoom-gated
+            landmarksZoomActive (which made it look "off" whenever zoomed out
+            even though the user had explicitly turned it on). Same state is
+            shared with the mobile chip below, so toggling either one keeps
+            both in sync. */}
         <div
           onClick={toggleLandmarks}
           title={
@@ -918,14 +919,14 @@ export default function FilterBar() {
               ? "Landmarks Off (Click to turn on)"
               : landmarksZoomActive
                 ? "Landmarks On (Click to turn off)"
-                : "Landmarks enabled — zoom in to see them (Click to turn off)"
+                : "Landmarks On — zoom in to see them (Click to turn off)"
           }
           className="filter-landmarks-toggle"
           style={{
             height: 38,
             boxSizing: 'border-box',
-            border: landmarksActuallyVisible ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
-            background: landmarksActuallyVisible ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.78)',
+            border: showLandmarks ? `2px solid ${GLASS_COLORS.borderActive}` : `1px solid ${GLASS_COLORS.border}`,
+            background: showLandmarks ? 'rgba(245, 158, 11, 0.22)' : 'rgba(30, 41, 59, 0.78)',
             borderRadius: GLASS_RADIUS.control,
             padding: '0 12px',
             display: 'flex',
@@ -933,13 +934,13 @@ export default function FilterBar() {
             gap: 7,
             fontSize: 14,
             fontWeight: 600,
-            color: landmarksActuallyVisible ? '#f59e0b' : '#e2e8f0',
+            color: showLandmarks ? '#f59e0b' : '#e2e8f0',
             whiteSpace: 'nowrap',
             cursor: 'pointer',
             transition: 'all 0.2s ease'
           }}
         >
-          {landmarksActuallyVisible ? (
+          {showLandmarks ? (
             <FiEye size={16} color="#f59e0b" />
           ) : (
             <FiEyeOff size={16} color="#94a3b8" />
@@ -1143,8 +1144,8 @@ export default function FilterBar() {
           className="mobile-toggle-chips"
           style={{ position: 'fixed', bottom: 70, left: 16, zIndex: 1000, gap: 8 }}
         >
-          <button type="button" onClick={toggleLandmarks} style={mobileChipStyle(landmarksActuallyVisible)}>
-            {landmarksActuallyVisible ? <FiEye size={14} /> : <FiEyeOff size={14} />}
+          <button type="button" onClick={toggleLandmarks} style={mobileChipStyle(showLandmarks)}>
+            {showLandmarks ? <FiEye size={14} /> : <FiEyeOff size={14} />}
             Landmarks
           </button>
           <button type="button" onClick={toggleLabels} style={mobileChipStyle(showLabels)}>
