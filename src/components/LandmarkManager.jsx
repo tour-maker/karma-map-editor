@@ -345,6 +345,11 @@ export default function LandmarkManager() {
   const setIsInfoPanelOpen = useMapStore(state => state.setIsInfoPanelOpen);
 
   const landmarkOverlaysRef = useRef(new Map()); // clusterKey -> { overlay, cluster }
+  // Tracks the zoom level as of the previous call, so the auto-enable below
+  // can tell "the user just zoomed in past the threshold" apart from "the
+  // map simply opened already zoomed in this far" (undefined = no previous
+  // call yet, i.e. this is the very first measurement after mount/reload).
+  const prevZoomRef = useRef(undefined);
 
   // Perform 2D AABB bounding box collision detection & adaptive mode / occlusion hiding
   const updateOverlaysState = useCallback(() => {
@@ -352,14 +357,22 @@ export default function LandmarkManager() {
 
     const zoom = map.getZoom();
     const isZoomedOut = zoom != null && zoom < 12;
+    const prevZoom = prevZoomRef.current;
+    const isFirstMeasurement = prevZoom === undefined;
+    prevZoomRef.current = zoom;
 
     if (!useMapStore.getState().showLandmarks) {
-      // Auto-turn-on: zooming in far enough reveals landmarks even if the
-      // toggle is currently off, so the user doesn't have to click it first.
-      // This only ever turns it ON — zooming back out never auto-turns it
-      // off again, so a manual "on" (by this auto-enable or by clicking)
-      // stays on until the user explicitly clicks it off.
-      if (!isZoomedOut) {
+      // Auto-turn-on: an actual zoom-IN past the threshold reveals landmarks
+      // even if the toggle is currently off, so the user doesn't have to
+      // click it first. Deliberately does NOT fire on the very first
+      // measurement after mount/reload — otherwise a map that simply opens
+      // already zoomed in (the common case for a specific project) would
+      // look "on by default", which is exactly what showLandmarks: false is
+      // meant to prevent. Zooming back out never auto-turns it off again, so
+      // a manual "on" (by this auto-enable or by clicking) stays on until
+      // the user explicitly clicks it off.
+      const justZoomedInPastThreshold = !isFirstMeasurement && prevZoom < 12 && !isZoomedOut;
+      if (justZoomedInPastThreshold) {
         useMapStore.getState().setShowLandmarks(true);
       } else {
         landmarkOverlaysRef.current.forEach(item => {
