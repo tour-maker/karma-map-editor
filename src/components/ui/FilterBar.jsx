@@ -790,18 +790,23 @@ export default function FilterBar() {
 
   // Secondary location field appears whenever the selected primary location actually
   // has sub-locations in the live data (not just Surat — e.g. "NH 48 , Palsana" too).
-  // Sub-locations that only contain landmarks (no real properties) are excluded here,
-  // so e.g. "Abhva" with one landmark and zero plots never shows up as a selectable
-  // sub-location (which would otherwise dead-end the filter at "0 found").
+  // A sub-location is only offered here when it has at least one real (non-landmark,
+  // visible) property matching the *currently active* category + area-unit filters —
+  // not just any property anywhere. A location can have properties under one category
+  // (e.g. Leasehold) but none under another (e.g. Freehold); listing it regardless of
+  // the active category/unit is what let picking it dead-end at "0 found" (e.g. "Abhva"
+  // showing up under a Freehold + Sq.Yard filter despite having no Freehold plots there).
   const subLocationsForPrimary = useMemo(() => {
     if (!filterPrimary) return [];
     const allSubs = dynamicCategoryMap[filterPrimary] || [];
     return allSubs.filter(sub => features.some(feature =>
       feature.data?.location === sub &&
       feature.style?.visible !== false &&
-      !(feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark')
+      !(feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark') &&
+      isFeatureMatchingUnit(feature, globalAreaUnit) &&
+      (!filterType || feature.data?.type === filterType)
     ));
-  }, [dynamicCategoryMap, filterPrimary, features]);
+  }, [dynamicCategoryMap, filterPrimary, features, globalAreaUnit, filterType]);
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
 
