@@ -31,11 +31,13 @@ export const useMapStore = create(
         // preference.
         landmarksZoomActive: false,
         // Once true, LandmarkManager's automatic zoom-in-turns-on /
-        // zoom-out-turns-off behavior stops adjusting showLandmarks — the
-        // user's own click is treated as an explicit, sticky choice that
-        // zooming should no longer override. Reset to false on every fresh
-        // load (not persisted), so automatic behavior is back to normal next
-        // time the page is opened.
+        // zoom-out-turns-off behavior stops adjusting showLandmarks. Only set
+        // when the user manually clicks the toggle ON — that's a deliberate
+        // "keep landmarks on" choice that zooming back out should no longer
+        // undo. Manually clicking it OFF clears this instead, handing control
+        // back to the automatic zoom behavior (so zooming in later still
+        // auto-turns it on again, same as if it had never been touched).
+        // Reset to false on every fresh load (not persisted).
         landmarksManualOverride: false,
 
         filterPrimary: null,
@@ -242,13 +244,15 @@ export const useMapStore = create(
         setUiHidden: (hidden) => set({ uiHidden: Boolean(hidden) }),
         toggleUiHidden: () => set((state) => ({ uiHidden: !state.uiHidden })),
         toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
-        // A manual click is a sticky, explicit choice — it marks
+        // Manually turning it ON is a sticky "keep this on" choice — it marks
         // landmarksManualOverride so LandmarkManager's automatic zoom-based
-        // on/off stops touching showLandmarks from here on (for this load).
-        toggleLandmarks: () => set((state) => ({
-          showLandmarks: !state.showLandmarks,
-          landmarksManualOverride: true
-        })),
+        // on/off stops turning it back off on zoom-out. Manually turning it
+        // OFF clears the override instead, so automatic zoom behavior takes
+        // back over (zooming in later will auto-turn it on again).
+        toggleLandmarks: () => set((state) => {
+          const next = !state.showLandmarks;
+          return { showLandmarks: next, landmarksManualOverride: next };
+        }),
         // Used by LandmarkManager's automatic zoom-based on/off — separate
         // from toggleLandmarks (a manual, sticky flip) so it can set an exact
         // value without marking it as a manual override.

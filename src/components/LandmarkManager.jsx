@@ -366,11 +366,11 @@ export default function LandmarkManager() {
     const { showLandmarks, landmarksManualOverride } = useMapStore.getState();
 
     // Automatic mode (default): zooming in past the threshold turns landmarks
-    // on, zooming back out turns them off again — but only once the user has
-    // never manually clicked the toggle. The moment they do (toggleLandmarks
-    // sets landmarksManualOverride), that click is treated as a sticky,
-    // explicit choice and this automatic sync stops adjusting showLandmarks
-    // for the rest of this load, in either direction.
+    // on, zooming back out turns them off again — unless the user has
+    // manually turned it ON (toggleLandmarks then sets landmarksManualOverride,
+    // a deliberate "keep landmarks on" choice), in which case this automatic
+    // sync stops touching showLandmarks until they manually turn it off again
+    // (which clears the override and hands control back to zoom).
     if (!landmarksManualOverride && zoomActuallyChanged) {
       if (!isZoomedOut && !showLandmarks) {
         useMapStore.getState().setShowLandmarks(true);
