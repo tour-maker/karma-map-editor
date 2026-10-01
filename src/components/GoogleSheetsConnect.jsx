@@ -73,7 +73,7 @@ export default function GoogleSheetsConnect() {
 
   return createPortal(
     <div role="status" aria-live="polite" style={{
-      position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 1000001,
+      position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 2000001,
       display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
       borderRadius: 8, background: '#fff', color: '#3c4043',
       boxShadow: '0 2px 8px rgba(0,0,0,0.25)', fontSize: 16, whiteSpace: 'nowrap'

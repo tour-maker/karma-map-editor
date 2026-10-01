@@ -96,7 +96,7 @@ function App() {
           react-hot-toast's default container z-index otherwise sits behind them, so any
           toast fired while a modal is open (e.g. the signup-conflict error) rendered behind
           the modal's backdrop-blur: visible but smeared and unreadable, not actually hidden. */}
-      <Toaster position="top-center" containerStyle={{ zIndex: 1000000 }} />
+      <Toaster position="top-center" containerStyle={{ zIndex: 2000002 }} />
       <GoogleSheetsConnect />
       <MapEditor />
     </GoogleMapProvider>
