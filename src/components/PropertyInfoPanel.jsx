@@ -252,11 +252,6 @@ export default function PropertyInfoPanel() {
 
   const handleCategoryChange = (type) => {
     setFormData(prev => ({ ...prev, type }));
-    if (displayFeature) {
-      updateFeature(displayFeature.id, {
-        data: { ...displayFeature.data, type }
-      });
-    }
   };
 
   const handleChange = (field, value) => {
@@ -276,14 +271,6 @@ export default function PropertyInfoPanel() {
         } else if (value && value.toLowerCase() === 'surat') {
           next.location = '';
         }
-      }
-      if (displayFeature) {
-        updateFeature(displayFeature.id, {
-          data: {
-            ...displayFeature.data,
-            ...next
-          }
-        });
       }
       return next;
     });

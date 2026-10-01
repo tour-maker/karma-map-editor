@@ -115,8 +115,13 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
         // Non-fatal — badge just stays at its last known count.
       }
     };
+    const refreshOnSubmissionChange = () => fetchPendingCount();
     fetchPendingCount();
-    return () => { cancelled = true; };
+    window.addEventListener('karma-submissions-changed', refreshOnSubmissionChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('karma-submissions-changed', refreshOnSubmissionChange);
+    };
   }, [appMode, activeTab, isAdminAuthenticated]);
 
   const features = useMapStore(state => state.features);

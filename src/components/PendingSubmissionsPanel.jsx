@@ -76,6 +76,7 @@ export default function PendingSubmissionsPanel() {
       });
       if (!res.ok) throw new Error('Failed to approve on backend');
       const result = await res.json();
+      window.dispatchEvent(new Event('karma-submissions-changed'));
 
       const featureId = result.sheetId || `drawn-${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const newFeature = {
@@ -118,6 +119,7 @@ export default function PendingSubmissionsPanel() {
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
       if (res.ok) {
+        window.dispatchEvent(new Event('karma-submissions-changed'));
         toast.success('Submission rejected');
         removeFeature(subId);
         setSubmissions(prev => prev.filter(s => s._id !== subId));

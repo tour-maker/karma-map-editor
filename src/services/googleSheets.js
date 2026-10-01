@@ -432,19 +432,19 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 
   try {
     const d = feature.data || {};
-    const loc = d.location || feature.location || '';
-    const parentLoc = d.parentLocation || d.parent_location || feature.parentLocation || determineParentLocation(loc) || '';
-    const tpVal = d.tp || feature.tp || '';
-    const opVal = d.op || feature.op || '';
-    const fpVal = d.fp || feature.fp || '';
+    const loc = d.location ?? feature.location ?? '';
+    const parentLoc = d.parentLocation ?? d.parent_location ?? feature.parentLocation ?? determineParentLocation(loc) ?? '';
+    const tpVal = d.tp ?? feature.tp ?? '';
+    const opVal = d.op ?? feature.op ?? '';
+    const fpVal = d.fp ?? feature.fp ?? '';
     const areaVal = d.area != null ? d.area : (feature.area != null ? feature.area : '');
-    const landmarkVal = d.landmark || feature.landmark || '';
-    const typeVal = d.type || feature.type || '';
-    const remarksVal = d.remarks || feature.remarks || '';
-    const partyNameVal = d.partyName || feature.partyName || '';
-    const partyPhoneVal = d.partyPhone || feature.partyPhone || '';
-    const brokerNameVal = d.brokerName || feature.brokerName || '';
-    const brokerPhoneVal = d.brokerPhone || feature.brokerPhone || '';
+    const landmarkVal = d.landmark ?? feature.landmark ?? '';
+    const typeVal = d.type ?? feature.type ?? '';
+    const remarksVal = d.remarks ?? feature.remarks ?? '';
+    const partyNameVal = d.partyName ?? feature.partyName ?? '';
+    const partyPhoneVal = d.partyPhone ?? feature.partyPhone ?? '';
+    const brokerNameVal = d.brokerName ?? feature.brokerName ?? '';
+    const brokerPhoneVal = d.brokerPhone ?? feature.brokerPhone ?? '';
 
     const cleanPartyName = partyNameVal.includes('[{"lat":') ? '' : partyNameVal;
     const cleanPartyPhone = partyPhoneVal.includes('[{"lat":') ? '' : partyPhoneVal;
@@ -470,7 +470,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       feature.coordinates && feature.coordinates.length > 0 ? JSON.stringify(feature.coordinates) : '',
       center ? `${center.lat}, ${center.lng}` : '',
       d.reference || feature.reference || '',
-      d.areaUnit || feature.areaUnit || '',
+      d.areaUnit ?? feature.areaUnit ?? '',
       formatTimestamp()
     ];
 
