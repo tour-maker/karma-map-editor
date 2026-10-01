@@ -224,7 +224,7 @@ export default function PropertyInfoPanel() {
         op: displayFeature.data.op || '',
         fp: displayFeature.data.fp || '',
         area: displayFeature.data.area || '',
-        areaUnit: displayFeature.data.areaUnit || 'Sq Yard',
+        areaUnit: getFeatureAreaUnit(displayFeature) === 'wingha' ? 'Wingha' : 'Sq Yard',
         location: loc,
         parentLocation: pLoc,
         landmark: displayFeature.data.landmark || '',
@@ -370,8 +370,13 @@ export default function PropertyInfoPanel() {
       // nothing at all. 'create' does the same safe match-by-id/tp/op/fp lookup
       // and updates in place if found, but appends a new row when it isn't,
       // so both first-time saves and edits of existing rows are handled.
-      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, updatedFeature, 'create'));
-      updateFeature(displayFeature.id, { syncStatus: 'synced' });
+      const syncedId = await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, updatedFeature, 'create'));
+      if (syncedId && syncedId !== displayFeature.id) {
+        updateFeature(displayFeature.id, { id: syncedId, syncStatus: 'synced' });
+        setSelectedFeatureId(syncedId);
+      } else {
+        updateFeature(displayFeature.id, { syncStatus: 'synced' });
+      }
       toast.success('Saved and synced property!', { id: 'sync-sheet' });
       setIsOpen(false);
     } catch (err) {
@@ -811,9 +816,9 @@ export default function PropertyInfoPanel() {
                 disabled={!isEdit}
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
-                  background: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
-                  boxShadow: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT_SHADOW : 'none',
-                  color: formData.areaUnit === 'Sq Yard' ? '#1c1406' : '#94a3b8',
+                  background: getFeatureAreaUnit(displayFeature) === 'yards' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
+                  boxShadow: getFeatureAreaUnit(displayFeature) === 'yards' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: getFeatureAreaUnit(displayFeature) === 'yards' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
                 }}
               >
@@ -825,9 +830,9 @@ export default function PropertyInfoPanel() {
                 disabled={!isEdit}
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
-                  background: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
-                  boxShadow: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT_SHADOW : 'none',
-                  color: formData.areaUnit === 'Wingha' ? '#1c1406' : '#94a3b8',
+                  background: getFeatureAreaUnit(displayFeature) === 'wingha' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
+                  boxShadow: getFeatureAreaUnit(displayFeature) === 'wingha' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: getFeatureAreaUnit(displayFeature) === 'wingha' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
                 }}
               >

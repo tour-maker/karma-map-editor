@@ -452,7 +452,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
     const cleanBrokerPhone = brokerPhoneVal.includes('[{"lat":') ? '' : brokerPhoneVal;
     const center = feature.center || calculatePolygonCenter(feature.coordinates);
 
-    const cleanRow = [
+    let cleanRow = [
       feature.id || '',
       tpVal,
       opVal,
@@ -478,7 +478,12 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 
     await repairSheet1Headers(spreadsheetId, 'Polygons');
     const sheetData = await fetchSheetData(spreadsheetId, 'Polygons');
-    const rows = sheetData.values || [];
+    let rows = sheetData.values || [];
+    if (rows.length === 0) {
+      const headers = ['id', 'tp', 'op', 'fp', 'area', 'location', 'parent_location', 'landmark', 'type', 'remarks', 'Party Name', 'Party Phone', 'Broker Name', 'Broker Phone', 'coordinates', 'center pin lat long', 'reference', 'area unit', 'last updated'];
+      await updateSheetRow(spreadsheetId, 'Polygons!A1:S1', [headers]);
+      rows = [headers];
+    }
     if (rows.length > 0) {
       // Label column S if it's missing, so the new timestamp isn't a headerless column
       const existingS1 = String((rows[0][18] || '')).trim().toLowerCase();
@@ -523,6 +528,19 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
         }
       }
 
+      const unitPrefix = /wingha|vingha|vigha/i.test(String(d.areaUnit || feature.areaUnit || '')) ? 'w' : 's';
+      const existingId = targetRowIndex > 1 ? String(rows[targetRowIndex - 1]?.[idIdx] || '').trim() : '';
+      const existingIdMatchesUnit = new RegExp(`^${unitPrefix}\\d+$`, 'i').test(existingId);
+      if (action === 'create' || action === 'add' || (targetRowIndex > 1 && !existingIdMatchesUnit)) {
+        const maxId = rows.slice(1).reduce((max, row) => {
+          const match = String(row?.[idIdx] || '').trim().match(/^([sw])(\d+)$/i);
+          return match && match[1].toLowerCase() === unitPrefix ? Math.max(max, Number(match[2])) : max;
+        }, 0);
+        cleanRow[0] = existingIdMatchesUnit ? existingId : `${unitPrefix}${maxId + 1}`;
+      } else if (targetRowIndex > 1) {
+        cleanRow[0] = existingId;
+      }
+
       // Strictly execute action: ONLY touch the targeted row if updating
       if (action === 'delete') {
         if (targetRowIndex > 1) {
@@ -546,6 +564,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
         }
       }
     }
+    return cleanRow[0];
   } catch (err) {
     console.error('[syncFeatureToSheet] FAILED:', err);
     throw err; // Re-throw so callers can handle it

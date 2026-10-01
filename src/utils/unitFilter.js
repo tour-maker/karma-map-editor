@@ -13,6 +13,11 @@ export function getFeatureAreaUnit(feature) {
     if (/yard|sqyd|sq/.test(norm)) return 'yards';
   }
 
+  // Sheet IDs use s<number> for Sq Yard and w<number> for Wingha. This also
+  // gives older rows with a missing area unit a stable editor selection.
+  if (/^w\d+$/i.test(String(feature.id || ''))) return 'wingha';
+  if (/^s\d+$/i.test(String(feature.id || ''))) return 'yards';
+
   // 2. Check all string values in feature.data and extendedData
   const allTexts = [
     d.sheetName,
