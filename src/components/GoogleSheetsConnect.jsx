@@ -15,7 +15,7 @@ export default function GoogleSheetsConnect() {
     let toastId = null;
     
     if (!silent) {
-      toastId = toast.loading('Loading polygons...', { id: 'loading-polygons' });
+      toastId = toast.loading('Loading polygons...', { id: 'loading-polygons', duration: Infinity });
     }
 
     try {
@@ -23,6 +23,26 @@ export default function GoogleSheetsConnect() {
         await repairSheet1Headers(spreadsheetId);
       }
       await fetchAndMergeSheetUpdates(spreadsheetId);
+
+      if (!silent) {
+        // Wait for FeatureInstanceManager to attach the fetched polygons to the
+        // map before hiding the loading toast. Sheet data can arrive one render
+        // before Google Maps has finished creating the visible polygon overlays.
+        await new Promise(resolve => {
+          const deadline = Date.now() + 10000;
+          const waitForMapPolygons = () => {
+            const polygons = useMapStore.getState().features.filter(feature =>
+              feature.type === 'polygon' && Array.isArray(feature.coordinates) && feature.coordinates.length >= 3
+            );
+            if (polygons.length === 0 || polygons.every(feature => feature.instances?.polygon) || Date.now() >= deadline) {
+              resolve();
+            } else {
+              window.setTimeout(waitForMapPolygons, 50);
+            }
+          };
+          waitForMapPolygons();
+        });
+      }
       
       if (toastId) {
         toast.dismiss(toastId);
@@ -54,7 +74,7 @@ export default function GoogleSheetsConnect() {
     if (spreadsheetId) {
       useMapStore.getState().clearAllFeatures(); updateMap();
     }
-  }, []); // Run once on mount
+  }, [spreadsheetId]); // Run after the configured sheet is available on initial load
 
   return null;
 }
