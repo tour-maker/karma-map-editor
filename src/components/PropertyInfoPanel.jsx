@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2, FiEye, FiEyeOff } from 'react-icons/fi';
+import { createPortal } from 'react-dom';
+import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2, FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
 import { useMapStore } from '../store/useMapStore';
 import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
@@ -183,6 +184,7 @@ export default function PropertyInfoPanel() {
   const displayFeature = feature || cachedFeature;
 
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -350,7 +352,8 @@ export default function PropertyInfoPanel() {
           style: updatedStyle,
           syncStatus: 'synced'
         });
-        toast.success('Saved property locally!');
+        setSaveSuccess('Property saved');
+        window.setTimeout(() => setSaveSuccess(''), 2200);
         setIsOpen(false);
         return;
       }
@@ -377,7 +380,9 @@ export default function PropertyInfoPanel() {
       } else {
         updateFeature(displayFeature.id, { syncStatus: 'synced' });
       }
-      toast.success('Saved and synced property!', { id: 'sync-sheet' });
+      toast.dismiss('sync-sheet');
+      setSaveSuccess('Property saved and synced to Google Sheets');
+      window.setTimeout(() => setSaveSuccess(''), 2200);
       setIsOpen(false);
     } catch (err) {
       console.error(err);
@@ -1038,6 +1043,14 @@ export default function PropertyInfoPanel() {
             <FiSave size={16} /> {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
+      )}
+      {saveSuccess && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 22px', borderRadius: 14, background: 'rgba(15, 23, 42, 0.96)', border: '1px solid rgba(34, 197, 94, 0.55)', boxShadow: '0 18px 55px rgba(0,0,0,0.45)', color: '#f8fafc', fontSize: 14, fontWeight: 600 }}>
+            <FiCheckCircle size={22} color="#22c55e" /> {saveSuccess}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
