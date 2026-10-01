@@ -811,9 +811,9 @@ export default function PropertyInfoPanel() {
                 disabled={!isEdit}
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
-                  background: getFeatureAreaUnit(displayFeature) === 'yards' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
-                  boxShadow: getFeatureAreaUnit(displayFeature) === 'yards' ? GOLD_GRADIENT_SHADOW : 'none',
-                  color: getFeatureAreaUnit(displayFeature) === 'yards' ? '#1c1406' : '#94a3b8',
+                  background: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
+                  boxShadow: formData.areaUnit === 'Sq Yard' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: formData.areaUnit === 'Sq Yard' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
                 }}
               >
@@ -825,9 +825,9 @@ export default function PropertyInfoPanel() {
                 disabled={!isEdit}
                 style={{
                   flex: 1, padding: '8px 0', borderRadius: GLASS_RADIUS.control, border: 'none',
-                  background: getFeatureAreaUnit(displayFeature) === 'wingha' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
-                  boxShadow: getFeatureAreaUnit(displayFeature) === 'wingha' ? GOLD_GRADIENT_SHADOW : 'none',
-                  color: getFeatureAreaUnit(displayFeature) === 'wingha' ? '#1c1406' : '#94a3b8',
+                  background: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT : (isEdit ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)'),
+                  boxShadow: formData.areaUnit === 'Wingha' ? GOLD_GRADIENT_SHADOW : 'none',
+                  color: formData.areaUnit === 'Wingha' ? '#1c1406' : '#94a3b8',
                   fontSize: 13, fontWeight: 600, cursor: isEdit ? 'pointer' : 'default'
                 }}
               >
