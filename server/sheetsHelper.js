@@ -27,8 +27,19 @@ export const getSheets = () => {
  */
 export const appendApprovedSubmission = async (submission) => {
   const sheets = getSheets();
-
-  const id = submission._id?.toString() || `drawn-${Date.now()}`;
+  // IDs are allocated independently for Sq Yard (s) and Wingha (w), based on
+  // the highest matching ID already present in the sheet.
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Polygons!A:R',
+  });
+  const rows = existing.data.values || [];
+  const prefix = /wingha|vingha|vigha/i.test(String(submission.areaUnit || '')) ? 'w' : 's';
+  const maxId = rows.reduce((max, row) => {
+    const match = String(row[0] || '').trim().match(/^([sw])(\d+)$/i);
+    return match && match[1].toLowerCase() === prefix ? Math.max(max, Number(match[2])) : max;
+  }, 0);
+  const id = `${prefix}${maxId + 1}`;
   const coordsArray = Array.isArray(submission.coordinates) ? submission.coordinates : [];
   const coords = coordsArray.length > 0 ? JSON.stringify(coordsArray) : '';
 

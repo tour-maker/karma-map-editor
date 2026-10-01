@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiCheck, FiX, FiClock, FiArrowLeft, FiList, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiCheck, FiX, FiClock, FiArrowLeft, FiList, FiCheckCircle, FiXCircle, FiEdit2 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
@@ -11,6 +11,8 @@ export default function PendingSubmissionsPanel() {
   const [submissions, setSubmissions] = useState([]);
   const [processingId, setProcessingId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
   const map = useGoogleMap();
   
   const addFeatures = useMapStore(state => state.addFeatures);
@@ -84,6 +86,7 @@ export default function PendingSubmissionsPanel() {
         data: {
           tp: sub.tp || '', op: sub.op || '', fp: sub.fp || '',
           area: sub.area || '', location: sub.location || '',
+          areaUnit: sub.areaUnit || 'Sq Yard',
           parentLocation: sub.parentLocation || 'Surat', landmark: sub.landmark || '',
           remarks: sub.remarks || '', type: sub.type || 'Freehold'
         },
@@ -121,6 +124,32 @@ export default function PendingSubmissionsPanel() {
       }
     } catch (error) {
       toast.error('Error rejecting submission');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const startEditing = (sub) => {
+    setEditingId(sub._id);
+    setEditData(Object.fromEntries(['tp', 'op', 'fp', 'area', 'areaUnit', 'location', 'parentLocation', 'landmark', 'type', 'remarks'].map(key => [key, sub[key] || ''])));
+  };
+
+  const saveEdit = async (subId) => {
+    setProcessingId(subId);
+    try {
+      const jwt = localStorage.getItem('karmaAdminJWT');
+      const res = await fetch(`${API_BASE_URL}/api/submissions/${subId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
+        body: JSON.stringify(editData)
+      });
+      if (!res.ok) throw new Error('Failed to update submission');
+      const result = await res.json();
+      setSubmissions(prev => prev.map(sub => sub._id === subId ? result.submission : sub));
+      setEditingId(null);
+      toast.success('Submission updated');
+    } catch (error) {
+      toast.error(error.message || 'Error updating submission');
     } finally {
       setProcessingId(null);
     }
@@ -239,7 +268,16 @@ export default function PendingSubmissionsPanel() {
               <span style={{ color: '#64748b', fontSize: 12 }}><FiClock /> {new Date(sub.createdAt).toLocaleDateString()}</span>
             </div>
             
-            <div style={{ fontSize: 13, color: '#e2e8f0', marginBottom: 12 }}>
+            {editingId === sub._id ? (
+              <div onClick={e => e.stopPropagation()} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                {['tp', 'op', 'fp', 'area', 'areaUnit', 'location', 'parentLocation', 'landmark', 'type', 'remarks'].map(field => (
+                  <label key={field} style={{ color: '#94a3b8', fontSize: 11, textTransform: 'capitalize' }}>{field}
+                    <input value={editData[field]} onChange={e => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
+                      style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 3, padding: 7, borderRadius: 6, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(15,23,42,0.8)', color: '#f8fafc' }} />
+                  </label>
+                ))}
+              </div>
+            ) : <div style={{ fontSize: 13, color: '#e2e8f0', marginBottom: 12 }}>
               <div><strong>Location:</strong> {sub.parentLocation || sub.location} {sub.location && sub.parentLocation ? `(${sub.location})` : ''}</div>
               <div><strong>Area:</strong> {sub.area || 'N/A'}</div>
               <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
@@ -250,9 +288,13 @@ export default function PendingSubmissionsPanel() {
               <div style={{ marginTop: 4 }}><strong>Type:</strong> {sub.type || 'N/A'}</div>
               {sub.landmark && <div><strong>Landmark:</strong> {sub.landmark}</div>}
               {sub.remarks && <div><strong>Remarks:</strong> {sub.remarks}</div>}
-            </div>
+            </div>}
 
             <div style={{ display: 'flex', gap: 8 }}>
+              {sub.status === 'pending' && (editingId === sub._id ? <>
+                <button onClick={e => { e.stopPropagation(); saveEdit(sub._id); }} disabled={processingId === sub._id} style={{ flex: 1, padding: 8, background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 8, cursor: 'pointer' }}>Save</button>
+                <button onClick={e => { e.stopPropagation(); setEditingId(null); }} style={{ flex: 1, padding: 8, background: 'rgba(255,255,255,0.06)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
+              </> : <button onClick={e => { e.stopPropagation(); startEditing(sub); }} style={{ flex: 1, padding: '8px', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><FiEdit2 /> Edit</button>)}
               {sub.status !== 'approved' && (
                 <button
                   onClick={() => handleApprove(sub)}
