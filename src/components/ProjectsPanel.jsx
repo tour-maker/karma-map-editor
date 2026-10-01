@@ -93,13 +93,14 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'landmarks'
   const [isTabDropdownOpen, setIsTabDropdownOpen] = useState(false);
   const appMode = useMapStore(state => state.appMode);
+  const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
 
   // Pending-requests count for the "Requests" tab/button badge. Fetched on mount and
   // re-fetched whenever the Requests tab is closed (approving/rejecting there changes
   // the count), so the badge doesn't require reopening the panel to refresh.
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   useEffect(() => {
-    if (appMode !== 'edit') return;
+    if (appMode !== 'edit' || !isAdminAuthenticated) return;
     let cancelled = false;
     const fetchPendingCount = async () => {
       try {
@@ -116,7 +117,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     };
     fetchPendingCount();
     return () => { cancelled = true; };
-  }, [appMode, activeTab]);
+  }, [appMode, activeTab, isAdminAuthenticated]);
 
   const features = useMapStore(state => state.features);
   const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
@@ -726,9 +727,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     <FiClock size={14} color="#fff" /> Requests
                     {pendingRequestsCount > 0 && (
                       <span style={{
-                        fontSize: 10, fontWeight: 700, color: '#fff',
-                        background: '#ef4444', padding: '1px 6px', borderRadius: 10,
-                        minWidth: 16, textAlign: 'center', lineHeight: '14px'
+                        width: 18, height: 18, flexShrink: 0,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 700, color: '#1e293b',
+                        background: '#fff', borderRadius: '50%', textAlign: 'center', lineHeight: '18px'
                       }}>
                         {pendingRequestsCount}
                       </span>
@@ -941,9 +943,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'submissions' ? 700 : 500 }}>Requests</span>
                     {pendingRequestsCount > 0 && (
                       <span style={{
-                        fontSize: 10, fontWeight: 700, color: '#fff',
-                        background: '#ef4444', padding: '1px 6px', borderRadius: 10,
-                        minWidth: 16, textAlign: 'center', lineHeight: '14px'
+                        width: 18, height: 18, flexShrink: 0,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 700, color: '#1e293b',
+                        background: '#fff', borderRadius: '50%', textAlign: 'center', lineHeight: '18px'
                       }}>
                         {pendingRequestsCount}
                       </span>
