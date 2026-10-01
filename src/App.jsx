@@ -92,7 +92,11 @@ function App() {
   return (
     <GoogleMapProvider>
       {appMode === 'edit' && !isAdminAuthenticated && <AdminAuthOverlay />}
-      <Toaster position="top-center" />
+      {/* zIndex above every modal (UserAuthModal, PropertyInfoPanel, etc. all use 99999) —
+          react-hot-toast's default container z-index otherwise sits behind them, so any
+          toast fired while a modal is open (e.g. the signup-conflict error) rendered behind
+          the modal's backdrop-blur: visible but smeared and unreadable, not actually hidden. */}
+      <Toaster position="top-center" containerStyle={{ zIndex: 1000000 }} />
       <GoogleSheetsConnect />
       <MapEditor />
     </GoogleMapProvider>
