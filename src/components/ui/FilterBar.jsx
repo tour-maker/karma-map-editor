@@ -547,15 +547,15 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
           display: 'flex',
           flexDirection: 'column'
         }}>
-          {/* Scrollable, like Location/Sub-location — previously had no maxHeight/overflow
-              at all, so a long category list just overflowed with nothing to scroll.
-              In-modal: the outer panel already clamps total height to the measured
-              viewport space, so this just fills whatever's left instead of a second,
-              independently-guessed cap. */}
+          {/* In-modal: the outer panel already clamps total height to the measured
+              viewport space, so this fills whatever's left and scrolls if it must.
+              Desktop (non-modal): the category list is short and fixed, so it's sized
+              to its content instead of an arbitrary cap — every option is visible at
+              once with no inner scrollbar. */}
           <div style={{
-            ...(isInModal ? { flex: '1 1 auto', minHeight: 0 } : { maxHeight: 240 }),
-            overflowY: 'auto',
-            overscrollBehavior: 'contain',
+            ...(isInModal
+              ? { flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }
+              : { overflow: 'visible' }),
             display: 'flex',
             flexDirection: 'column',
             gap: 4,

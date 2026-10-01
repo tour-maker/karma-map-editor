@@ -182,11 +182,7 @@ export default function PropertyInfoPanel() {
 
   const displayFeature = feature || cachedFeature;
 
-  const areaUnit = useMapStore(state => state.globalAreaUnit);
-  const setAreaUnit = useMapStore(state => state.setGlobalAreaUnit);
-
   const [isSaving, setIsSaving] = useState(false);
-  const YARDS_PER_WINGHA = 23.83 * 121; // Assuming 1 Vigha = 2883.43 sq yards (Gujarat). Can be adjusted if needed.
 
   const [formData, setFormData] = useState({
     name: '',
@@ -293,67 +289,79 @@ export default function PropertyInfoPanel() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const updatedData = isMarker
-      ? {
-          ...displayFeature.data,
-          name: formData.name,
-          landmark: formData.landmark,
-          type: formData.type,
-          remarks: formData.remarks
-        }
-      : {
-          ...displayFeature.data,
-          tp: formData.tp,
-          op: formData.op,
-          fp: formData.fp,
-          area: formData.area,
-          areaUnit: formData.areaUnit,
-          location: formData.location,
-          parentLocation: formData.parentLocation || determineParentLocation(formData.location),
-          landmark: formData.landmark,
-          type: formData.type,
-          remarks: formData.remarks,
-          partyName: formData.partyName,
-          partyPhone: formData.partyPhone,
-          brokerName: formData.brokerName,
-          brokerPhone: formData.brokerPhone
-        };
+    // Everything below used to run outside this try block. Any exception thrown
+    // before the sync call (e.g. displayFeature briefly null/stale during a fast
+    // click, or any future change to the fields below) skipped the `finally` that
+    // resets isSaving — leaving the button stuck on "Saving..." and permanently
+    // disabled for the rest of this panel's life, which looked exactly like
+    // "the Save button does nothing" on every click after the first. Wrapping the
+    // whole function guarantees isSaving is always reset and the failure is always
+    // surfaced as a toast instead of a silent, permanently-stuck button.
+    try {
+      if (!displayFeature) {
+        toast.error('Nothing to save — the selected property could not be found.');
+        return;
+      }
 
-    const typeColor = getPropertyTypeColor(formData.type);
-    const updatedStyle = {
-      ...displayFeature.style,
-      fillColor: typeColor,
-      strokeColor: typeColor,
-      visible: true
-    };
+      const updatedData = isMarker
+        ? {
+            ...displayFeature.data,
+            name: formData.name,
+            landmark: formData.landmark,
+            type: formData.type,
+            remarks: formData.remarks
+          }
+        : {
+            ...displayFeature.data,
+            tp: formData.tp,
+            op: formData.op,
+            fp: formData.fp,
+            area: formData.area,
+            areaUnit: formData.areaUnit,
+            location: formData.location,
+            parentLocation: formData.parentLocation || determineParentLocation(formData.location),
+            landmark: formData.landmark,
+            type: formData.type,
+            remarks: formData.remarks,
+            partyName: formData.partyName,
+            partyPhone: formData.partyPhone,
+            brokerName: formData.brokerName,
+            brokerPhone: formData.brokerPhone
+          };
 
-    const updatedFeature = {
-      ...displayFeature,
-      data: updatedData,
-      style: updatedStyle
-    };
+      const typeColor = getPropertyTypeColor(formData.type);
+      const updatedStyle = {
+        ...displayFeature.style,
+        fillColor: typeColor,
+        strokeColor: typeColor,
+        visible: true
+      };
 
-    // No sheet configured — this is a purely local save, nothing to sync.
-    if (!spreadsheetId) {
+      const updatedFeature = {
+        ...displayFeature,
+        data: updatedData,
+        style: updatedStyle
+      };
+
+      // No sheet configured — this is a purely local save, nothing to sync.
+      if (!spreadsheetId) {
+        updateFeature(displayFeature.id, {
+          data: updatedData,
+          style: updatedStyle,
+          syncStatus: 'synced'
+        });
+        toast.success('Saved property locally!');
+        setIsOpen(false);
+        return;
+      }
+
+      // Optimistic local update, marked pending until the sync actually succeeds.
       updateFeature(displayFeature.id, {
         data: updatedData,
         style: updatedStyle,
-        syncStatus: 'synced'
+        syncStatus: 'pending'
       });
-      toast.success('Saved property locally!');
-      setIsOpen(false);
-      setIsSaving(false);
-      return;
-    }
 
-    // Optimistic local update, marked pending until the sync actually succeeds.
-    updateFeature(displayFeature.id, {
-      data: updatedData,
-      style: updatedStyle,
-      syncStatus: 'pending'
-    });
-
-    try {
       toast.loading('Syncing to Google Sheets...', { id: 'sync-sheet' });
       // 'create' (not 'update'): a brand-new polygon has no matching row in the
       // sheet yet, and syncFeatureToSheet's 'update' action silently no-ops when
@@ -368,8 +376,10 @@ export default function PropertyInfoPanel() {
       setIsOpen(false);
     } catch (err) {
       console.error(err);
-      updateFeature(displayFeature.id, { syncStatus: 'error' });
-      toast.error('Failed to sync to Google Sheets after multiple attempts. Your edits are only saved locally — try Save again before leaving this page.', { id: 'sync-sheet', duration: 6000 });
+      if (displayFeature) {
+        updateFeature(displayFeature.id, { syncStatus: 'error' });
+      }
+      toast.error('Failed to save: ' + (err?.message || 'an unexpected error occurred') + '. Your edits may only be saved locally — try Save again before leaving this page.', { id: 'sync-sheet', duration: 6000 });
       // Keep the panel open on failure so the admin notices the unsynced state
       // and can retry, instead of silently losing the edit on navigation/refresh.
     } finally {
@@ -777,43 +787,12 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Area</label>
-              <div style={{ display: 'flex', gap: 4, background: 'rgba(30, 41, 59, 0.6)', padding: 2, borderRadius: 6 }}>
-                <button
-                  type="button"
-                  onClick={() => setAreaUnit('yards')}
-                  style={{
-                    border: 'none', background: areaUnit === 'yards' ? '#3b82f6' : 'transparent',
-                    boxShadow: areaUnit === 'yards' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                    color: areaUnit === 'yards' ? '#fff' : '#94a3b8'
-                  }}
-                >Yards</button>
-                <button
-                  type="button"
-                  onClick={() => setAreaUnit('wingha')}
-                  style={{
-                    border: 'none', background: areaUnit === 'wingha' ? '#3b82f6' : 'transparent',
-                    boxShadow: areaUnit === 'wingha' ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
-                    padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600, cursor: 'pointer',
-                    color: areaUnit === 'wingha' ? '#fff' : '#94a3b8'
-                  }}
-                >Wingha</button>
-              </div>
-            </div>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Area</label>
             <input
               type="number"
               step="any"
-              value={areaUnit === 'wingha' && formData.area ? (Number(formData.area) / YARDS_PER_WINGHA).toFixed(4).replace(/\.?0+$/, '') : formData.area}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (areaUnit === 'wingha') {
-                  handleChange('area', val ? String(Number(val) * YARDS_PER_WINGHA) : '');
-                } else {
-                  handleChange('area', val);
-                }
-              }}
+              value={formData.area}
+              onChange={(e) => handleChange('area', e.target.value)}
               disabled={!isEdit}
               className="karma-glass-input"
               style={{
