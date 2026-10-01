@@ -155,8 +155,7 @@ export default function PendingSubmissionsPanel() {
     }
   };
 
-  const handleSubmissionClick = (sub) => {
-    useMapStore.getState().setPreviewSubmission(sub);
+  const zoomToSubmission = (sub) => {
     if (map && sub.coordinates && sub.coordinates.length > 0) {
       if (!window.google?.maps) return;
       let bounds = new window.google.maps.LatLngBounds();
@@ -170,6 +169,11 @@ export default function PendingSubmissionsPanel() {
         map.setZoom(15);
       }
     }
+  };
+
+  const handleSubmissionClick = (sub) => {
+    useMapStore.getState().setPreviewSubmission(sub);
+    zoomToSubmission(sub);
   };
 
   if (currentView === 'summary') {
@@ -294,7 +298,7 @@ export default function PendingSubmissionsPanel() {
               {sub.status === 'pending' && (editingId === sub._id ? <>
                 <button onClick={e => { e.stopPropagation(); saveEdit(sub._id); }} disabled={processingId === sub._id} style={{ flex: 1, padding: 8, background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 8, cursor: 'pointer' }}>Save</button>
                 <button onClick={e => { e.stopPropagation(); setEditingId(null); }} style={{ flex: 1, padding: 8, background: 'rgba(255,255,255,0.06)', color: '#cbd5e1', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, cursor: 'pointer' }}>Cancel</button>
-              </> : <button onClick={e => { e.stopPropagation(); startEditing(sub); }} style={{ flex: 1, padding: '8px', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><FiEdit2 /> Edit</button>)}
+              </> : <button onClick={e => { e.stopPropagation(); zoomToSubmission(sub); startEditing(sub); }} style={{ flex: 1, padding: '8px', background: 'rgba(59,130,246,0.2)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><FiEdit2 /> Edit</button>)}
               {sub.status !== 'approved' && (
                 <button
                   onClick={() => handleApprove(sub)}

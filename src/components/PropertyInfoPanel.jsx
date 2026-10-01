@@ -375,7 +375,10 @@ export default function PropertyInfoPanel() {
       // so both first-time saves and edits of existing rows are handled.
       const syncedId = await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, updatedFeature, 'create'));
       if (syncedId && syncedId !== displayFeature.id) {
-        updateFeature(displayFeature.id, { id: syncedId, syncStatus: 'synced' });
+        // The map instance manager keys Google Maps overlays by feature ID.
+        // Clear the old overlay reference so it creates a fresh overlay under
+        // the sheet ID instead of removing the old one and leaving the plot hidden.
+        updateFeature(displayFeature.id, { id: syncedId, instances: undefined, syncStatus: 'synced' });
         setSelectedFeatureId(syncedId);
       } else {
         updateFeature(displayFeature.id, { syncStatus: 'synced' });
@@ -1045,7 +1048,7 @@ export default function PropertyInfoPanel() {
         </div>
       )}
       {saveSuccess && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        <div style={{ position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 10000, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
           <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 22px', borderRadius: 14, background: 'rgba(15, 23, 42, 0.96)', border: '1px solid rgba(34, 197, 94, 0.55)', boxShadow: '0 18px 55px rgba(0,0,0,0.45)', color: '#f8fafc', fontSize: 14, fontWeight: 600 }}>
             <FiCheckCircle size={22} color="#22c55e" /> {saveSuccess}
           </div>
