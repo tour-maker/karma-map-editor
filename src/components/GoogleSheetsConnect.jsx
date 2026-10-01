@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useMapStore } from '../store/useMapStore';
 import { fetchAndMergeSheetUpdates, repairSheet1Headers } from '../services/googleSheets';
-import toast from 'react-hot-toast';
 
 export default function GoogleSheetsConnect() {
   const [isUpdatingMap, setIsUpdatingMap] = useState(false);
@@ -12,12 +12,7 @@ export default function GoogleSheetsConnect() {
   // ─── Update Map (Sheet → Map) ────────────────────────────────────────────────
   const updateMap = async (silent = false) => {
     if (!silent) setIsUpdatingMap(true);
-    let toastId = null;
-    
-    if (!silent) {
-      toastId = toast.loading('Loading polygons...', { id: 'loading-polygons', duration: Infinity });
-    }
-
+    let loaded = false;
     try {
       if (spreadsheetId) {
         await repairSheet1Headers(spreadsheetId);
@@ -43,17 +38,14 @@ export default function GoogleSheetsConnect() {
           waitForMapPolygons();
         });
       }
-      
-      if (toastId) {
-        toast.dismiss(toastId);
-      }
+      loaded = true;
     } catch (err) {
       console.error(err);
-      if (!silent) {
-        toast.error('Failed to connect: ' + err.message, { id: toastId || 'error-polygons' });
-      }
+      // Keep the startup loader visible and retry while the sheet is
+      // unavailable. A failed request must not look like a completed load.
+      if (!silent) window.setTimeout(() => updateMap(false), 5000);
     }
-    if (!silent) setIsUpdatingMap(false);
+    if (!silent && loaded) setIsUpdatingMap(false);
   };
 
   // ─── 10-Second Background Polling (Sheet → Map) ────────────────────────────
@@ -74,9 +66,22 @@ export default function GoogleSheetsConnect() {
     // Sheet reads are proxied through the backend, which has its own configured
     // spreadsheet ID. Do not gate the initial load on the optional browser-side
     // spreadsheetId value, or a normal page refresh can skip loading altogether.
-    useMapStore.getState().clearAllFeatures();
     updateMap();
   }, []); // Load polygons and show the loader on every full page load
 
-  return null;
+  if (!isUpdatingMap) return null;
+
+  return createPortal(
+    <div role="status" aria-live="polite" style={{
+      position: 'fixed', top: 18, left: '50%', transform: 'translateX(-50%)', zIndex: 1000001,
+      display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px',
+      borderRadius: 8, background: '#fff', color: '#3c4043',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.25)', fontSize: 16, whiteSpace: 'nowrap'
+    }}>
+      <span aria-hidden="true" style={{ width: 14, height: 14, border: '2px solid #dadce0', borderTopColor: '#4285f4', borderRadius: '50%', animation: 'karma-polygons-spin 0.8s linear infinite' }} />
+      Loading polygons...
+      <style>{'@keyframes karma-polygons-spin { to { transform: rotate(360deg); } }'}</style>
+    </div>,
+    document.body
+  );
 }

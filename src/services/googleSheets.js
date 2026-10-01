@@ -649,14 +649,23 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     try {
       const pRes = await fetchSheetData(spreadsheetId, 'Polygons');
       if (pRes && pRes.values) polygonsData = pRes.values;
+    } catch (err) {
+      console.warn('Failed to fetch Polygons sheet:', err);
+      throw err;
+    }
 
+    try {
       const aRes = await fetchSheetData(spreadsheetId, 'Areas');
       if (aRes && aRes.values) areasData = aRes.values;
+    } catch (err) {
+      console.warn('Failed to fetch optional Areas sheet:', err);
+    }
 
+    try {
       const lRes = await fetchSheetData(spreadsheetId, 'Landmarks');
       if (lRes && lRes.values) landmarksData = lRes.values;
     } catch (err) {
-      console.warn('Failed to fetch sheet data:', err);
+      console.warn('Failed to fetch optional Landmarks sheet:', err);
     }
 
     if (!polygonsData || polygonsData.length < 2) return 0;
@@ -1055,6 +1064,6 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     return updateCount + deleteCount;
   } catch (err) {
     console.error('Failed to sync Google Sheets updates to Map Editor:', err);
-    return 0;
+    throw err;
   }
 };
