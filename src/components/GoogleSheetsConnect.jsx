@@ -71,10 +71,12 @@ export default function GoogleSheetsConnect() {
 
   // Auto-load map from Google Sheets on startup to bypass any local storage reliance
   useEffect(() => {
-    if (spreadsheetId) {
-      useMapStore.getState().clearAllFeatures(); updateMap();
-    }
-  }, [spreadsheetId]); // Run after the configured sheet is available on initial load
+    // Sheet reads are proxied through the backend, which has its own configured
+    // spreadsheet ID. Do not gate the initial load on the optional browser-side
+    // spreadsheetId value, or a normal page refresh can skip loading altogether.
+    useMapStore.getState().clearAllFeatures();
+    updateMap();
+  }, []); // Load polygons and show the loader on every full page load
 
   return null;
 }
