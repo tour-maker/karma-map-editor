@@ -1,9 +1,16 @@
 import { google } from 'googleapis';
+import dotenv from 'dotenv';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// This module is imported by the route modules before server.js reaches its
+// dotenv.config() call. Load the server-local env file here before resolving
+// the spreadsheet ID, otherwise deployments using server/.env silently fall
+// back to the hard-coded sheet ID and every Sheets read returns 500.
+dotenv.config({ path: join(__dirname, '.env') });
 
 export const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID || '1-9eVBefBNnBJMp4iQBlnA4wdHmEiinHERilgu-b7GQ4';
 
