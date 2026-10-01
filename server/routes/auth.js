@@ -37,10 +37,28 @@ router.post('/verify', (req, res) => {
 
 // ─── Viewer accounts ────────────────────────────────────────────────────────
 
+// Check phone/email availability while the registration form is being filled.
+router.post('/signup/availability', async (req, res) => {
+  try {
+    const mobile = String(req.body.mobile || '').replace(/\D/g, '');
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const conflicts = { mobile: false, email: false };
+
+    if (mobile.length === 10) conflicts.mobile = Boolean(await User.exists({ username: mobile }));
+    if (email) conflicts.email = Boolean(await User.exists({ email }));
+    res.json({ available: !conflicts.mobile && !conflicts.email, conflicts });
+  } catch (error) {
+    console.error('Signup availability check error:', error);
+    res.status(500).json({ error: 'Could not check account details' });
+  }
+});
+
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { password } = req.body;
+    const username = String(req.body.mobile || req.body.username || '').replace(/\D/g, '');
+    const email = String(req.body.email || '').trim().toLowerCase();
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
@@ -54,15 +72,25 @@ router.post('/signup', async (req, res) => {
     const normalizedUsername = username.trim().toLowerCase();
     const existing = await User.findOne({ username: normalizedUsername });
     if (existing) {
-      return res.status(409).json({ error: 'That username is already taken' });
+      return res.status(409).json({ error: 'An account with this mobile number already exists. Please log in.', field: 'mobile' });
+    }
+    if (email && await User.exists({ email })) {
+      return res.status(409).json({ error: 'An account with this email address already exists.', field: 'email' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ username: normalizedUsername, passwordHash });
+    const user = await User.create({ username: normalizedUsername, passwordHash, ...(email ? { email } : {}) });
 
     const token = jwt.sign({ id: user._id.toString(), username: user.username, role: 'user' }, JWT_SECRET, { expiresIn: '30d' });
     res.status(201).json({ token, username: user.username });
   } catch (error) {
+    if (error?.code === 11000) {
+      const field = error.keyPattern?.email ? 'email' : 'mobile';
+      return res.status(409).json({
+        error: field === 'email' ? 'An account with this email address already exists.' : 'An account with this mobile number already exists. Please log in.',
+        field
+      });
+    }
     console.error('Signup error:', error);
     res.status(500).json({ error: 'Server error' });
   }

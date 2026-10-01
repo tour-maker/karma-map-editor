@@ -68,6 +68,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const [signupPassword, setSignupPassword] = useState('');
   const [email, setEmail] = useState('');
   const [agreed, setAgreed] = useState(false);
+  const [registrationConflicts, setRegistrationConflicts] = useState({ mobile: false, email: false });
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,42 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
     const timer = setInterval(() => setResendSeconds(s => Math.max(0, s - 1)), 1000);
     return () => clearInterval(timer);
   }, [resendSeconds]);
+
+  useEffect(() => {
+    if (mode !== 'signup' || step !== 'form') return;
+    const normalizedMobile = mobile.replace(/\D/g, '');
+    const normalizedEmail = email.trim();
+    const hasCheckableValue = normalizedMobile.length === 10 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+    if (!hasCheckableValue) {
+      setRegistrationConflicts({ mobile: false, email: false });
+      setAvailabilityLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setAvailabilityLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/signup/availability`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mobile: normalizedMobile, email: normalizedEmail })
+        });
+        if (!response.ok) throw new Error('Availability check failed');
+        const result = await response.json();
+        if (!cancelled) setRegistrationConflicts(result.conflicts || { mobile: false, email: false });
+      } catch {
+        if (!cancelled) setRegistrationConflicts({ mobile: false, email: false });
+      } finally {
+        if (!cancelled) setAvailabilityLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [mode, step, mobile, email]);
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -159,6 +197,17 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
 
     setLoading(true);
     try {
+      const availabilityResponse = await fetch(`${API_BASE_URL}/api/auth/signup/availability`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile: mobile.trim(), email: email.trim() })
+      });
+      if (!availabilityResponse.ok) throw new Error('Could not check whether this phone or email is already registered. Please try again.');
+      const availability = await availabilityResponse.json();
+      const conflicts = availability.conflicts || { mobile: false, email: false };
+      setRegistrationConflicts(conflicts);
+      if (conflicts.mobile || conflicts.email) return;
+
       const result = await sendOtp(mobile.trim());
       if (result.success) {
         setOtpDigits(Array(OTP_LENGTH).fill(''));
@@ -168,6 +217,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       } else {
         toast.error('Failed to send OTP. Please try again.');
       }
+    } catch (error) {
+      toast.error(error.message || 'Could not check registration details. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -239,6 +290,10 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 409 && (data.field === 'mobile' || data.field === 'email')) {
+          setRegistrationConflicts(prev => ({ ...prev, [data.field]: true }));
+          setStep('form');
+        }
         toast.error(data.error || 'Something went wrong');
         return;
       }
@@ -526,6 +581,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                     onBlur={handleInputBlur}
                     style={inputStyle}
                   />
+                  {registrationConflicts.mobile && <div style={{ marginTop: 5, color: '#f87171', fontSize: 11.5 }}>This mobile number is already registered. Please log in.</div>}
                 </div>
 
                 <div>
@@ -560,6 +616,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
                 <div>
                   <label style={labelStyle}>Email Address (optional)</label>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="karma-auth-input" onFocus={handleInputFocus} onBlur={handleInputBlur} style={inputStyle} />
+                  {registrationConflicts.email && <div style={{ marginTop: 5, color: '#f87171', fontSize: 11.5 }}>This email address is already registered.</div>}
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: '#94a3b8', cursor: 'pointer' }}>
@@ -574,10 +631,11 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || availabilityLoading || registrationConflicts.mobile || registrationConflicts.email}
                   style={{
                     ...goldButtonStyle, marginTop: 6,
-                    cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1
+                    cursor: loading || availabilityLoading || registrationConflicts.mobile || registrationConflicts.email ? 'not-allowed' : 'pointer',
+                    opacity: loading || availabilityLoading || registrationConflicts.mobile || registrationConflicts.email ? 0.7 : 1
                   }}
                 >
                   {loading ? 'Sending OTP...' : 'Register Now'}
