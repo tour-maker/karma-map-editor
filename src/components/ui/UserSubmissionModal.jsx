@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
 import { determineParentLocation, buildDynamicLocationMap } from '../../config/categories';
@@ -26,6 +26,10 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
     brokerPhone: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Shows an in-modal confirmation screen instead of relying on the toast alone — the
+  // toast used to fire in the same instant the modal closed, which was easy to miss,
+  // and this stays on screen until the user actively dismisses it.
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const customAreas = useMapStore(state => state.customAreas) || [];
   const features = useMapStore(state => state.features);
@@ -66,7 +70,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
 
       if (response.ok) {
         toast.success('Polygon submitted successfully! Waiting for admin approval.');
-        onSubmitSuccess();
+        setIsSubmitted(true);
       } else {
         const errorData = await response.json();
         toast.error(`Submission failed: ${errorData.error}`);
@@ -90,14 +94,33 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
         padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto',
         color: '#f8fafc'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 20, color: '#FDB713', ...GLASS_FONT.serif }}>Submit New Polygon</h2>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-            <FiX size={24} />
-          </button>
-        </div>
+        {isSubmitted ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '20px 4px' }}>
+            <FiCheckCircle size={48} color="#22c55e" style={{ marginBottom: 16 }} />
+            <h2 style={{ margin: 0, fontSize: 20, color: '#f8fafc', ...GLASS_FONT.serif }}>Property Submitted Successfully!</h2>
+            <p style={{ margin: '10px 0 24px 0', fontSize: 13.5, color: '#94a3b8', lineHeight: 1.5 }}>
+              Your request is now waiting for admin approval. You can track its status anytime from "My Requests".
+            </p>
+            <button
+              onClick={onSubmitSuccess}
+              style={{
+                background: GOLD_GRADIENT, color: '#1c1406', padding: '12px 32px', borderRadius: GLASS_RADIUS.control,
+                fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: GOLD_GRADIENT_SHADOW
+              }}
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 20, color: '#FDB713', ...GLASS_FONT.serif }}>Submit New Polygon</h2>
+              <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <FiX size={24} />
+              </button>
+            </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{
             fontSize: 12.5, color: '#94a3b8', background: 'rgba(245, 158, 11, 0.08)',
             border: `1px solid ${GLASS_COLORS.border}`, borderRadius: GLASS_RADIUS.control, padding: '8px 12px'
@@ -216,7 +239,9 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
           >
             {isSubmitting ? 'Submitting...' : 'Submit Polygon'}
           </button>
-        </form>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
