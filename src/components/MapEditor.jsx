@@ -417,7 +417,13 @@ export default function MapEditor() {
         />
       )}
 
-      {showAccountModal && (
+      {/* Suppressed while the submission sign-in modal above is showing (userSubmissionData
+          && !viewerUsername) — both are full-screen UserAuthModal overlays with their own
+          backdrop blur, so if both conditions were ever true at once (e.g. a guest draws a
+          polygon, which sets userSubmissionData without requiring sign-in first, and then
+          also clicks the header "Sign In" button) they'd stack: one blurred behind the other.
+          The in-progress submission takes priority since it's tied to real unsaved work. */}
+      {showAccountModal && !(userSubmissionData && !viewerUsername) && (
         <UserAuthModal
           onClose={() => setShowAccountModal(false)}
           onSuccess={() => {
