@@ -392,9 +392,11 @@ export default function PropertyInfoPanel() {
       if (isAdminAuthError) {
         // Admin token missing/expired: sign out so the login overlay returns and a fresh
         // token is minted, instead of leaving the admin stuck failing on every save.
+        // The global admin-session guard (utils/adminSession.js) already signed out and showed
+        // the calm notice; just drop the "Syncing..." toast. The edit stays open to save again.
         sessionStorage.removeItem('karmaAdminJWT');
         useMapStore.getState().setIsAdminAuthenticated(false);
-        toast.error('Your admin session expired — please sign in again, then save again.', { id: 'sync-sheet', duration: 4000 });
+        toast.dismiss('sync-sheet');
       } else {
         toast.error('Failed to save: ' + (err?.message || 'an unexpected error occurred') + '. Your edits may only be saved locally — try Save again before leaving this page.', { id: 'sync-sheet', duration: 6000 });
       }

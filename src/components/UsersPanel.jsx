@@ -54,7 +54,7 @@ export default function UsersPanel() {
     if (res.status === 401) {
       sessionStorage.removeItem('karmaAdminJWT');
       setIsAdminAuthenticated(false);
-      toast.error('Your admin session expired — please sign in again.');
+      // The global admin-session guard (utils/adminSession.js) shows the calm notice.
     }
     return res;
   };

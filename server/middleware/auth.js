@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../utils/adminJwt.js';
 
+const ADMIN_RENEW_AFTER_SECONDS = 24 * 60 * 60;
+
 function verifyBearer(req) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,6 +20,11 @@ export const requireAdmin = (req, res, next) => {
   const decoded = verifyBearer(req);
   if (!decoded || decoded.role !== 'admin') {
     return res.status(401).json({ error: 'Unauthorized — admin token required' });
+  }
+  // Sliding session: an admin who is actively working gets a fresh 7-day token once the
+  // current one is over a day old. The client stores it from this header.
+  if (decoded.iat && Date.now() / 1000 - decoded.iat > ADMIN_RENEW_AFTER_SECONDS) {
+    res.set('X-Renewed-Token', jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '7d' }));
   }
   next();
 };

@@ -7,11 +7,14 @@ import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { setAccessToken } from './services/googleSheets'
+import { installAdminSessionGuard, startAdminSessionWatch } from './utils/adminSession'
 
 function App() {
   const [isAdminAuthChecking, setIsAdminAuthChecking] = useState(true);
 
   useEffect(() => {
+    // Any 401 on an admin request returns the login screen; also renews the admin token.
+    installAdminSessionGuard();
     const { googleAccessToken } = useMapStore.getState();
 
     // Admin and viewer sessions both end on a full page reload.
@@ -88,6 +91,14 @@ function App() {
 
   const appMode = useMapStore(state => state.appMode);
   const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
+
+  // While signed in, re-check the admin token periodically so a dead session shows the
+  // login screen before a save fails.
+  useEffect(() => {
+    if (!isAdminAuthenticated) return undefined;
+    return startAdminSessionWatch();
+  }, [isAdminAuthenticated]);
+
   return (
     <GoogleMapProvider>
       {appMode === 'edit' && !isAdminAuthenticated && !isAdminAuthChecking && <AdminAuthOverlay />}
