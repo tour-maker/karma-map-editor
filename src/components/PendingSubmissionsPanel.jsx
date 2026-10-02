@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FiCheck, FiX, FiClock, FiArrowLeft, FiList, FiCheckCircle, FiXCircle, FiEdit2 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { API_BASE_URL } from '../config/api';
+import { CATEGORY_MAP, buildDynamicLocationMap } from '../config/categories';
+import SearchableSelect from './ui/SearchableSelect';
 
 export default function PendingSubmissionsPanel() {
   const [currentView, setCurrentView] = useState('summary'); // 'summary', 'pending', 'approved', 'rejected'
@@ -17,6 +19,34 @@ export default function PendingSubmissionsPanel() {
   
   const addFeatures = useMapStore(state => state.addFeatures);
   const removeFeature = useMapStore(state => state.removeFeature);
+  const features = useMapStore(state => state.features);
+  const customAreas = useMapStore(state => state.customAreas) || [];
+  const syncedAreas = useMapStore(state => state.syncedAreas) || [];
+
+  // Full lists for the Parent Area / Sub Area dropdowns, built from every place an area can
+  // live: the built-in list, areas the admin created, the Areas sheet, and the plots themselves.
+  const { parentOptions, subOptionsFor } = useMemo(() => {
+    const dynamicMap = buildDynamicLocationMap(features);
+    const isReal = (n) => n && String(n).trim() && String(n).trim().toLowerCase() !== 'unassigned';
+    const parents = Array.from(new Set([
+      ...Object.keys(CATEGORY_MAP), ...customAreas, ...Object.keys(dynamicMap), ...syncedAreas.map(a => a.parent)
+    ].filter(isReal))).sort((a, b) => {
+      if (a.toLowerCase() === 'surat') return -1;
+      if (b.toLowerCase() === 'surat') return 1;
+      return a.localeCompare(b);
+    });
+    const subsFor = (parent) => {
+      const key = String(parent || '').trim().toLowerCase();
+      if (!key) return [];
+      const owners = (obj) => Object.keys(obj).filter(k => k.toLowerCase() === key);
+      return Array.from(new Set([
+        ...owners(CATEGORY_MAP).flatMap(k => CATEGORY_MAP[k] || []),
+        ...owners(dynamicMap).flatMap(k => dynamicMap[k] || []),
+        ...syncedAreas.filter(a => String(a.parent || '').trim().toLowerCase() === key).map(a => a.secondary)
+      ].filter(isReal))).sort((a, b) => a.localeCompare(b));
+    };
+    return { parentOptions: parents, subOptionsFor: subsFor };
+  }, [features, customAreas, syncedAreas]);
 
   useEffect(() => {
     if (currentView === 'summary') {
@@ -309,8 +339,33 @@ export default function PendingSubmissionsPanel() {
                           {unitButton('Wingha', isWingha)}
                         </div>
                       </div>
-                      {textField('parentLocation', 'Parent Area')}
-                      {textField('location', 'Sub Area')}
+                      <div style={labelStyle}>Parent Area
+                        <div style={{ marginTop: 3 }}>
+                          <SearchableSelect
+                            value={editData.parentLocation}
+                            options={parentOptions}
+                            placeholder="Select parent area"
+                            onChange={(val) => setEditData(prev => {
+                              const subs = subOptionsFor(val);
+                              const keepSub = subs.some(s => s.toLowerCase() === String(prev.location || '').toLowerCase());
+                              // No sub-areas -> the plot sits directly under the parent (location = parent),
+                              // the same convention the rest of the app and the sheet use.
+                              return { ...prev, parentLocation: val, location: keepSub ? prev.location : (subs.length > 0 ? '' : val) };
+                            })}
+                          />
+                        </div>
+                      </div>
+                      <div style={labelStyle}>Sub Area
+                        <div style={{ marginTop: 3 }}>
+                          <SearchableSelect
+                            value={editData.location}
+                            options={subOptionsFor(editData.parentLocation)}
+                            disabled={subOptionsFor(editData.parentLocation).length === 0}
+                            placeholder={subOptionsFor(editData.parentLocation).length === 0 ? 'No sub-areas' : 'Select sub area'}
+                            onChange={(val) => setEditData(prev => ({ ...prev, location: val }))}
+                          />
+                        </div>
+                      </div>
                       {textField('landmark', 'Landmark')}
                       {textField('remarks', 'Remarks')}
                     </>
