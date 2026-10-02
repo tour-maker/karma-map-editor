@@ -3,7 +3,7 @@ import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP } from '../config/categories';
 import { FiGlobe, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { syncAreaToSheet } from '../services/googleSheets';
+import { updateAreasSheet } from '../services/googleSheets';
 
 export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = [] }) {
   // 'primary' = brand-new Primary Location (optionally with its own Sub-locations
@@ -37,34 +37,34 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
 
     setIsSaving(true);
 
-    // Save to store
-    addCustomArea(name);
-
-    // Add sub-locations to CATEGORY_MAP in runtime memory if provided
     const subs = mode === 'sub'
       ? [subName.trim()]
       : (subLocations.trim() ? subLocations.split(',').map(s => s.trim()).filter(Boolean) : []);
-    if (subs.length > 0) {
-      if (!CATEGORY_MAP[name]) {
-        CATEGORY_MAP[name] = subs;
-      } else {
-        CATEGORY_MAP[name] = Array.from(new Set([...(CATEGORY_MAP[name] || []), ...subs]));
-      }
-    } else if (!CATEGORY_MAP[name]) {
-      CATEGORY_MAP[name] = [];
-    }
-
-    // Set filter to this new area
-    setFilterPrimary(name);
 
     // Sync only this new area to the "Areas" tab — never touch the Polygons sheet here.
     try {
-      await syncAreaToSheet(name, subs, spreadsheetId);
-      if (spreadsheetId && subs.length > 0) {
-        useMapStore.setState(state => ({
-          syncedAreas: [...(state.syncedAreas || []), ...subs.map(secondary => ({ parent: name, secondary }))]
-        }));
-      }
+      const additions = subs.length > 0
+        ? subs.map(secondary => ({ parent: name, secondary }))
+        : [{ parent: name, secondary: '' }];
+      await updateAreasSheet(spreadsheetId, { add: additions });
+
+      addCustomArea(name);
+      const existingKey = Object.keys(CATEGORY_MAP).find(key => key.toLowerCase() === name.toLowerCase());
+      const categoryKey = existingKey || name;
+      CATEGORY_MAP[categoryKey] = Array.from(new Map(
+        [...(CATEGORY_MAP[categoryKey] || []), ...subs].map(value => [value.toLowerCase(), value])
+      ).values());
+      useMapStore.setState(state => {
+        const pairs = [...(state.syncedAreas || [])];
+        additions.forEach(({ parent, secondary }) => {
+          if (!pairs.some(pair => pair.parent?.toLowerCase() === parent.toLowerCase() &&
+            (pair.secondary || '').toLowerCase() === secondary.toLowerCase())) {
+            pairs.push({ parent, secondary });
+          }
+        });
+        return { syncedAreas: pairs };
+      });
+      setFilterPrimary(name);
       const successMsg = mode === 'sub'
         ? `Sub-location "${subs[0]}" added to "${name}"! 📍`
         : `Parent Location "${name}" added successfully! 📍`;
@@ -73,7 +73,9 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
       });
     } catch (err) {
       console.error('Failed to sync new area to Google Sheets:', err);
-      toast.error('Area added locally, but sync to Google Sheets failed.');
+      toast.error('Area was not saved. Google Sheets sync failed: ' + (err?.message || 'unknown error'));
+      setIsSaving(false);
+      return;
     }
 
     setIsSaving(false);

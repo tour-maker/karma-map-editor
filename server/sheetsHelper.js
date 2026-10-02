@@ -94,11 +94,12 @@ export const appendApprovedSubmission = async (submission) => {
 };
 
 /**
- * Removes a submission from the Polygons sheet by searching for its ID in Column A.
+ * Removes an approved submission from the Polygons sheet by its allocated sheet ID.
  */
 export const removeSubmissionFromSheet = async (submissionId) => {
   const sheets = getSheets();
-  const idStr = submissionId.toString();
+  const idStr = submissionId.toString().trim();
+  if (!idStr) throw new Error('Cannot delete an approved polygon without its Google Sheet ID.');
 
   // 1. Get column A to find the row index
   const response = await sheets.spreadsheets.values.get({
@@ -107,18 +108,17 @@ export const removeSubmissionFromSheet = async (submissionId) => {
   });
   
   const rows = response.data.values || [];
-  let rowIndex = -1;
+  const matchingRowIndexes = [];
   for (let i = 0; i < rows.length; i++) {
-    if (rows[i][0] === idStr) {
-      rowIndex = i;
-      break;
-    }
+    if (String(rows[i]?.[0] || '').trim().toLowerCase() === idStr.toLowerCase()) matchingRowIndexes.push(i);
   }
 
-  if (rowIndex === -1) {
-    console.log(`[Sheets] Submission ${idStr} not found in sheet, skipping delete.`);
-    return;
+  if (matchingRowIndexes.length !== 1) {
+    throw new Error(matchingRowIndexes.length === 0
+      ? `Approved polygon ${idStr} was not found in the sheet.`
+      : `Approved polygon ID ${idStr} is duplicated in the sheet; refusing to delete an uncertain row.`);
   }
+  const rowIndex = matchingRowIndexes[0];
 
   // 2. Get the sheetId (gid) for the "Polygons" sheet
   const spreadsheet = await sheets.spreadsheets.get({

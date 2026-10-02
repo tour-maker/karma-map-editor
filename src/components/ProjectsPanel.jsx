@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
-import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap } from '../config/categories';
+import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap, isPropertyPolygon } from '../config/categories';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GoogleSheetsConnect from './GoogleSheetsConnect';
 import AddAreaModal from './AddAreaModal';
@@ -297,7 +297,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
 
     // 3. Scan map features for parent locations
     features.forEach(f => {
-      if (f.style?.visible === false) return;
+      if (f.style?.visible === false || !isPropertyPolygon(f)) return;
       const d = f.data || {};
       const parentLoc = d.parentLocation || d.parent_location || determineParentLocation(d.location);
       if (parentLoc) {
@@ -1777,9 +1777,18 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 onClick={async () => {
                   if (!movePanel.target) { setMovePanel(null); return; }
                   const { isSub, name, parentName, target } = movePanel;
+                  const beforeMove = useMapStore.getState();
+                  const affectedIds = new Set(beforeMove.features.filter(f => {
+                    if (!isPropertyPolygon(f)) return false;
+                    const loc = String(f.data?.location || '').toLowerCase();
+                    const parent = String(f.data?.parentLocation || f.data?.parent_location || '').toLowerCase();
+                    return isSub
+                      ? loc === name.toLowerCase() && parent === parentName.toLowerCase()
+                      : parent === name.toLowerCase();
+                  }).map(f => f.id));
                   // Sub-areas the source currently owns in the Areas sheet — read BEFORE the store changes.
                   const formerSubs = isSub ? [] : (useMapStore.getState().syncedAreas || [])
-                    .filter(p => p.parent === name && p.secondary).map(p => p.secondary);
+                    .filter(p => p.parent?.toLowerCase() === name.toLowerCase() && p.secondary).map(p => p.secondary);
                   if (isSub) {
                     if (target === '__promote__') {
                       promoteSubToPrimary(name, parentName);
@@ -1792,13 +1801,6 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   setMovePanel(null);
                   const toastId = toast.loading('Saving move to Google Sheets...');
                   try {
-                    // Features touched by the move are flagged 'edited' (see the store actions) so the
-                    // 10-second sheet poll cannot revert them while we write; mark each synced once saved.
-                    const moved = useMapStore.getState().features.filter(f => f.syncStatus === 'edited');
-                    for (const f of moved) {
-                      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
-                      useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
-                    }
                     // Keep the Areas tab in step, otherwise the next poll re-creates the old structure.
                     let areaChanges;
                     if (isSub && target === '__promote__') {
@@ -1811,7 +1813,28 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                         add: [{ parent: target, secondary: name }, ...formerSubs.map(sec => ({ parent: target, secondary: sec }))]
                       };
                     }
-                    await withSyncRetry(() => updateAreasSheet(spreadsheetId, areaChanges));
+                    if (spreadsheetId) {
+                      // Only sync properties actually moved by this operation. Syncing every edited
+                      // feature here could accidentally apply an unrelated unsaved change.
+                      const moved = useMapStore.getState().features.filter(f => affectedIds.has(f.id));
+                      for (const f of moved) {
+                        await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
+                        useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
+                      }
+                      await withSyncRetry(() => updateAreasSheet(spreadsheetId, areaChanges));
+                    }
+                    useMapStore.setState(state => {
+                      const norm = value => String(value || '').trim().toLowerCase();
+                      const pairs = (state.syncedAreas || []).filter(pair => !areaChanges.remove.some(removal =>
+                        norm(pair.parent) === norm(removal.parent) &&
+                        (!norm(removal.secondary) || norm(pair.secondary) === norm(removal.secondary))
+                      ));
+                      areaChanges.add.forEach(pair => {
+                        if (!pairs.some(existing => norm(existing.parent) === norm(pair.parent) &&
+                          norm(existing.secondary) === norm(pair.secondary))) pairs.push(pair);
+                      });
+                      return { syncedAreas: pairs };
+                    });
                     toast.success('Move saved to Google Sheets', {
                       id: toastId,
                       style: { background: '#0f172a', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)' }
@@ -1873,6 +1896,14 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 type="button"
                 onClick={async () => {
                   const { isSub, name, parentName } = deleteConfirm;
+                  const affectedIds = new Set(useMapStore.getState().features.filter(f => {
+                    if (!isPropertyPolygon(f)) return false;
+                    const location = String(f.data?.location || '').toLowerCase();
+                    const parent = String(f.data?.parentLocation || f.data?.parent_location || '').toLowerCase();
+                    return isSub
+                      ? location === name.toLowerCase() && parent === parentName.toLowerCase()
+                      : parent === name.toLowerCase();
+                  }).map(f => f.id));
                   if (isSub) {
                     deleteSubLocation(parentName, name);
                   } else {
@@ -1883,16 +1914,24 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   try {
                     // Plots of the deleted area were rescued into "Unassigned" and flagged 'edited'
                     // by the store action (so the sheet poll cannot revert them) — write them out.
-                    const rescued = useMapStore.getState().features.filter(f => f.syncStatus === 'edited');
-                    for (const f of rescued) {
-                      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
-                      useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
+                    const rescued = useMapStore.getState().features.filter(f => affectedIds.has(f.id));
+                    if (spreadsheetId) {
+                      for (const f of rescued) {
+                        await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
+                        useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
+                      }
+                      // Remove it from the Areas tab too — otherwise the next poll adds it straight back.
+                      await withSyncRetry(() => updateAreasSheet(
+                        spreadsheetId,
+                        { remove: [isSub ? { parent: parentName, secondary: name } : { parent: name, secondary: '' }] }
+                      ));
                     }
-                    // Remove it from the Areas tab too — otherwise the next poll adds it straight back.
-                    await withSyncRetry(() => updateAreasSheet(
-                      spreadsheetId,
-                      { remove: [isSub ? { parent: parentName, secondary: name } : { parent: name, secondary: '' }] }
-                    ));
+                    useMapStore.setState(state => ({
+                      syncedAreas: (state.syncedAreas || []).filter(pair =>
+                        !(pair.parent?.toLowerCase() === (isSub ? parentName : name).toLowerCase() &&
+                          (!isSub || pair.secondary?.toLowerCase() === name.toLowerCase()))
+                      )
+                    }));
                     toast.success(
                       `"${name}" deleted` + (rescued.length > 0 ? ' - its plots moved to Unassigned Plots' : ''),
                       { id: toastId, style: { background: '#0f172a', color: '#fca5a5', border: '1px solid rgba(248, 113, 113, 0.4)' } }

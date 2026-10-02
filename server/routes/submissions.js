@@ -87,12 +87,22 @@ router.post('/:id/approve', requireAdmin, async (req, res) => {
     await submission.save();
 
     // Sync to Google Sheets via service account (no OAuth needed)
+    let sheetId;
     try {
-      const sheetId = await appendApprovedSubmission(submission);
+      sheetId = await appendApprovedSubmission(submission);
+      submission.sheetId = sheetId;
+      await submission.save();
       console.log(`[Approve] Synced to sheet with id: ${sheetId}`);
       res.json({ message: 'Submission approved and synced to Google Sheet', submission, sheetId });
     } catch (sheetErr) {
       console.error('[Approve] Sheet sync failed:', sheetErr.message);
+      if (sheetId) {
+        try {
+          await removeSubmissionFromSheet(sheetId);
+        } catch (cleanupErr) {
+          console.error('[Approve] Failed to clean up unlinked sheet row:', cleanupErr.message);
+        }
+      }
       // Still return success for the approval itself, just note sheet sync failed
       res.json({ message: 'Submission approved (sheet sync failed)', submission, sheetError: sheetErr.message });
     }
@@ -113,10 +123,11 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     // If it was previously approved, we must remove it from the Google Sheet
     if (submission.status === 'approved') {
       try {
-        await removeSubmissionFromSheet(submission._id);
+        if (!submission.sheetId) throw new Error('Approved request is missing its Google Sheets row ID.');
+        await removeSubmissionFromSheet(submission.sheetId);
       } catch (sheetErr) {
         console.error('[Reject] Failed to remove from sheet:', sheetErr);
-        // We continue with rejection even if sheet removal fails, but we can log it.
+        return res.status(502).json({ error: 'Could not safely remove the approved polygon from Google Sheets. The request was left unchanged.' });
       }
     }
 
@@ -171,9 +182,11 @@ router.delete('/:id/permanent', requireAdmin, async (req, res) => {
 
     if (submission.status === 'approved') {
       try {
-        await removeSubmissionFromSheet(submission._id);
+        if (!submission.sheetId) throw new Error('Approved request is missing its Google Sheets row ID.');
+        await removeSubmissionFromSheet(submission.sheetId);
       } catch (sheetErr) {
         console.error('[Permanent Delete] Failed to remove from sheet:', sheetErr);
+        return res.status(502).json({ error: 'Could not safely remove the approved polygon from Google Sheets. The request was left unchanged.' });
       }
     }
 

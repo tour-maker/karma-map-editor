@@ -365,10 +365,10 @@ export default function PropertyInfoPanel() {
         // The map instance manager keys Google Maps overlays by feature ID.
         // Clear the old overlay reference so it creates a fresh overlay under
         // the sheet ID instead of removing the old one and leaving the plot hidden.
-        updateFeature(displayFeature.id, { id: syncedId, instances: undefined, syncStatus: 'synced' });
+        updateFeature(displayFeature.id, { id: syncedId, instances: undefined, syncStatus: 'synced', isNew: false });
         setSelectedFeatureId(syncedId);
       } else {
-        updateFeature(displayFeature.id, { syncStatus: 'synced' });
+        updateFeature(displayFeature.id, { syncStatus: 'synced', isNew: false });
       }
       toast.dismiss('sync-sheet');
       setSaveSuccess('Property saved and synced to Google Sheets');
@@ -379,7 +379,8 @@ export default function PropertyInfoPanel() {
       if (displayFeature) {
         updateFeature(displayFeature.id, { syncStatus: 'error' });
       }
-      if (err?.status === 401) {
+      const isAdminAuthError = err?.status === 401 || /unauthorized.*admin token required/i.test(err?.message || '');
+      if (isAdminAuthError) {
         // Admin token missing/expired: sign out so the login overlay returns and a fresh
         // token is minted, instead of leaving the admin stuck failing on every save.
         sessionStorage.removeItem('karmaAdminJWT');
@@ -397,6 +398,14 @@ export default function PropertyInfoPanel() {
 
   const handleDelete = async () => {
     if (!displayFeature) return;
+
+    if (displayFeature.isNew) {
+      removeFeature(displayFeature.id);
+      setIsOpen(false);
+      setSelectedFeatureId(null);
+      toast.success('New polygon removed from the map');
+      return;
+    }
 
     if (spreadsheetId) {
       toast.loading('Deleting from Google Sheets...', { id: 'delete-sheet' });

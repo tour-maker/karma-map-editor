@@ -37,7 +37,11 @@ const SubmissionSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
-  }
+  },
+  // The Google Sheets row ID allocated when this submission is approved.
+  // Keep this separate from Mongo's _id so later edits/deletes target the
+  // exact approved polygon row.
+  sheetId: String
 }, { timestamps: true });
 
 export default mongoose.model('Submission', SubmissionSchema);

@@ -1,8 +1,5 @@
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'karma-jwt-2024-secure-admin-key-realtors';
+import { JWT_SECRET } from '../utils/adminJwt.js';
 
 function verifyBearer(req) {
   const authHeader = req.headers.authorization;

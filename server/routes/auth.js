@@ -1,12 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
 import User from '../models/User.js';
-dotenv.config();
+import { JWT_SECRET } from '../utils/adminJwt.js';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'karma-jwt-2024-secure-admin-key-realtors';
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'karma@2024';
 

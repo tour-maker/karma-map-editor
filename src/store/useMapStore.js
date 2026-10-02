@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
-import { getCategoryOptionsForUnit, CATEGORY_MAP } from '../config/categories';
+import { getCategoryOptionsForUnit, CATEGORY_MAP, isPropertyPolygon } from '../config/categories';
 
 // Plots rescued from a deleted Primary/Sub-area land here instead of disappearing —
 // it's a normal location value like any other, so it shows up in the Areas tab
@@ -82,6 +82,7 @@ export const useMapStore = create(
 
           // update all features with this location or parentLocation
           const features = state.features.map(f => {
+             if (!isPropertyPolygon(f)) return f;
              let changed = false;
              const newData = { ...f.data };
 
@@ -121,6 +122,7 @@ export const useMapStore = create(
           }
 
           const features = state.features.map(f => {
+            if (!isPropertyPolygon(f)) return f;
             const par = f.data?.parentLocation;
             if (par && par.toLowerCase() === trimmed.toLowerCase()) {
               return { ...f, syncStatus: 'edited', data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
@@ -140,6 +142,7 @@ export const useMapStore = create(
           if (!trimmedParent || !trimmedSub) return state;
 
           const features = state.features.map(f => {
+            if (!isPropertyPolygon(f)) return f;
             const loc = f.data?.location;
             const par = f.data?.parentLocation;
             if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedParent.toLowerCase()) {
@@ -167,6 +170,7 @@ export const useMapStore = create(
           }
 
           const features = state.features.map(f => {
+            if (!isPropertyPolygon(f)) return f;
             const par = f.data?.parentLocation;
             if (par && par.toLowerCase() === trimmedSource.toLowerCase()) {
               return { ...f, syncStatus: 'edited', data: { ...f.data, parentLocation: trimmedTarget } };
@@ -186,6 +190,7 @@ export const useMapStore = create(
           if (!trimmedSub || !trimmedOldParent || !trimmedNewParent) return state;
 
           const features = state.features.map(f => {
+            if (!isPropertyPolygon(f)) return f;
             const loc = f.data?.location;
             const par = f.data?.parentLocation;
             if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedOldParent.toLowerCase()) {
@@ -207,6 +212,7 @@ export const useMapStore = create(
           const customAreas = exists ? state.customAreas : [...(state.customAreas || []), trimmedSub];
 
           const features = state.features.map(f => {
+            if (!isPropertyPolygon(f)) return f;
             const loc = f.data?.location;
             const par = f.data?.parentLocation;
             if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedOldParent.toLowerCase()) {

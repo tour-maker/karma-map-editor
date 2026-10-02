@@ -257,17 +257,7 @@ export default function MapEditor() {
       return;
     }
 
-    const currentFeatures = useMapStore.getState().features;
-    let maxS = 0;
-    currentFeatures.forEach(f => {
-      if (f.id && f.id.startsWith('s')) {
-        const num = parseInt(f.id.slice(1), 10);
-        if (!isNaN(num) && num > maxS) {
-          maxS = num;
-        }
-      }
-    });
-    const id = `s${maxS + 1}`;
+    const id = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const newFeature = {
       id,
       source: 'drawn',
@@ -285,7 +275,6 @@ export default function MapEditor() {
         type: 'Freehold',
         remarks: ''
       },
-      syncStatus: 'pending',
       style: {
         fillColor: '#facc15',
         fillOpacity: 0.4,
@@ -295,7 +284,7 @@ export default function MapEditor() {
       }
     };
 
-    addFeatures([validateFeature(newFeature)]);
+    addFeatures([{ ...validateFeature(newFeature), isNew: true, syncStatus: 'pending' }]);
     const store = useMapStore.getState();
     store.setSelectedFeatureId(id);
     store.setIsInfoPanelOpen(true);

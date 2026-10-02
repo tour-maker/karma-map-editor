@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import MapEditor from './components/MapEditor'
 import { GoogleMapProvider } from './context/GoogleMapContext'
@@ -7,22 +7,43 @@ import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { setAccessToken } from './services/googleSheets'
+import { API_BASE_URL } from './config/api'
 
 function App() {
+  const [isAdminAuthChecking, setIsAdminAuthChecking] = useState(true);
+
   useEffect(() => {
     const { googleAccessToken } = useMapStore.getState();
 
-    // Admin accounts do not survive a page refresh either — same as viewer
-    // accounts below: every fresh load/reload starts signed out, so the
-    // admin has to log back in rather than picking up an old JWT. Previously
-    // this verified the stored JWT with the backend and silently
-    // re-authenticated if it was still valid, which meant refreshing the
-    // admin page never actually signed anyone out.
-    // The admin token now lives in sessionStorage (per tab), so loading the viewer page in
-    // another tab can no longer wipe it. The localStorage line only cleans up old tokens.
+    // Keep the admin session scoped to this tab and verify it on reload.
     localStorage.removeItem('karmaAdminJWT');
-    sessionStorage.removeItem('karmaAdminJWT');
-    useMapStore.getState().setIsAdminAuthenticated(false);
+    const adminJWT = sessionStorage.getItem('karmaAdminJWT');
+    if (adminJWT) {
+      fetch(`${API_BASE_URL}/api/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: adminJWT })
+      })
+        .then(async response => {
+          if (!response.ok) {
+            if (response.status === 401) sessionStorage.removeItem('karmaAdminJWT');
+            throw new Error('Admin session verification failed');
+          }
+          return response.json();
+        })
+        .then(data => {
+          useMapStore.getState().setIsAdminAuthenticated(Boolean(data.valid));
+          if (!data.valid) sessionStorage.removeItem('karmaAdminJWT');
+        })
+        .catch(error => {
+          console.error('Admin session verification failed:', error);
+          useMapStore.getState().setIsAdminAuthenticated(false);
+        })
+        .finally(() => setIsAdminAuthChecking(false));
+    } else {
+      useMapStore.getState().setIsAdminAuthenticated(false);
+      setIsAdminAuthChecking(false);
+    }
 
     // Viewer accounts do not survive a page refresh: every fresh load starts signed out,
     // and Map Labels always starts OFF (stale values from older persisted storage are reset too).
@@ -94,7 +115,7 @@ function App() {
   const isAdminAuthenticated = useMapStore(state => state.isAdminAuthenticated);
   return (
     <GoogleMapProvider>
-      {appMode === 'edit' && !isAdminAuthenticated && <AdminAuthOverlay />}
+      {appMode === 'edit' && !isAdminAuthenticated && !isAdminAuthChecking && <AdminAuthOverlay />}
       {/* zIndex above every modal (UserAuthModal, PropertyInfoPanel, etc. all use 99999) —
           react-hot-toast's default container z-index otherwise sits behind them, so any
           toast fired while a modal is open (e.g. the signup-conflict error) rendered behind

@@ -17,6 +17,80 @@ const formatTimestamp = (date = new Date()) => new Intl.DateTimeFormat('en-US', 
   timeZone: 'Asia/Kolkata'
 }).format(date);
 
+const normalizeSheetId = value => String(value || '').trim().toLowerCase();
+const normalizeParcelNumber = value => String(value || '')
+  .trim()
+  .replace(/^(tp|op|fp)[:\s]*/i, '')
+  .toLowerCase()
+  .replace(/\s+/g, ' ');
+
+const polygonCoordinatesKey = value => {
+  let coordinates = value;
+  if (typeof coordinates === 'string') {
+    try {
+      coordinates = JSON.parse(coordinates);
+    } catch {
+      return '';
+    }
+  }
+  if (!Array.isArray(coordinates) || coordinates.length < 3) return '';
+  return JSON.stringify(coordinates.map(point => [Number(point?.lat), Number(point?.lng)]));
+};
+
+const addUniqueSheetMatch = (map, key, row) => {
+  if (!key) return;
+  if (map.has(key)) map.set(key, null);
+  else map.set(key, row);
+};
+
+const hasUniqueSheetId = (sheetMap, row) =>
+  Boolean(row?.id) && sheetMap.get(`id:${normalizeSheetId(row.id)}`) === row;
+
+const findPolygonSheetMatch = (sheetMap, feature) => {
+  if (feature.isNew) {
+    const geometryKey = polygonCoordinatesKey(feature.coordinates);
+    return geometryKey ? sheetMap.get(`geometry:${geometryKey}`) || null : null;
+  }
+
+  const id = normalizeSheetId(feature.id);
+  if (id && sheetMap.has(`id:${id}`)) return sheetMap.get(`id:${id}`);
+
+  const data = feature.data || {};
+  const tp = normalizeParcelNumber(data.tp ?? feature.tp);
+  const op = normalizeParcelNumber(data.op ?? feature.op);
+  const fp = normalizeParcelNumber(data.fp ?? feature.fp);
+  if (tp && op && fp) {
+    const match = sheetMap.get(`tpopfp:${JSON.stringify([tp, op, fp])}`);
+    if (match) return match;
+  }
+  if (tp && fp && !op) {
+    return sheetMap.get(`tpfp:${JSON.stringify([tp, fp])}`) || null;
+  }
+  return null;
+};
+
+const hasAmbiguousPolygonSheetMatch = (sheetMap, feature) => {
+  if (feature.isNew) {
+    const geometryKey = polygonCoordinatesKey(feature.coordinates);
+    const key = geometryKey ? `geometry:${geometryKey}` : '';
+    return Boolean(key && sheetMap.has(key) && sheetMap.get(key) === null);
+  }
+
+  const id = normalizeSheetId(feature.id);
+  if (id && sheetMap.has(`id:${id}`)) return sheetMap.get(`id:${id}`) === null;
+
+  const data = feature.data || {};
+  const tp = normalizeParcelNumber(data.tp ?? feature.tp);
+  const op = normalizeParcelNumber(data.op ?? feature.op);
+  const fp = normalizeParcelNumber(data.fp ?? feature.fp);
+  const key = tp && op && fp
+    ? `tpopfp:${JSON.stringify([tp, op, fp])}`
+    : tp && fp && !op
+      ? `tpfp:${JSON.stringify([tp, fp])}`
+      : '';
+  return Boolean(key && sheetMap.has(key) && sheetMap.get(key) === null);
+};
+
 const _handleTokenResponse = (response) => {
   if (response.error !== undefined) {
     console.warn('Google silent auth failed:', response.error);
@@ -331,6 +405,7 @@ export const updateAreasSheet = async (spreadsheetId, { remove = [], add = [] } 
   if (!spreadsheetId || spreadsheetId === 'default') return;
   const norm = (v) => String(v || '').trim().toLowerCase();
 
+  await ensureSheetTabExists(spreadsheetId, 'Areas', ['Parent Location', 'Secondary Location']);
   const sheetData = await fetchSheetData(spreadsheetId, 'Areas!A:B');
   const rows = sheetData.values || [];
 
@@ -550,42 +625,63 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
       const tpIdx = headers.indexOf('tp') >= 0 ? headers.indexOf('tp') : 1;
       const opIdx = headers.indexOf('op') >= 0 ? headers.indexOf('op') : 2;
       const fpIdx = headers.indexOf('fp') >= 0 ? headers.indexOf('fp') : 3;
+      const coordinatesIdx = headers.indexOf('coordinates') >= 0 ? headers.indexOf('coordinates') : 14;
 
-      const cleanStr = val => String(val || '').toLowerCase().replace(/^(tp|op|fp)[:\s]*/i, '').replace(/[^a-z0-9]/gi, '');
+      const fIdNorm = normalizeSheetId(feature.id);
+      const fTpNorm = normalizeParcelNumber(tpVal);
+      const fOpNorm = normalizeParcelNumber(opVal);
+      const fFpNorm = normalizeParcelNumber(fpVal);
+      const dataRows = rows.slice(1);
+      const isNewFeature = feature.isNew === true;
 
-      const fIdNorm = cleanStr(feature.id);
-      const fTpNorm = cleanStr(tpVal);
-      const fOpNorm = cleanStr(opVal);
-      const fFpNorm = cleanStr(fpVal);
-
-      // Find exact row matching THIS specific polygon
-      for (let i = 1; i < rows.length; i++) {
-        const r = rows[i];
-        const rIdNorm = idIdx >= 0 ? cleanStr(r[idIdx]) : '';
-        const rTpNorm = tpIdx >= 0 ? cleanStr(r[tpIdx]) : '';
-        const rOpNorm = opIdx >= 0 ? cleanStr(r[opIdx]) : '';
-        const rFpNorm = fpIdx >= 0 ? cleanStr(r[fpIdx]) : '';
-
-        // Priority 1: Match by unique ID
-        if (fIdNorm && rIdNorm && rIdNorm === fIdNorm) {
-          targetRowIndex = i + 1;
-          break;
+      const uniqueRowMatch = (matches, keyDescription) => {
+        if (matches.length > 1) {
+          throw new Error(`Cannot safely ${action} polygon: ${keyDescription} matches multiple Google Sheet rows.`);
         }
-        // Priority 2: Match by TP + OP + FP
-        if (fTpNorm && fOpNorm && fFpNorm && rTpNorm === fTpNorm && rOpNorm === fOpNorm && rFpNorm === fFpNorm) {
-          targetRowIndex = i + 1;
-          break;
-        }
-        // Priority 3: Match by TP + FP
-        if (fTpNorm && fFpNorm && rTpNorm === fTpNorm && rFpNorm === fFpNorm) {
-          targetRowIndex = i + 1;
-          break;
-        }
+        return matches.length === 1 ? matches[0].index + 2 : -1;
+      };
+
+      if (isNewFeature) {
+        const geometryKey = polygonCoordinatesKey(feature.coordinates);
+        if (!geometryKey) throw new Error('Cannot safely save a new polygon without valid coordinates.');
+        targetRowIndex = uniqueRowMatch(
+          dataRows.map((row, index) => ({ row, index })).filter(({ row }) =>
+            polygonCoordinatesKey(row?.[coordinatesIdx]) === geometryKey
+          ),
+          'polygon coordinates'
+        );
+      } else if (fIdNorm) {
+        targetRowIndex = uniqueRowMatch(
+          dataRows.map((row, index) => ({ row, index })).filter(({ row }) => normalizeSheetId(row?.[idIdx]) === fIdNorm),
+          `ID "${feature.id}"`
+        );
+      }
+
+      // Use parcel fields only as a legacy fallback, and only when they identify
+      // exactly one row. Never fall back to TP+FP when an OP was supplied.
+      if (!isNewFeature && targetRowIndex < 0 && fTpNorm && fOpNorm && fFpNorm) {
+        targetRowIndex = uniqueRowMatch(
+          dataRows.map((row, index) => ({ row, index })).filter(({ row }) =>
+            normalizeParcelNumber(row?.[tpIdx]) === fTpNorm &&
+            normalizeParcelNumber(row?.[opIdx]) === fOpNorm &&
+            normalizeParcelNumber(row?.[fpIdx]) === fFpNorm
+          ),
+          `TP/OP/FP (${tpVal}/${opVal}/${fpVal})`
+        );
+      } else if (!isNewFeature && targetRowIndex < 0 && fTpNorm && fFpNorm && !fOpNorm) {
+        targetRowIndex = uniqueRowMatch(
+          dataRows.map((row, index) => ({ row, index })).filter(({ row }) =>
+            normalizeParcelNumber(row?.[tpIdx]) === fTpNorm &&
+            normalizeParcelNumber(row?.[fpIdx]) === fFpNorm
+          ),
+          `TP/FP (${tpVal}/${fpVal})`
+        );
       }
 
       const unitPrefix = /wingha|vingha|vigha/i.test(String(d.areaUnit || feature.areaUnit || '')) ? 'w' : 's';
       const existingId = targetRowIndex > 1 ? String(rows[targetRowIndex - 1]?.[idIdx] || '').trim() : '';
-      const existingIdMatchesUnit = new RegExp(`^${unitPrefix}\\d+$`, 'i').test(existingId);
+      const existingIdMatchesUnit = new RegExp(`^${unitPrefix}\\d+$`, 'i').test(existingId) &&
+        rows.slice(1).filter(row => normalizeSheetId(row?.[idIdx]) === normalizeSheetId(existingId)).length === 1;
       if (action === 'create' || action === 'add' || (targetRowIndex > 1 && !existingIdMatchesUnit)) {
         const maxId = rows.slice(1).reduce((max, row) => {
           const match = String(row?.[idIdx] || '').trim().match(/^([sw])(\d+)$/i);
@@ -598,18 +694,16 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 
       // Strictly execute action: ONLY touch the targeted row if updating
       if (action === 'delete') {
-        if (targetRowIndex > 1) {
-          const sId = await getSheetIdByName(spreadsheetId, 'Polygons');
-          if (sId !== null) {
-            await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
-          }
-        }
+        if (targetRowIndex <= 1) throw new Error(`Cannot safely delete polygon "${feature.id}": no unique matching sheet row was found.`);
+        const sId = await getSheetIdByName(spreadsheetId, 'Polygons');
+        if (sId === null) throw new Error('Cannot safely delete polygon: the Polygons sheet was not found.');
+        await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
       } else if (action === 'update' || action === 'edit' || action === 'save') {
         if (targetRowIndex > 1) {
           // Update ONLY the specific matched row
           await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:S${targetRowIndex}`, [cleanRow]);
         } else {
-          console.warn(`[syncFeatureToSheet] No matching row found in Google Sheet for polygon id="${feature.id}" (TP: ${tpVal}, FP: ${fpVal}). Skipping update to avoid creating new rows or overwriting unrelated polygons.`);
+          throw new Error(`Cannot safely update polygon "${feature.id}": no unique matching sheet row was found.`);
         }
       } else if (action === 'create' || action === 'add') {
         if (targetRowIndex > 1) {
@@ -815,6 +909,10 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     const lastUpdatedIdx = !isCorruptedHeaders && rawHeaders.indexOf('last updated') >= 0 ? rawHeaders.indexOf('last updated') : 18;
 
     const sheetMap = new Map();
+    const pendingPolygonGeometryKeys = new Set(currentFeatures
+      .filter(feature => feature.isNew)
+      .map(feature => polygonCoordinatesKey(feature.coordinates))
+      .filter(Boolean));
     for (let i = 1; i < polygonsData.length; i++) {
       const row = polygonsData[i];
       if (!Array.isArray(row)) continue;
@@ -864,8 +962,20 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         lastUpdated: lastUpdatedIdx >= 0 ? String(row[lastUpdatedIdx] || '').trim() : ''
       };
 
-      if (id) sheetMap.set(`id:${id}`, rowData);
-      if (tp || fp) sheetMap.set(`tpfp:${tp}_${fp}`, rowData);
+      if (id) addUniqueSheetMatch(sheetMap, `id:${normalizeSheetId(id)}`, rowData);
+      const normalizedTp = normalizeParcelNumber(tp);
+      const normalizedOp = normalizeParcelNumber(rowData.op);
+      const normalizedFp = normalizeParcelNumber(fp);
+      if (normalizedTp && normalizedOp && normalizedFp) {
+        addUniqueSheetMatch(sheetMap, `tpopfp:${JSON.stringify([normalizedTp, normalizedOp, normalizedFp])}`, rowData);
+      }
+      if (normalizedTp && normalizedFp) {
+        addUniqueSheetMatch(sheetMap, `tpfp:${JSON.stringify([normalizedTp, normalizedFp])}`, rowData);
+      }
+      const geometryKey = pendingPolygonGeometryKeys.size ? polygonCoordinatesKey(rowData.coordinates) : '';
+      if (geometryKey && pendingPolygonGeometryKeys.has(geometryKey)) {
+        addUniqueSheetMatch(sheetMap, `geometry:${geometryKey}`, rowData);
+      }
     }
 
     // Process Landmarks (5 columns: id, Landmark Name, Latitude, Longitude, Remarks)
@@ -884,11 +994,12 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         if (id) {
           const lName = lNameIdx >= 0 ? String(row[lNameIdx] || '').trim() : '';
 
-          if (sheetMap.has(`id:${id}`)) {
-             sheetMap.get(`id:${id}`).landmark = lName;
+          const existingPolygonRow = sheetMap.get(`id:${normalizeSheetId(id)}`);
+          if (existingPolygonRow) {
+             existingPolygonRow.landmark = lName;
              continue;
           }
-          sheetMap.set(`id:${id}`, {
+          addUniqueSheetMatch(sheetMap, `id:${normalizeSheetId(id)}`, {
             id,
             name: lName,
             landmark: lName,
@@ -903,16 +1014,11 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
 
     let deleteCount = 0;
     const updatedFeatures = currentFeatures.filter(f => {
-      const d = f.data || {};
-      const lookupTp = d.tp != null ? String(d.tp).trim() : '';
-      const lookupFp = d.fp != null ? String(d.fp).trim() : '';
-      let sheetMatch = sheetMap.get(`id:${f.id}`);
-      if (!sheetMatch && (lookupTp || lookupFp)) {
-        sheetMatch = sheetMap.get(`tpfp:${lookupTp}_${lookupFp}`);
-      }
+      const sheetMatch = findPolygonSheetMatch(sheetMap, f);
       if (!sheetMatch) {
-        // Never delete locally-drawn features — they may not yet be in the sheet or the ID lookup may fail
-        if (f.source === 'drawn') return true;
+        if (hasAmbiguousPolygonSheetMatch(sheetMap, f)) return true;
+        if (f.syncStatus === 'pending' || f.syncStatus === 'error') return true;
+        // Keep features without a completed sheet sync or a reliable row match.
         if (f.syncStatus === 'synced') {
           console.log(`Removing deleted feature: ${f.id}`);
           deleteCount++;
@@ -923,12 +1029,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       return true;
     }).map(f => {
       const d = f.data || {};
-      const lookupTp = d.tp != null ? String(d.tp).trim() : '';
-      const lookupFp = d.fp != null ? String(d.fp).trim() : '';
-      let sheetMatch = sheetMap.get(`id:${f.id}`);
-      if (!sheetMatch && (lookupTp || lookupFp)) {
-        sheetMatch = sheetMap.get(`tpfp:${lookupTp}_${lookupFp}`);
-      }
+      const sheetMatch = findPolygonSheetMatch(sheetMap, f);
       if (!sheetMatch) return f;
       
       sheetMatch.processed = true; // Mark as processed
@@ -987,6 +1088,13 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged || partyNameChanged || partyPhoneChanged || brokerNameChanged || brokerPhoneChanged || areaUnitChanged) {
           // Do not let a polling response overwrite a local edit while its sheet
           // write is in flight. The save handler marks it synced when the write ends.
+          if (f.isNew && f.syncStatus === 'pending' && hasUniqueSheetId(sheetMap, sheetMatch)) {
+            updateCount++;
+            if (useMapStore.getState().selectedFeatureId === f.id) {
+              useMapStore.getState().setSelectedFeatureId(sheetMatch.id);
+            }
+            return { ...f, id: sheetMatch.id, isNew: false, syncStatus: 'synced', instances: undefined };
+          }
           if (f.syncStatus === 'edited' || f.syncStatus === 'pending') return f;
           updateCount++;
           const newType = sheetMatch.type || localType;
@@ -1023,6 +1131,12 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       }
       if (f.syncStatus !== 'synced') {
         updateCount++;
+        if (f.isNew && hasUniqueSheetId(sheetMap, sheetMatch)) {
+          if (useMapStore.getState().selectedFeatureId === f.id) {
+            useMapStore.getState().setSelectedFeatureId(sheetMatch.id);
+          }
+          return { ...f, id: sheetMatch.id, isNew: false, syncStatus: 'synced', instances: undefined };
+        }
         return { ...f, syncStatus: 'synced' };
       }
       return f;
@@ -1031,7 +1145,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
     const newFeaturesToImport = [];
     for (const [key, sheetMatch] of sheetMap.entries()) {
       // Only process the id entries to avoid duplicates from tpfp entries, and only if not processed
-      if (key.startsWith('id:') && !sheetMatch.processed && sheetMatch.coordinates) {
+      if (key.startsWith('id:') && sheetMatch && !sheetMatch.processed && sheetMatch.coordinates) {
         try {
           const parsedCoordinates = JSON.parse(sheetMatch.coordinates);
           // Filter out any null/undefined elements and ensure proper {lat, lng} format
@@ -1080,7 +1194,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         } catch (err) {
           console.warn('Failed to parse coordinates for new feature from sheet:', sheetMatch.id, err);
         }
-      } else if (key.startsWith('id:') && !sheetMatch.processed && sheetMatch.type === 'Landmark') {
+      } else if (key.startsWith('id:') && sheetMatch && !sheetMatch.processed && sheetMatch.type === 'Landmark') {
         const lat = parseFloat(sheetMatch.lat);
         const lng = parseFloat(sheetMatch.lng);
         if (!isNaN(lat) && !isNaN(lng)) {
