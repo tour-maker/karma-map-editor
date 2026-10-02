@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers, FiEdit2, FiSave, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../store/useMapStore';
+import { useGoogleMap } from '../context/GoogleMapContext';
 import { API_BASE_URL } from '../config/api';
+import { getCoordinatesCenter, SUBMISSION_FOCUS_ZOOM } from '../utils/submissionLocation';
 
 const EDIT_FIELDS = [
   { key: 'tp', label: 'TP' },
@@ -39,6 +41,17 @@ export default function UsersPanel() {
   const [deletingSubId, setDeletingSubId] = useState(null);
 
   const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
+  const map = useGoogleMap();
+
+  // Clicking a user's property card takes the map to that polygon. Clicks on the card's own
+  // buttons / inputs (Edit, Delete, the edit form) are ignored so they behave as before.
+  const handleSubmissionCardClick = (event, sub) => {
+    if (editingSubId === sub._id || event.target.closest('button, input, label, select, textarea')) return;
+    const center = getCoordinatesCenter(sub.coordinates);
+    if (!map || !center) return;
+    map.panTo(center);
+    map.setZoom(SUBMISSION_FOCUS_ZOOM);
+  };
 
   // Shared wrapper for every admin-authenticated call in this panel: if the
   // token is missing/expired/invalid, the backend returns 401 — instead of
@@ -195,10 +208,15 @@ export default function UsersPanel() {
           userSubmissions.map(sub => {
             const isEditing = editingSubId === sub._id;
             return (
-              <div key={sub._id} style={{
-                background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16,
-                border: '1px solid rgba(255,255,255,0.1)'
-              }}>
+              <div
+                key={sub._id}
+                onClick={(event) => handleSubmissionCardClick(event, sub)}
+                title={isEditing ? undefined : 'Click to show this polygon on the map'}
+                style={{
+                  background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16,
+                  border: '1px solid rgba(255,255,255,0.1)', cursor: isEditing ? 'default' : 'pointer'
+                }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{
                     fontWeight: 'bold', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px',
