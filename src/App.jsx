@@ -7,7 +7,6 @@ import { useMapStore } from './store/useMapStore'
 import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { setAccessToken } from './services/googleSheets'
-import { API_BASE_URL } from './config/api'
 
 function App() {
   const [isAdminAuthChecking, setIsAdminAuthChecking] = useState(true);
@@ -15,35 +14,11 @@ function App() {
   useEffect(() => {
     const { googleAccessToken } = useMapStore.getState();
 
-    // Keep the admin session scoped to this tab and verify it on reload.
+    // Admin and viewer sessions both end on a full page reload.
     localStorage.removeItem('karmaAdminJWT');
-    const adminJWT = sessionStorage.getItem('karmaAdminJWT');
-    if (adminJWT) {
-      fetch(`${API_BASE_URL}/api/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: adminJWT })
-      })
-        .then(async response => {
-          if (!response.ok) {
-            if (response.status === 401) sessionStorage.removeItem('karmaAdminJWT');
-            throw new Error('Admin session verification failed');
-          }
-          return response.json();
-        })
-        .then(data => {
-          useMapStore.getState().setIsAdminAuthenticated(Boolean(data.valid));
-          if (!data.valid) sessionStorage.removeItem('karmaAdminJWT');
-        })
-        .catch(error => {
-          console.error('Admin session verification failed:', error);
-          useMapStore.getState().setIsAdminAuthenticated(false);
-        })
-        .finally(() => setIsAdminAuthChecking(false));
-    } else {
-      useMapStore.getState().setIsAdminAuthenticated(false);
-      setIsAdminAuthChecking(false);
-    }
+    sessionStorage.removeItem('karmaAdminJWT');
+    useMapStore.getState().setIsAdminAuthenticated(false);
+    setIsAdminAuthChecking(false);
 
     // Viewer accounts do not survive a page refresh: every fresh load starts signed out,
     // and Map Labels always starts OFF (stale values from older persisted storage are reset too).
