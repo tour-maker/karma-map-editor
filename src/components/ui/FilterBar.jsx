@@ -5,6 +5,7 @@ import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
 import { isFeatureMatchingUnit } from '../../utils/unitFilter';
+import { getParentsWithProperties, hasPropertyInLocation } from '../../utils/locationAvailability';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GLASS_BLUR, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 const countPillStyle = {
@@ -793,16 +794,24 @@ export default function FilterBar() {
 
   // Locations with zero properties in the active category are filtered out here — computed
   // live from locationCategoryMatrix, so it never needs a per-location config entry.
+  // A primary location is only offered when at least one real property in it matches the
+  // active unit + category — a location with no properties (e.g. one that only has a
+  // landmark, or an area just added without any plot) would only ever read "0 found".
+  const parentsWithProperties = useMemo(
+    () => getParentsWithProperties(features, globalAreaUnit, filterType),
+    [features, globalAreaUnit, filterType]
+  );
+
   const primaryCategories = useMemo(() => {
     const allowedLocations = getLocationsForCategory(locationCategoryMatrix, filterType);
-    const base = Object.keys(dynamicCategoryMap);
+    const base = Object.keys(dynamicCategoryMap).filter(loc => parentsWithProperties.has(loc));
     return (allowedLocations ? base.filter(loc => allowedLocations.includes(loc)) : base)
       .sort((a, b) => {
         if (a.toLowerCase() === 'surat') return -1;
         if (b.toLowerCase() === 'surat') return 1;
         return a.localeCompare(b);
       });
-  }, [dynamicCategoryMap, locationCategoryMatrix, filterType]);
+  }, [dynamicCategoryMap, locationCategoryMatrix, filterType, parentsWithProperties]);
 
   // Secondary location field appears whenever the selected primary location actually
   // has sub-locations in the live data (not just Surat — e.g. "NH 48 , Palsana" too).
@@ -825,6 +834,22 @@ export default function FilterBar() {
   }, [dynamicCategoryMap, filterPrimary, features, globalAreaUnit, filterType]);
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
+
+  // Viewer only: if the selected location (or sub-location) no longer has any matching
+  // property — e.g. the last plot there was deleted or moved in the sheet — drop it
+  // instead of leaving a stale "0 found" selection on screen. (The admin editor can
+  // deliberately select a still-empty area from its Areas tab, so it is left alone.)
+  const appMode = useMapStore(state => state.appMode);
+  useEffect(() => {
+    if (appMode !== 'viewer') return;
+    // Wait until real properties have loaded, so a slow sheet load never clears a choice.
+    if (!features.some(isPropertyPolygon)) return;
+    if (filterPrimary && !parentsWithProperties.has(filterPrimary)) {
+      setFilterPrimary(null); // the store also clears the sub-location
+    } else if (filterSecondary && !hasPropertyInLocation(features, filterSecondary, globalAreaUnit, filterType)) {
+      setFilterSecondary(null);
+    }
+  }, [appMode, features, filterPrimary, filterSecondary, globalAreaUnit, filterType, parentsWithProperties, setFilterPrimary, setFilterSecondary]);
 
   // Categories with zero properties in the active location (sub-location takes precedence
   // over the broader primary when both are set) are filtered out — also live from the matrix.
