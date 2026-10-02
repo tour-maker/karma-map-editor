@@ -163,6 +163,7 @@ export default function PropertyInfoPanel() {
 //   const googleSheetsConnected = useMapStore(state => state.googleSheetsConnected);
   const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const customAreas = useMapStore(state => state.customAreas) || [];
+  const syncedAreas = useMapStore(state => state.syncedAreas) || [];
   const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
   const allParentLocations = Array.from(new Set([...Object.keys(dynamicLocationMap), ...customAreas])).sort((a, b) => {
     if (a.toLowerCase() === 'surat') return -1;
@@ -203,6 +204,14 @@ export default function PropertyInfoPanel() {
     brokerName: '',
     brokerPhone: ''
   });
+
+  const selectedParentLocation = formData.parentLocation || determineParentLocation(formData.location);
+  const secondaryLocationOptions = Array.from(new Set([
+    ...(dynamicLocationMap[selectedParentLocation] || []),
+    ...syncedAreas
+      .filter(area => area.parent?.toLowerCase() === String(selectedParentLocation || '').toLowerCase() && area.secondary)
+      .map(area => area.secondary)
+  ]));
 
   useEffect(() => {
     if (displayFeature && displayFeature.data) {
@@ -867,7 +876,7 @@ export default function PropertyInfoPanel() {
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
             <SearchableSelect
               value={formData.location}
-              options={dynamicLocationMap[formData.parentLocation || determineParentLocation(formData.location)] || []}
+              options={secondaryLocationOptions}
               onChange={(val) => handleChange('location', val)}
               disabled={!isEdit}
             />

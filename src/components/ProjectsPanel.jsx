@@ -318,15 +318,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       // dynamicLocationMap includes every known sub-area name regardless of
       // whether anything's been added to it yet, which cluttered the trigger
       // ("N sub-areas") and the expanded list with empty entries.
-      subLocations: Array.from(new Set([
-        ...(item.subLocations || []).filter(sub => item.features.some(f => f.data?.location === sub)),
-        // Keep a newly added empty sub-area visible in this session so the admin can
-        // manage it. Empty legacy entries from the sheet are hidden; a landmark by
-        // itself never qualifies as a property in item.features.
-        ...syncedAreas.filter(p => p.parent === item.name && p.secondary && (
-          p.keepEmpty || item.features.some(f => f.data?.location?.toLowerCase() === p.secondary.toLowerCase())
-        )).map(p => p.secondary)
-      ])),
+      // Only real property polygons create a visible sub-area. Saved empty entries
+      // remain available in the property editor, but do not clutter this list.
+      subLocations: Array.from(new Set(
+        (item.subLocations || []).filter(sub => item.features.some(f => f.data?.location === sub))
+      )),
       count: item.features.length
     }));
 
