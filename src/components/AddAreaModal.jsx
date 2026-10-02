@@ -59,7 +59,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
         additions.forEach(({ parent, secondary }) => {
           if (!pairs.some(pair => pair.parent?.toLowerCase() === parent.toLowerCase() &&
             (pair.secondary || '').toLowerCase() === secondary.toLowerCase())) {
-            pairs.push({ parent, secondary });
+            pairs.push({ parent, secondary, keepEmpty: Boolean(secondary) });
           }
         });
         return { syncedAreas: pairs };

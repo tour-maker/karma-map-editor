@@ -320,10 +320,12 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       // ("N sub-areas") and the expanded list with empty entries.
       subLocations: Array.from(new Set([
         ...(item.subLocations || []).filter(sub => item.features.some(f => f.data?.location === sub)),
-        // Sub-areas the admin added explicitly (they live in the Areas sheet) stay listed even
-        // while they have no plots, otherwise a freshly added sub-area looks like it did not
-        // add. The viewer filter bar still hides sub-areas that have no property.
-        ...syncedAreas.filter(p => p.parent === item.name && p.secondary).map(p => p.secondary)
+        // Keep a newly added empty sub-area visible in this session so the admin can
+        // manage it. Empty legacy entries from the sheet are hidden; a landmark by
+        // itself never qualifies as a property in item.features.
+        ...syncedAreas.filter(p => p.parent === item.name && p.secondary && (
+          p.keepEmpty || item.features.some(f => f.data?.location?.toLowerCase() === p.secondary.toLowerCase())
+        )).map(p => p.secondary)
       ])),
       count: item.features.length
     }));

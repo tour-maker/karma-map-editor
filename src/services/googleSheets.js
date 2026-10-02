@@ -862,10 +862,17 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         });
         
         // 3. Update syncedAreas to match exactly what we fetched
+        const manuallyAddedEmptyAreas = new Set((store.syncedAreas || [])
+          .filter(area => area.keepEmpty)
+          .map(area => `${String(area.parent || '').trim().toLowerCase()}||${String(area.secondary || '').trim().toLowerCase()}`));
         const newSyncedAreas = [];
         Object.entries(loadedAreasMap).forEach(([pName, sList]) => {
            if (sList.length === 0) newSyncedAreas.push({ parent: pName, secondary: '' });
-           else sList.forEach(s => newSyncedAreas.push({ parent: pName, secondary: s }));
+           else sList.forEach(s => newSyncedAreas.push({
+             parent: pName,
+             secondary: s,
+             keepEmpty: manuallyAddedEmptyAreas.has(`${pName.trim().toLowerCase()}||${s.trim().toLowerCase()}`)
+           }));
         });
         useMapStore.setState({ syncedAreas: newSyncedAreas });
 
