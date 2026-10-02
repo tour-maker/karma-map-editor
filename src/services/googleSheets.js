@@ -221,49 +221,44 @@ export const syncLandmarkToSheet = async (landmarkFeature, spreadsheetId = null,
     const sheetData = await fetchSheetData(spreadsheetId, 'Landmarks');
     const rows = sheetData.values || [];
     let targetRowIndex = -1;
+    const headers = rows[0]?.map(h => String(h || '').trim().toLowerCase()) || [];
+    const idIdx = headers.indexOf('id') >= 0 ? headers.indexOf('id') : 0;
+    const landmarkIdx = headers.indexOf('landmark name') >= 0 ? headers.indexOf('landmark name') : 1;
+    const cleanStr = val => String(val || '').toLowerCase().trim();
+    const isCreate = action === 'create' || action === 'add';
+    const fIdNorm = isCreate ? '' : cleanStr(landmarkFeature.id);
+    const fTitleNorm = cleanStr(title);
 
-    if (rows.length > 0) {
-      const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
-      const idIdx = headers.indexOf('id');
-      const landmarkIdx = headers.indexOf('landmark name');
+    for (let i = 1; i < rows.length; i++) {
+      const rowId = cleanStr(rows[i]?.[idIdx]);
+      const rowTitle = cleanStr(rows[i]?.[landmarkIdx]);
+      if ((fIdNorm && rowId === fIdNorm) || (fTitleNorm && rowTitle === fTitleNorm)) {
+        targetRowIndex = i + 1;
+        break;
+      }
+    }
 
-      const cleanStr = val => String(val || '').toLowerCase().trim();
-      const fIdNorm = cleanStr(landmarkFeature.id);
-      const fTitleNorm = cleanStr(title);
+    const maxLandmarkNumber = rows.slice(1).reduce((max, row) => {
+      const match = String(row?.[idIdx] || '').trim().match(/^lm(\d+)$/i);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+    const existingRowId = targetRowIndex > 1 ? String(rows[targetRowIndex - 1]?.[idIdx] || '').trim() : '';
+    landmarkSheetRow[0] = existingRowId || `lm${maxLandmarkNumber + 1}`;
 
-      for (let i = 1; i < rows.length; i++) {
-        const r = rows[i];
-        const rIdNorm = idIdx >= 0 ? cleanStr(r[idIdx]) : '';
-        const rLandmarkNorm = landmarkIdx >= 0 ? cleanStr(r[landmarkIdx]) : '';
-
-        if (fIdNorm && rIdNorm && rIdNorm === fIdNorm) {
-          targetRowIndex = i + 1;
-          break;
-        }
-        if (fTitleNorm && rLandmarkNorm && rLandmarkNorm === fTitleNorm) {
-          targetRowIndex = i + 1;
-          break;
+    if (action === 'delete') {
+      if (targetRowIndex > 1) {
+        const sId = await getSheetIdByName(spreadsheetId, 'Landmarks');
+        if (sId !== null) {
+          await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
         }
       }
-
-      if (action === 'delete') {
-        if (targetRowIndex > 1) {
-          const sId = await getSheetIdByName(spreadsheetId, 'Landmarks');
-          if (sId !== null) {
-            await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
-          }
-        }
-      } else {
-        // 'update' / 'edit' / 'create' / 'add'
-        if (targetRowIndex > 1) {
-          await updateSheetRow(spreadsheetId, `Landmarks!A${targetRowIndex}:E${targetRowIndex}`, [landmarkSheetRow]);
-        } else {
-          await appendSheetRow(spreadsheetId, 'Landmarks!A:E', landmarkSheetRow);
-        }
-      }
+    } else if (targetRowIndex > 1) {
+      await updateSheetRow(spreadsheetId, `Landmarks!A${targetRowIndex}:E${targetRowIndex}`, [landmarkSheetRow]);
     } else {
       await appendSheetRow(spreadsheetId, 'Landmarks!A:E', landmarkSheetRow);
     }
+
+    return landmarkSheetRow[0];
   } catch (err) {
     console.error('Failed to sync landmark to Google Sheets:', err);
     throw err;
@@ -990,7 +985,9 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
         const areaUnitChanged = sheetMatch.areaUnit && sheetMatch.areaUnit !== localAreaUnit;
 
         if (tpChanged || opChanged || fpChanged || areaChanged || locChanged || landmarkChanged || typeChanged || remarksChanged || partyNameChanged || partyPhoneChanged || brokerNameChanged || brokerPhoneChanged || areaUnitChanged) {
-          if (f.syncStatus === 'edited') return f;
+          // Do not let a polling response overwrite a local edit while its sheet
+          // write is in flight. The save handler marks it synced when the write ends.
+          if (f.syncStatus === 'edited' || f.syncStatus === 'pending') return f;
           updateCount++;
           const newType = sheetMatch.type || localType;
           const newColor = getPropertyTypeColor(newType);

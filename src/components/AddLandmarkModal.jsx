@@ -13,6 +13,8 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const addFeatures = useMapStore(state => state.addFeatures);
+  const updateFeature = useMapStore(state => state.updateFeature);
+  const features = useMapStore(state => state.features);
   const spreadsheetId = useMapStore(state => state.spreadsheetId);
 
   const handleSave = async (e) => {
@@ -24,9 +26,13 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
 
     setIsSaving(true);
     const cleanedName = cleanLandmarkTitle(name);
+    const lastLandmarkNumber = features.reduce((max, feature) => {
+      const match = String(feature.id || '').match(/^lm(\d+)$/i);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
 
     const newLandmarkFeature = {
-      id: `landmark-${Date.now()}`,
+      id: `lm${lastLandmarkNumber + 1}`,
       type: 'marker',
       position: {
         lat: Number(position.lat),
@@ -54,7 +60,10 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
     // Targeted sync — only this one landmark, not a full sheet overwrite
     if (spreadsheetId) {
       try {
-        await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, newLandmarkFeature, 'create'));
+        const syncedId = await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, newLandmarkFeature, 'create'));
+        if (syncedId && syncedId !== newLandmarkFeature.id) {
+          updateFeature(newLandmarkFeature.id, { id: syncedId, syncStatus: 'synced' });
+        }
       } catch (err) {
         console.error('Failed to sync new landmark to Google Sheets:', err);
         toast.error('Landmark added locally, but sync to Google Sheets failed after multiple attempts.', { duration: 6000 });
