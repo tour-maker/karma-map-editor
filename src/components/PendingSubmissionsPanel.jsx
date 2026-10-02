@@ -304,7 +304,7 @@ export default function PendingSubmissionsPanel() {
               <span style={{ color: '#64748b', fontSize: 12 }}><FiClock /> {new Date(sub.createdAt).toLocaleDateString()}</span>
             </div>
             
-            {editingId === sub._id ? (
+            {sub.status === 'pending' && editingId === sub._id ? (
               <div onClick={e => e.stopPropagation()} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
                 {(() => {
                   const labelStyle = { color: '#94a3b8', fontSize: 11 };
