@@ -18,7 +18,10 @@ function App() {
     // this verified the stored JWT with the backend and silently
     // re-authenticated if it was still valid, which meant refreshing the
     // admin page never actually signed anyone out.
+    // The admin token now lives in sessionStorage (per tab), so loading the viewer page in
+    // another tab can no longer wipe it. The localStorage line only cleans up old tokens.
     localStorage.removeItem('karmaAdminJWT');
+    sessionStorage.removeItem('karmaAdminJWT');
     useMapStore.getState().setIsAdminAuthenticated(false);
 
     // Viewer accounts do not survive a page refresh: every fresh load starts signed out,

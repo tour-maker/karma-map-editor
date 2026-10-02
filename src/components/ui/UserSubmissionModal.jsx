@@ -64,6 +64,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
         },
         body: JSON.stringify({
           ...formData,
+          location: formData.location || formData.parentLocation || '',
           coordinates: data.coordinates
         })
       });
@@ -155,8 +156,11 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
           </div>
 
           <div>
-            <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Area Unit</label>
+            <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Area</label>
             <div style={{ display: 'flex', gap: 8 }}>
+              <input type="number" name="area" min="0" step="any" inputMode="decimal" placeholder="Enter area"
+                value={formData.area} onChange={handleChange} className="karma-glass-input"
+                style={{ flex: 1.4, minWidth: 0, padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }} />
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, areaUnit: 'Sq Yard' }))}
@@ -168,7 +172,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                   fontSize: 13, fontWeight: 600, cursor: 'pointer'
                 }}
               >
-                Add in Sq Yard
+                Sq Yard
               </button>
               <button
                 type="button"
@@ -181,7 +185,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                   fontSize: 13, fontWeight: 600, cursor: 'pointer'
                 }}
               >
-                Add in Wingha
+                Wingha
               </button>
             </div>
           </div>

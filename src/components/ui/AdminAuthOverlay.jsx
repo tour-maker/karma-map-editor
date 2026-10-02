@@ -25,7 +25,7 @@ export default function AdminAuthOverlay() {
       });
       const data = await res.json();
       if (res.ok && data.token) {
-        localStorage.setItem('karmaAdminJWT', data.token);
+        sessionStorage.setItem('karmaAdminJWT', data.token);
         setIsAdminAuthenticated(true);
         toast.success('Admin access granted!', {
           style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }

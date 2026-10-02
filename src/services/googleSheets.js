@@ -107,7 +107,7 @@ export const isGoogleAuthenticated = () => {
 const BACKEND_URL = API_BASE_URL;
 
 const adminAuthHeaders = () => {
-  const jwt = localStorage.getItem('karmaAdminJWT');
+  const jwt = sessionStorage.getItem('karmaAdminJWT');
   return jwt ? { 'Authorization': `Bearer ${jwt}` } : {};
 };
 
@@ -122,7 +122,9 @@ const backendFetch = async (path, options = {}) => {
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || 'Sheets backend error');
+    const error = new Error(err.error || 'Sheets backend error');
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 };
@@ -321,6 +323,62 @@ export const syncAreaToSheet = async (parentLocation, subLocationsInput = [], sp
     await appendSheetRows(spreadsheetId, 'Areas!A:B', rowsToAppend);
   } catch (err) {
     console.warn('Sync for Area failed:', err);
+    // Re-throw so callers (AddAreaModal) can tell the user the save did NOT reach the sheet.
+    throw err;
+  }
+};
+
+// Edits the "Areas" tab: removes rows (a pair with a secondary removes just that row;
+// a pair with an empty secondary removes EVERY row of that parent) and then appends new
+// pairs that are not already present. Rows are deleted bottom-up in ONE batchUpdate, so
+// nothing is cleared-then-rewritten and a failure cannot wipe the tab.
+export const updateAreasSheet = async (spreadsheetId, { remove = [], add = [] } = {}) => {
+  if (!spreadsheetId || spreadsheetId === 'default') return;
+  const norm = (v) => String(v || '').trim().toLowerCase();
+
+  const sheetData = await fetchSheetData(spreadsheetId, 'Areas!A:B');
+  const rows = sheetData.values || [];
+
+  const toDelete = [];
+  const kept = [];
+  rows.forEach((row, idx) => {
+    const parent = norm(row?.[0]);
+    const secondary = norm(row?.[1]);
+    const isHeader = idx === 0 && parent === 'parent location';
+    const matches = !isHeader && remove.some(r =>
+      norm(r.parent) === parent && (!norm(r.secondary) || norm(r.secondary) === secondary)
+    );
+    if (matches) toDelete.push(idx);
+    else if (!isHeader && parent) kept.push(`${parent}||${secondary}`);
+  });
+
+  if (toDelete.length > 0) {
+    const areasSheetId = await getSheetIdByName(spreadsheetId, 'Areas');
+    if (areasSheetId == null) throw new Error('Could not find the Areas tab in the sheet');
+    await backendFetch('/api/sheets/batchUpdate', {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: toDelete.sort((a, b) => b - a).map(rowIndex => ({
+          deleteDimension: { range: { sheetId: areasSheetId, dimension: 'ROWS', startIndex: rowIndex, endIndex: rowIndex + 1 } }
+        }))
+      }),
+    });
+  }
+
+  const seen = new Set(kept);
+  const rowsToAppend = [];
+  add.forEach(({ parent, secondary = '' }) => {
+    const p = String(parent || '').trim();
+    if (!p) return;
+    const sec = String(secondary || '').trim();
+    const key = `${norm(p)}||${norm(sec)}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    rowsToAppend.push([p, sec]);
+  });
+  if (rowsToAppend.length > 0) {
+    await ensureSheetTabExists(spreadsheetId, 'Areas', ['Parent Location', 'Secondary Location']);
+    await appendSheetRows(spreadsheetId, 'Areas!A:B', rowsToAppend);
   }
 };
 
@@ -410,6 +468,8 @@ export const withSyncRetry = async (fn, { retries = 3, delayMs = 700 } = {}) => 
       return await fn();
     } catch (err) {
       lastError = err;
+      // Retrying an auth failure can never succeed and only keeps the user waiting.
+      if (err?.status === 401) throw err;
       console.warn(`[withSyncRetry] Attempt ${attempt}/${retries} failed:`, err?.message || err);
       if (attempt < retries) {
         await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
@@ -782,7 +842,7 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
          pLoc = determineParentLocation(loc);
       }
 
-      if (pLoc && pLoc.toLowerCase() !== 'surat') {
+      if (pLoc && pLoc.toLowerCase() !== 'surat' && !loc) {
         loc = pLoc;
       }
 

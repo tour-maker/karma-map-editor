@@ -33,7 +33,7 @@ export default function PendingSubmissionsPanel() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
+      const jwt = sessionStorage.getItem('karmaAdminJWT');
       const response = await fetch(`${API_BASE_URL}/api/submissions/stats`, {
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
@@ -51,7 +51,7 @@ export default function PendingSubmissionsPanel() {
   const fetchSubmissions = async (status) => {
     setLoading(true);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
+      const jwt = sessionStorage.getItem('karmaAdminJWT');
       const response = await fetch(`${API_BASE_URL}/api/submissions?status=${status}`, {
         headers: { 'Authorization': `Bearer ${jwt}` }
       });
@@ -69,7 +69,7 @@ export default function PendingSubmissionsPanel() {
   const handleApprove = async (sub) => {
     setProcessingId(sub._id);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
+      const jwt = sessionStorage.getItem('karmaAdminJWT');
       const res = await fetch(`${API_BASE_URL}/api/submissions/${sub._id}/approve`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${jwt}` }
@@ -86,7 +86,7 @@ export default function PendingSubmissionsPanel() {
         coordinates: sub.coordinates,
         data: {
           tp: sub.tp || '', op: sub.op || '', fp: sub.fp || '',
-          area: sub.area || '', location: sub.location || '',
+          area: sub.area || '', location: sub.location || sub.parentLocation || '',
           areaUnit: sub.areaUnit || 'Sq Yard',
           parentLocation: sub.parentLocation || 'Surat', landmark: sub.landmark || '',
           remarks: sub.remarks || '', type: sub.type || 'Freehold'
@@ -113,7 +113,7 @@ export default function PendingSubmissionsPanel() {
   const handleReject = async (subId) => {
     setProcessingId(subId);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
+      const jwt = sessionStorage.getItem('karmaAdminJWT');
       const res = await fetch(`${API_BASE_URL}/api/submissions/${subId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${jwt}` }
@@ -139,7 +139,7 @@ export default function PendingSubmissionsPanel() {
   const saveEdit = async (subId) => {
     setProcessingId(subId);
     try {
-      const jwt = localStorage.getItem('karmaAdminJWT');
+      const jwt = sessionStorage.getItem('karmaAdminJWT');
       const res = await fetch(`${API_BASE_URL}/api/submissions/${subId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
@@ -276,16 +276,51 @@ export default function PendingSubmissionsPanel() {
             
             {editingId === sub._id ? (
               <div onClick={e => e.stopPropagation()} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-                {['tp', 'op', 'fp', 'area', 'areaUnit', 'location', 'parentLocation', 'landmark', 'type', 'remarks'].map(field => (
-                  <label key={field} style={{ color: '#94a3b8', fontSize: 11, textTransform: 'capitalize' }}>{field}
-                    <input value={editData[field]} onChange={e => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
-                      style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 3, padding: 7, borderRadius: 6, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(15,23,42,0.8)', color: '#f8fafc' }} />
-                  </label>
-                ))}
+                {(() => {
+                  const labelStyle = { color: '#94a3b8', fontSize: 11 };
+                  const inputStyle = { display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 3, padding: 7, borderRadius: 6, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(15,23,42,0.8)', color: '#f8fafc' };
+                  const textField = (field, label) => (
+                    <label key={field} style={labelStyle}>{label}
+                      <input value={editData[field]} onChange={e => setEditData(prev => ({ ...prev, [field]: e.target.value }))} style={inputStyle} />
+                    </label>
+                  );
+                  const isWingha = /wingha|vingha|vigha/i.test(String(editData.areaUnit || ''));
+                  const unitButton = (value, active) => (
+                    <button type="button" key={value} onClick={() => setEditData(prev => ({ ...prev, areaUnit: value }))}
+                      style={{ flex: 1, marginTop: 3, padding: '7px 6px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                        border: active ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.18)',
+                        background: active ? 'rgba(245,158,11,0.2)' : 'rgba(15,23,42,0.8)',
+                        color: active ? '#fbbf24' : '#94a3b8' }}>
+                      {value}
+                    </button>
+                  );
+                  return (
+                    <>
+                      {textField('tp', 'TP')}
+                      {textField('op', 'OP')}
+                      {textField('fp', 'FP')}
+                      {textField('type', 'Type')}
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <div style={labelStyle}>Area</div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
+                          <input value={editData.area} onChange={e => setEditData(prev => ({ ...prev, area: e.target.value }))}
+                            inputMode="decimal" style={{ ...inputStyle, flex: 1.4, width: 'auto' }} />
+                          {unitButton('Sq Yard', !isWingha)}
+                          {unitButton('Wingha', isWingha)}
+                        </div>
+                      </div>
+                      {textField('parentLocation', 'Parent Area')}
+                      {textField('location', 'Sub Area')}
+                      {textField('landmark', 'Landmark')}
+                      {textField('remarks', 'Remarks')}
+                    </>
+                  );
+                })()}
               </div>
             ) : <div style={{ fontSize: 13, color: '#e2e8f0', marginBottom: 12 }}>
-              <div><strong>Location:</strong> {sub.parentLocation || sub.location} {sub.location && sub.parentLocation ? `(${sub.location})` : ''}</div>
-              <div><strong>Area:</strong> {sub.area || 'N/A'}</div>
+              <div><strong>Parent Area:</strong> {sub.parentLocation || sub.location || '-'}</div>
+              <div><strong>Sub Area:</strong> {sub.location && sub.location !== sub.parentLocation ? sub.location : '-'}</div>
+              <div><strong>Area:</strong> {sub.area ? `${sub.area} ${sub.areaUnit || ''}`.trim() : 'N/A'}</div>
               <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
                 <span><strong>TP:</strong> {sub.tp || '-'}</span>
                 <span><strong>OP:</strong> {sub.op || '-'}</span>

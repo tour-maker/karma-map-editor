@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PROPERTY_TYPE_COLORS, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
+import { PROPERTY_TYPE_COLORS, isPropertyPolygon, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
@@ -697,9 +697,25 @@ export default function FilterBar() {
       }
     }
 
+    // A sub-location stays selected after the unit/category changes, so it can end up
+    // with zero matching properties ("Abhva" + Freehold + Sq.Yard -> 0 found). Drop it
+    // when no real property matches the new unit + category, so the filter falls back
+    // to the broader location instead of dead-ending.
+    if (nextSecondary && updates.secondary === undefined) {
+      const secondaryHasPlots = features.some(feature =>
+        isPropertyPolygon(feature) &&
+        feature.data?.location === nextSecondary &&
+        feature.style?.visible !== false &&
+        isFeatureMatchingUnit(feature, nextAreaUnit) &&
+        (!nextType || feature.data?.type === nextType)
+      );
+      if (!secondaryHasPlots) nextSecondary = null;
+    }
+
     if (updates.primary !== undefined) setFilterPrimary(updates.primary);
     else if (nextPrimary !== filterPrimary) setFilterPrimary(nextPrimary);
     if (updates.secondary !== undefined) setFilterSecondary(updates.secondary);
+    else if (nextSecondary !== filterSecondary) setFilterSecondary(nextSecondary);
     if (updates.type !== undefined || nextType !== filterType) setFilterType(nextType);
     if (updates.areaUnit !== undefined) setGlobalAreaUnit(updates.areaUnit);
 
@@ -800,9 +816,9 @@ export default function FilterBar() {
     if (!filterPrimary) return [];
     const allSubs = dynamicCategoryMap[filterPrimary] || [];
     return allSubs.filter(sub => features.some(feature =>
+      isPropertyPolygon(feature) &&
       feature.data?.location === sub &&
       feature.style?.visible !== false &&
-      !(feature.id?.startsWith('landmark-') || feature.data?.type === 'Landmark') &&
       isFeatureMatchingUnit(feature, globalAreaUnit) &&
       (!filterType || feature.data?.type === filterType)
     ));

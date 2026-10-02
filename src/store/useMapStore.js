@@ -123,7 +123,7 @@ export const useMapStore = create(
           const features = state.features.map(f => {
             const par = f.data?.parentLocation;
             if (par && par.toLowerCase() === trimmed.toLowerCase()) {
-              return { ...f, data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
+              return { ...f, syncStatus: 'edited', data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
             }
             return f;
           });
@@ -143,7 +143,7 @@ export const useMapStore = create(
             const loc = f.data?.location;
             const par = f.data?.parentLocation;
             if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedParent.toLowerCase()) {
-              return { ...f, data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
+              return { ...f, syncStatus: 'edited', data: { ...f.data, location: UNASSIGNED_LOCATION, parentLocation: UNASSIGNED_LOCATION } };
             }
             return f;
           });
@@ -169,7 +169,7 @@ export const useMapStore = create(
           const features = state.features.map(f => {
             const par = f.data?.parentLocation;
             if (par && par.toLowerCase() === trimmedSource.toLowerCase()) {
-              return { ...f, data: { ...f.data, parentLocation: trimmedTarget } };
+              return { ...f, syncStatus: 'edited', data: { ...f.data, parentLocation: trimmedTarget } };
             }
             return f;
           });
@@ -189,7 +189,7 @@ export const useMapStore = create(
             const loc = f.data?.location;
             const par = f.data?.parentLocation;
             if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedOldParent.toLowerCase()) {
-              return { ...f, data: { ...f.data, parentLocation: trimmedNewParent } };
+              return { ...f, syncStatus: 'edited', data: { ...f.data, parentLocation: trimmedNewParent } };
             }
             return f;
           });
@@ -210,7 +210,7 @@ export const useMapStore = create(
             const loc = f.data?.location;
             const par = f.data?.parentLocation;
             if (loc && par && loc.toLowerCase() === trimmedSub.toLowerCase() && par.toLowerCase() === trimmedOldParent.toLowerCase()) {
-              return { ...f, data: { ...f.data, parentLocation: trimmedSub } };
+              return { ...f, syncStatus: 'edited', data: { ...f.data, parentLocation: trimmedSub } };
             }
             return f;
           });

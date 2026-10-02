@@ -46,13 +46,13 @@ export default function UsersPanel() {
   // out so the login overlay reappears and a fresh token is minted on the
   // next sign-in, rather than leaving the panel stuck failing silently.
   const adminFetch = async (url, options = {}) => {
-    const jwt = localStorage.getItem('karmaAdminJWT');
+    const jwt = sessionStorage.getItem('karmaAdminJWT');
     const res = await fetch(url, {
       ...options,
       headers: { ...(options.headers || {}), 'Authorization': `Bearer ${jwt}` }
     });
     if (res.status === 401) {
-      localStorage.removeItem('karmaAdminJWT');
+      sessionStorage.removeItem('karmaAdminJWT');
       setIsAdminAuthenticated(false);
       toast.error('Your admin session expired — please sign in again.');
     }

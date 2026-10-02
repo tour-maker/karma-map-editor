@@ -60,6 +60,11 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
     // Sync only this new area to the "Areas" tab — never touch the Polygons sheet here.
     try {
       await syncAreaToSheet(name, subs, spreadsheetId);
+      if (spreadsheetId && subs.length > 0) {
+        useMapStore.setState(state => ({
+          syncedAreas: [...(state.syncedAreas || []), ...subs.map(secondary => ({ parent: name, secondary }))]
+        }));
+      }
       const successMsg = mode === 'sub'
         ? `Sub-location "${subs[0]}" added to "${name}"! 📍`
         : `Parent Location "${name}" added successfully! 📍`;

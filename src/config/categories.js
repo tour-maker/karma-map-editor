@@ -154,11 +154,21 @@ export function getLocationsForCategory(matrix, category) {
 // Builds a live { parent: [subs...] } map from actual feature data, instead of
 // the static CATEGORY_MAP. A location only appears as a "sub" of a parent when
 // it's textually different from the parent (self-mapped parents have no subs).
+// A "property" is a real drawn polygon. Landmarks (map pins) are not properties.
+export function isPropertyPolygon(f) {
+  return Boolean(
+    f &&
+    f.type === 'polygon' &&
+    Array.isArray(f.coordinates) && f.coordinates.length >= 3 &&
+    !(f.id?.startsWith('landmark-') || f.data?.type === 'Landmark')
+  );
+}
+
 export function buildDynamicLocationMap(features = []) {
   const categoryMap = {};
 
   features.forEach(f => {
-    if (f.id?.startsWith('landmark-') || f.data?.type === 'Landmark') return;
+    if (!isPropertyPolygon(f)) return;
 
     const loc = f.data?.location;
     if (!loc) return;

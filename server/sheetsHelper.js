@@ -66,7 +66,7 @@ export const appendApprovedSubmission = async (submission) => {
     submission.op || '',
     submission.fp || '',
     submission.area || '',
-    submission.location || '',
+    submission.location || submission.parentLocation || '',
     submission.parentLocation || '',
     submission.landmark || '',
     submission.type || '',

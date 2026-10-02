@@ -379,7 +379,15 @@ export default function PropertyInfoPanel() {
       if (displayFeature) {
         updateFeature(displayFeature.id, { syncStatus: 'error' });
       }
-      toast.error('Failed to save: ' + (err?.message || 'an unexpected error occurred') + '. Your edits may only be saved locally — try Save again before leaving this page.', { id: 'sync-sheet', duration: 6000 });
+      if (err?.status === 401) {
+        // Admin token missing/expired: sign out so the login overlay returns and a fresh
+        // token is minted, instead of leaving the admin stuck failing on every save.
+        sessionStorage.removeItem('karmaAdminJWT');
+        useMapStore.getState().setIsAdminAuthenticated(false);
+        toast.error('Your admin session expired — please sign in again, then save again.', { id: 'sync-sheet', duration: 4000 });
+      } else {
+        toast.error('Failed to save: ' + (err?.message || 'an unexpected error occurred') + '. Your edits may only be saved locally — try Save again before leaving this page.', { id: 'sync-sheet', duration: 6000 });
+      }
       // Keep the panel open on failure so the admin notices the unsynced state
       // and can retry, instead of silently losing the edit on navigation/refresh.
     } finally {

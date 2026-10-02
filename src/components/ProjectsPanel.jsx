@@ -8,7 +8,7 @@ import GoogleSheetsConnect from './GoogleSheetsConnect';
 import AddAreaModal from './AddAreaModal';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { zoomToProperty, fitAllBounds } from '../services/googleMaps';
-import { syncFeatureToSheet } from '../services/googleSheets';
+import { syncFeatureToSheet, withSyncRetry, updateAreasSheet } from '../services/googleSheets';
 import toast from 'react-hot-toast';
 import { cleanLandmarkTitle, resolveLandmarkLocation } from './LandmarkManager';
 import PendingSubmissionsPanel from './PendingSubmissionsPanel';
@@ -104,7 +104,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     let cancelled = false;
     const fetchPendingCount = async () => {
       try {
-        const jwt = localStorage.getItem('karmaAdminJWT');
+        const jwt = sessionStorage.getItem('karmaAdminJWT');
         const response = await fetch(`${API_BASE_URL}/api/submissions/stats`, {
           headers: { 'Authorization': `Bearer ${jwt}` }
         });
@@ -169,6 +169,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
   const customAreas = useMapStore(state => state.customAreas) || [];
+  const syncedAreas = useMapStore(state => state.syncedAreas) || [];
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
   const setFilterSecondary = useMapStore(state => state.setFilterSecondary);
   const renameArea = useMapStore(state => state.renameArea);
@@ -317,9 +318,13 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       // dynamicLocationMap includes every known sub-area name regardless of
       // whether anything's been added to it yet, which cluttered the trigger
       // ("N sub-areas") and the expanded list with empty entries.
-      subLocations: (item.subLocations || []).filter(sub =>
-        item.features.some(f => f.data?.location === sub)
-      ),
+      subLocations: Array.from(new Set([
+        ...(item.subLocations || []).filter(sub => item.features.some(f => f.data?.location === sub)),
+        // Sub-areas the admin added explicitly (they live in the Areas sheet) stay listed even
+        // while they have no plots, otherwise a freshly added sub-area looks like it did not
+        // add. The viewer filter bar still hides sub-areas that have no property.
+        ...syncedAreas.filter(p => p.parent === item.name && p.secondary).map(p => p.secondary)
+      ])),
       count: item.features.length
     }));
 
@@ -335,7 +340,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
     });
 
     return list;
-  }, [features, customAreas, dynamicLocationMap]);
+  }, [features, customAreas, syncedAreas, dynamicLocationMap]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -535,7 +540,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   <button
                     type="button"
                     onClick={() => {
-                      localStorage.removeItem('karmaAdminJWT');
+                      sessionStorage.removeItem('karmaAdminJWT');
                       useMapStore.getState().setIsAdminAuthenticated(false);
                     }}
                     title="Sign out of the admin editor"
@@ -1771,33 +1776,54 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 type="button"
                 onClick={async () => {
                   if (!movePanel.target) { setMovePanel(null); return; }
-                  if (movePanel.isSub) {
-                    if (movePanel.target === '__promote__') {
-                      promoteSubToPrimary(movePanel.name, movePanel.parentName);
+                  const { isSub, name, parentName, target } = movePanel;
+                  // Sub-areas the source currently owns in the Areas sheet — read BEFORE the store changes.
+                  const formerSubs = isSub ? [] : (useMapStore.getState().syncedAreas || [])
+                    .filter(p => p.parent === name && p.secondary).map(p => p.secondary);
+                  if (isSub) {
+                    if (target === '__promote__') {
+                      promoteSubToPrimary(name, parentName);
                     } else {
-                      moveSubArea(movePanel.name, movePanel.parentName, movePanel.target);
+                      moveSubArea(name, parentName, target);
                     }
                   } else {
-                    mergeAreaIntoPrimary(movePanel.name, movePanel.target);
+                    mergeAreaIntoPrimary(name, target);
                   }
                   setMovePanel(null);
-                  toast.success('Changes saved', {
-                    style: { background: '#0f172a', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)' }
-                  });
-                  // Best-effort: push the moved features' new location to the sheet.
+                  const toastId = toast.loading('Saving move to Google Sheets...');
                   try {
-                    const moved = useMapStore.getState().features.filter(f => {
-                      const loc = f.data?.location;
-                      const par = f.data?.parentLocation;
-                      return movePanel.isSub
-                        ? loc?.toLowerCase() === movePanel.name.toLowerCase()
-                        : par?.toLowerCase() === movePanel.name.toLowerCase();
-                    });
+                    // Features touched by the move are flagged 'edited' (see the store actions) so the
+                    // 10-second sheet poll cannot revert them while we write; mark each synced once saved.
+                    const moved = useMapStore.getState().features.filter(f => f.syncStatus === 'edited');
                     for (const f of moved) {
-                      await syncFeatureToSheet(spreadsheetId, f, 'update');
+                      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
+                      useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
                     }
+                    // Keep the Areas tab in step, otherwise the next poll re-creates the old structure.
+                    let areaChanges;
+                    if (isSub && target === '__promote__') {
+                      areaChanges = { remove: [{ parent: parentName, secondary: name }], add: [{ parent: name, secondary: '' }] };
+                    } else if (isSub) {
+                      areaChanges = { remove: [{ parent: parentName, secondary: name }], add: [{ parent: target, secondary: name }] };
+                    } else {
+                      areaChanges = {
+                        remove: [{ parent: name, secondary: '' }],
+                        add: [{ parent: target, secondary: name }, ...formerSubs.map(sec => ({ parent: target, secondary: sec }))]
+                      };
+                    }
+                    await withSyncRetry(() => updateAreasSheet(spreadsheetId, areaChanges));
+                    toast.success('Move saved to Google Sheets', {
+                      id: toastId,
+                      style: { background: '#0f172a', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)' }
+                    });
                   } catch (err) {
-                    console.warn('Move: sheet sync failed (kept locally):', err);
+                    console.error('Move: sheet sync failed:', err);
+                    toast.error(
+                      err?.status === 401
+                        ? 'Admin session expired - sign in again, then repeat the move.'
+                        : 'Move was NOT saved to Google Sheets: ' + (err?.message || 'unknown error') + '. It may revert on refresh.',
+                      { id: toastId }
+                    );
                   }
                 }}
                 style={{
@@ -1847,30 +1873,38 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 type="button"
                 onClick={async () => {
                   const { isSub, name, parentName } = deleteConfirm;
-                  const beforeCount = useMapStore.getState().features.filter(f =>
-                    f.data?.location?.toLowerCase() === 'unassigned' && f.data?.parentLocation?.toLowerCase() === 'unassigned'
-                  ).length;
                   if (isSub) {
                     deleteSubLocation(parentName, name);
                   } else {
                     deleteArea(name);
                   }
                   setDeleteConfirm(null);
-                  const rescued = useMapStore.getState().features.filter(f =>
-                    f.data?.location?.toLowerCase() === 'unassigned' && f.data?.parentLocation?.toLowerCase() === 'unassigned'
-                  );
-                  const rescuedNow = rescued.length - beforeCount;
-                  toast.success(
-                    `"${name}" deleted` + (rescuedNow > 0 ? ` — its plots moved to Unassigned Plots` : ''),
-                    { style: { background: '#0f172a', color: '#fca5a5', border: '1px solid rgba(248, 113, 113, 0.4)' } }
-                  );
-                  // Best-effort: push the rescued features' new "Unassigned" location.
+                  const toastId = toast.loading(`Deleting "${name}"...`);
                   try {
+                    // Plots of the deleted area were rescued into "Unassigned" and flagged 'edited'
+                    // by the store action (so the sheet poll cannot revert them) — write them out.
+                    const rescued = useMapStore.getState().features.filter(f => f.syncStatus === 'edited');
                     for (const f of rescued) {
-                      await syncFeatureToSheet(spreadsheetId, f, 'update');
+                      await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
+                      useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
                     }
+                    // Remove it from the Areas tab too — otherwise the next poll adds it straight back.
+                    await withSyncRetry(() => updateAreasSheet(
+                      spreadsheetId,
+                      { remove: [isSub ? { parent: parentName, secondary: name } : { parent: name, secondary: '' }] }
+                    ));
+                    toast.success(
+                      `"${name}" deleted` + (rescued.length > 0 ? ' - its plots moved to Unassigned Plots' : ''),
+                      { id: toastId, style: { background: '#0f172a', color: '#fca5a5', border: '1px solid rgba(248, 113, 113, 0.4)' } }
+                    );
                   } catch (err) {
-                    console.warn('Delete: sheet sync failed (kept locally):', err);
+                    console.error('Delete: sheet sync failed:', err);
+                    toast.error(
+                      err?.status === 401
+                        ? 'Admin session expired - sign in again, then repeat the delete.'
+                        : `"${name}" was NOT deleted from Google Sheets: ` + (err?.message || 'unknown error') + '. It may come back on refresh.',
+                      { id: toastId }
+                    );
                   }
                 }}
                 style={{
