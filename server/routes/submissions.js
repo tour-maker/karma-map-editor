@@ -82,6 +82,18 @@ router.post('/:id/approve', requireAdmin, async (req, res) => {
   try {
     const submission = await Submission.findById(req.params.id);
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    // If the admin approves directly from the open edit form, commit those edits
+    // before status change and Sheets append. Only approved form fields are accepted.
+    const EDITABLE_FIELDS = [
+      'tp', 'op', 'fp', 'area', 'areaUnit', 'location', 'parentLocation',
+      'landmark', 'type', 'remarks', 'partyName', 'partyPhone', 'brokerName', 'brokerPhone'
+    ];
+    for (const field of EDITABLE_FIELDS) {
+      if (Object.prototype.hasOwnProperty.call(req.body || {}, field)) {
+        submission[field] = req.body[field];
+      }
+    }
     
     submission.status = 'approved';
     await submission.save();

@@ -100,12 +100,18 @@ export default function PendingSubmissionsPanel() {
     setProcessingId(sub._id);
     try {
       const jwt = sessionStorage.getItem('karmaAdminJWT');
+      const approvingEdits = editingId === sub._id ? editData : null;
       const res = await fetch(`${API_BASE_URL}/api/submissions/${sub._id}/approve`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${jwt}` }
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          ...(approvingEdits ? { 'Content-Type': 'application/json' } : {})
+        },
+        ...(approvingEdits ? { body: JSON.stringify(approvingEdits) } : {})
       });
       if (!res.ok) throw new Error('Failed to approve on backend');
       const result = await res.json();
+      const approved = result.submission || sub;
       window.dispatchEvent(new Event('karma-submissions-changed'));
 
       const featureId = result.sheetId || `drawn-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -113,13 +119,15 @@ export default function PendingSubmissionsPanel() {
         id: featureId,
         source: 'drawn',
         type: 'polygon',
-        coordinates: sub.coordinates,
+        coordinates: approved.coordinates || sub.coordinates,
         data: {
-          tp: sub.tp || '', op: sub.op || '', fp: sub.fp || '',
-          area: sub.area || '', location: sub.location || sub.parentLocation || '',
-          areaUnit: sub.areaUnit || 'Sq Yard',
-          parentLocation: sub.parentLocation || 'Surat', landmark: sub.landmark || '',
-          remarks: sub.remarks || '', type: sub.type || 'Freehold'
+          tp: approved.tp || '', op: approved.op || '', fp: approved.fp || '',
+          area: approved.area || '', location: approved.location || approved.parentLocation || '',
+          areaUnit: approved.areaUnit || 'Sq Yard',
+          parentLocation: approved.parentLocation || 'Surat', landmark: approved.landmark || '',
+          remarks: approved.remarks || '', type: approved.type || 'Freehold',
+          partyName: approved.partyName || '', partyPhone: approved.partyPhone || '',
+          brokerName: approved.brokerName || '', brokerPhone: approved.brokerPhone || ''
         },
         style: { fillColor: '#facc15', fillOpacity: 0.4, strokeColor: '#facc15', strokeWeight: 2, visible: true }
       };
