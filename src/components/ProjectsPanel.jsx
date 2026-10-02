@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { FiSearch, FiPlus, FiChevronDown, FiChevronRight, FiMapPin, FiX, FiLayers, FiGlobe, FiMenu, FiClock, FiUsers, FiMove, FiTrash2 } from 'react-icons/fi';
 import { FaFileExcel } from 'react-icons/fa';
 import { useMapStore } from '../store/useMapStore';
-import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap, isPropertyPolygon } from '../config/categories';
+import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap, isPropertyPolygon, normalizePropertyType } from '../config/categories';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GoogleSheetsConnect from './GoogleSheetsConnect';
 import AddAreaModal from './AddAreaModal';
@@ -232,7 +232,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       }
 
       if (isVisible && filterType) {
-        if (feature.data?.type !== filterType) isVisible = false;
+        if (normalizePropertyType(feature.data?.type) !== filterType) isVisible = false;
       }
 
       return isVisible && feature.style?.visible !== false;

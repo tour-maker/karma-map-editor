@@ -45,6 +45,14 @@ describe('location availability', () => {
     expect(hasPropertyInLocation(withNew, 'Abhva')).toBe(true);
   });
 
+  it('matches the category regardless of how the sheet spells it', () => {
+    // Real case: the sheet says "FreeHold" while the filter option is "Freehold".
+    const sheetSpelling = [plot('s118', { location: 'Abhva', parentLocation: 'Surat', type: 'FreeHold', areaUnit: 'Sq Yard' })];
+    expect(hasPropertyInLocation(sheetSpelling, 'Abhva', 'yards', 'Freehold')).toBe(true);
+    expect([...getParentsWithProperties(sheetSpelling, 'yards', 'Freehold')]).toEqual(['Surat']);
+    expect(hasPropertyInLocation(sheetSpelling, 'Abhva', 'yards', 'Commercial')).toBe(false);
+  });
+
   it('handles an empty feature list', () => {
     expect(getParentsWithProperties([]).size).toBe(0);
   });

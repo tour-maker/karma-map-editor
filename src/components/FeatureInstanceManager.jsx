@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { createImportedMarker, createImportedPolygon, highlightPolygon, zoomToProperty, getCategoryPinIcon, calculatePolygonCenter } from '../services/googleMaps';
-import { getPropertyTypeColor, DEFAULT_PROPERTY_COLOR, buildDynamicLocationMap } from '../config/categories';
+import { getPropertyTypeColor, DEFAULT_PROPERTY_COLOR, buildDynamicLocationMap, normalizePropertyType } from '../config/categories';
 import { isFeatureMatchingUnit } from '../utils/unitFilter';
 
 // Inject Keyframes for Selected Pin Glow Effect
@@ -312,7 +312,7 @@ export default function FeatureInstanceManager() {
 
       // Apply Type Filter
       if (isVisible && filterType) {
-        const type = feature.data?.type;
+        const type = normalizePropertyType(feature.data?.type);
         if (type !== filterType) {
           isVisible = false;
         }

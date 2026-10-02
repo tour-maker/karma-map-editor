@@ -1,4 +1,4 @@
-import { isPropertyPolygon, determineParentLocation } from '../config/categories';
+import { isPropertyPolygon, determineParentLocation, normalizePropertyType } from '../config/categories';
 import { isFeatureMatchingUnit } from './unitFilter';
 
 // A real, visible property polygon that matches the active unit + category. This is the
@@ -8,7 +8,7 @@ export function isMatchingProperty(feature, unit, type) {
   return isPropertyPolygon(feature) &&
     feature.style?.visible !== false &&
     isFeatureMatchingUnit(feature, unit) &&
-    (!type || feature.data?.type === type);
+    (!type || normalizePropertyType(feature.data?.type) === type);
 }
 
 // Primary (parent) locations that have at least one matching property.

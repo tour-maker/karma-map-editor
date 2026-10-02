@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { FiAlertTriangle } from 'react-icons/fi';
 import { useMapStore } from '../../store/useMapStore';
-import { buildDynamicLocationMap } from '../../config/categories';
+import { buildDynamicLocationMap, normalizePropertyType } from '../../config/categories';
 import { GLASS_COLORS, GLASS_SHADOW, GLASS_BLUR } from '../../styles/glass';
 
 export default function TopStatsBar() {
@@ -45,7 +45,7 @@ export default function TopStatsBar() {
       }
 
       if (isVisible && filterType) {
-        if (feature.data?.type !== filterType) isVisible = false;
+        if (normalizePropertyType(feature.data?.type) !== filterType) isVisible = false;
       }
       
       if (isVisible && feature.style?.visible !== false) {

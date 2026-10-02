@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { useMapStore } from '../../store/useMapStore';
-import { PROPERTY_TYPE_COLORS, isPropertyPolygon, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
+import { PROPERTY_TYPE_COLORS, isPropertyPolygon, normalizePropertyType, buildDynamicLocationMap, getCategoryOptionsForUnit, buildLocationCategoryMatrix, getCategoriesForLocation, getLocationsForCategory } from '../../config/categories';
 import { useGoogleMap } from '../../context/GoogleMapContext';
 import { fitAllBounds } from '../../services/googleMaps';
 import { FiChevronDown, FiChevronUp, FiRefreshCw, FiEye, FiEyeOff, FiArrowRight, FiMapPin, FiNavigation, FiTag, FiSquare, FiGrid, FiSliders, FiX, FiType } from 'react-icons/fi';
@@ -708,7 +708,7 @@ export default function FilterBar() {
         feature.data?.location === nextSecondary &&
         feature.style?.visible !== false &&
         isFeatureMatchingUnit(feature, nextAreaUnit) &&
-        (!nextType || feature.data?.type === nextType)
+        (!nextType || normalizePropertyType(feature.data?.type) === nextType)
       );
       if (!secondaryHasPlots) nextSecondary = null;
     }
@@ -741,7 +741,7 @@ export default function FilterBar() {
           }
         }
         if (isVisible && nextType) {
-          if (feature.data?.type !== nextType) isVisible = false;
+          if (normalizePropertyType(feature.data?.type) !== nextType) isVisible = false;
         }
         return isVisible && feature.style?.visible !== false;
       });
@@ -778,7 +778,7 @@ export default function FilterBar() {
       }
 
       if (isVisible && filterType) {
-        if (feature.data?.type !== filterType) isVisible = false;
+        if (normalizePropertyType(feature.data?.type) !== filterType) isVisible = false;
       }
 
       if (isVisible && feature.style?.visible !== false) {
@@ -829,7 +829,7 @@ export default function FilterBar() {
       feature.data?.location === sub &&
       feature.style?.visible !== false &&
       isFeatureMatchingUnit(feature, globalAreaUnit) &&
-      (!filterType || feature.data?.type === filterType)
+      (!filterType || normalizePropertyType(feature.data?.type) === filterType)
     ));
   }, [dynamicCategoryMap, filterPrimary, features, globalAreaUnit, filterType]);
 
