@@ -169,15 +169,20 @@ ${generalShareUrl}`;
 
   // Bulletproof Direct Screenshot Capture (Zero toast notifications in screenshot, clean map output!)
   const handleCaptureScreenshot = async () => {
+    let wasOptionsOpen = false;
     try {
       // 1. Dismiss any existing active toasts so zero toasts appear in the screenshot
       toast.dismiss();
 
-      // 2. Temporarily hide UI overlays visually via CSS class (Map stays 100% mounted & live!)
+      // 2. Keep the whole UI in the picture (top bar, search, property card, filters, dock,
+      //    Contact Us) — only toasts are hidden by this class. Fold the open Options panel
+      //    away first so the dock looks like it does at rest, and restore it afterwards.
+      wasOptionsOpen = isOpen;
+      if (wasOptionsOpen) setIsOpen(false);
       document.body.classList.add('hide-ui-for-screenshot');
 
-      // Wait 100ms for CSS transition & toast removal
-      await new Promise(r => setTimeout(r, 100));
+      // Wait for the panel to fold, the CSS rule to apply & toast removal
+      await new Promise(r => setTimeout(r, 250));
 
       const now = new Date();
       const dateStr = now.toISOString().slice(0, 10);
@@ -223,8 +228,9 @@ ${generalShareUrl}`;
       link.click();
       document.body.removeChild(link);
 
-      // 5. Restore UI controls back to screen FIRST
+      // 5. Restore the page state FIRST
       document.body.classList.remove('hide-ui-for-screenshot');
+      if (wasOptionsOpen) setIsOpen(true);
 
       // 6. Show success toast AFTER UI is restored and screenshot is saved!
       toast.success('map screenshot taken', {
@@ -234,6 +240,7 @@ ${generalShareUrl}`;
     } catch (error) {
       console.error('Screenshot capture error:', error);
       document.body.classList.remove('hide-ui-for-screenshot');
+      if (wasOptionsOpen) setIsOpen(true);
       toast.error('Failed to capture screenshot. Try again.');
     }
   };
