@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { cleanLandmarkTitle, resolveLandmarkLocation } from './LandmarkManager';
 import PendingSubmissionsPanel from './PendingSubmissionsPanel';
 import UsersPanel from './UsersPanel';
+import { getMovePanelPosition, MOVE_PANEL_WIDTH } from '../utils/movePanelPosition';
 import { API_BASE_URL } from '../config/api';
 
 // Inject Custom Scrollbar for Projects Panel
@@ -1731,9 +1732,19 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
-              top: movePanel.rect.bottom + 6,
-              left: Math.min(movePanel.rect.left, window.innerWidth - 260),
-              width: 240,
+              ...(() => {
+                // Opens beside the sidebar (never over the list it came from); below the button on narrow screens.
+                const pos = getMovePanelPosition({
+                  buttonRect: movePanel.rect,
+                  sidebarRect: document.querySelector('.projects-panel-container')?.getBoundingClientRect() || null,
+                  viewport: { width: window.innerWidth, height: window.innerHeight }
+                });
+                return { top: pos.top, left: pos.left };
+              })(),
+              width: MOVE_PANEL_WIDTH,
+              maxHeight: 'calc(100vh - 24px)',
+              display: 'flex',
+              flexDirection: 'column',
               zIndex: 2501,
               background: isDark ? 'rgba(15, 23, 42, 0.97)' : '#ffffff',
               border: isDark ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid #e2e8f0',
@@ -1745,30 +1756,58 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             <div style={{ fontSize: 12, fontWeight: 700, color: isDark ? '#e2e8f0' : '#1e293b', marginBottom: 8 }}>
               Move "{movePanel.name}"
             </div>
-            <select
-              value={movePanel.target}
-              onChange={(e) => setMovePanel(prev => ({ ...prev, target: e.target.value }))}
-              style={{
-                width: '100%', padding: '8px 10px', borderRadius: 8, marginBottom: 10,
-                background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                color: isDark ? '#f8fafc' : '#0f172a', fontSize: 12.5, outline: 'none'
-              }}
-            >
-              <option value="">
-                {movePanel.isSub ? `Keep inside ${movePanel.parentName}` : 'Keep as a Primary Area'}
-              </option>
-              {movePanel.isSub && (
-                <option value="__promote__">Make it a Primary Area</option>
-              )}
-              {parentLocationsList
+            {(() => {
+              // The first row(s) are the "stay where it is" choices; the rest are the other
+              // Primary Locations, searchable because there can be dozens of them.
+              const staying = [
+                { value: '', label: movePanel.isSub ? `Keep inside ${movePanel.parentName}` : 'Keep as a Primary Area' },
+                ...(movePanel.isSub ? [{ value: '__promote__', label: 'Make it a Primary Area' }] : [])
+              ];
+              const query = String(movePanel.search || '').trim().toLowerCase();
+              const targets = parentLocationsList
                 .filter(a => a.name !== movePanel.name && (!movePanel.isSub || a.name !== movePanel.parentName))
-                .map(a => (
-                  <option key={a.name} value={a.name}>
-                    Move into {a.name}
-                  </option>
-                ))}
-            </select>
+                .filter(a => !query || a.name.toLowerCase().includes(query))
+                .map(a => ({ value: a.name, label: `Move into ${a.name}` }));
+              const rowStyle = (active) => ({
+                padding: '7px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12.5, fontWeight: active ? 700 : 500,
+                color: active ? '#38bdf8' : (isDark ? '#e2e8f0' : '#0f172a'),
+                background: active ? 'rgba(56, 189, 248, 0.16)' : 'transparent',
+                border: active ? '1px solid rgba(56, 189, 248, 0.45)' : '1px solid transparent'
+              });
+              return (
+                <>
+                  <input
+                    type="text"
+                    value={movePanel.search || ''}
+                    placeholder="Search areas..."
+                    onChange={(e) => setMovePanel(prev => ({ ...prev, search: e.target.value }))}
+                    style={{
+                      width: '100%', boxSizing: 'border-box', padding: '7px 10px', borderRadius: 8, marginBottom: 8,
+                      background: isDark ? 'rgba(30, 41, 59, 0.8)' : '#fff', border: '1px solid rgba(255, 255, 255, 0.18)',
+                      color: isDark ? '#f8fafc' : '#0f172a', fontSize: 12.5, outline: 'none'
+                    }}
+                  />
+                  <div role="listbox" style={{
+                    display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', maxHeight: 260, marginBottom: 10,
+                    overscrollBehavior: 'contain', scrollbarWidth: 'thin'
+                  }}>
+                    {staying.map(opt => (
+                      <div key={opt.value || 'keep'} role="option" aria-selected={movePanel.target === opt.value}
+                        onClick={() => setMovePanel(prev => ({ ...prev, target: opt.value }))}
+                        style={rowStyle(movePanel.target === opt.value)}>{opt.label}</div>
+                    ))}
+                    {targets.map(opt => (
+                      <div key={opt.value} role="option" aria-selected={movePanel.target === opt.value}
+                        onClick={() => setMovePanel(prev => ({ ...prev, target: opt.value }))}
+                        style={rowStyle(movePanel.target === opt.value)}>{opt.label}</div>
+                    ))}
+                    {targets.length === 0 && query && (
+                      <div style={{ padding: '8px 10px', fontSize: 12, color: '#94a3b8' }}>No areas match "{movePanel.search}"</div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
