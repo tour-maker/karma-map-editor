@@ -1255,13 +1255,18 @@ export default function FilterBar() {
                 if (map && features.length > 0) fitAllBounds(map, features);
               }}
               title="Reset all applied filters"
+              aria-label="Reset all applied filters"
               style={{
                 background: 'rgba(245, 158, 11, 0.14)',
                 border: '1px solid rgba(245, 158, 11, 0.45)',
                 color: '#f59e0b',
                 borderRadius: 10,
-                width: 38,
                 height: 38,
+                padding: '0 10px',
+                gap: 5,
+                fontSize: 12,
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1270,7 +1275,7 @@ export default function FilterBar() {
                 transition: 'all 0.2s'
               }}
             >
-              <FiRefreshCw size={16} />
+              <FiRefreshCw size={14} /> <span className="mobile-reset-label">Reset All</span>
             </button>
           )}
 
@@ -1402,7 +1407,7 @@ export default function FilterBar() {
 
             {/* Filter Controls Stack */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
-              {/* Location + Category stacked full-width, one per row */}
+              {/* Primary Location, Sub Location, then Category — stacked full-width, one per row */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Primary Location */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
@@ -1423,6 +1428,28 @@ export default function FilterBar() {
                   </div>
                 </div>
 
+                {/* Sub Location — sits right after Primary Location (Primary -> Sub -> Category). It only
+                    appears once a primary location with sub-locations is chosen. */}
+                {showSecondaryLocationField && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
+                    <div style={{
+                      height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
+                      borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
+                    }}>
+                      <SubLocationDropdown
+                        subLocations={subLocationsForPrimary}
+                        primaryName="Surat"
+                        value={filterSecondary}
+                        onChange={(sub) => handleFilterChange({ secondary: sub })}
+                        placeholder="All Sub Locations"
+                        activeColor="#f59e0b"
+                        isInModal={true}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Category */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Property Category</label>
@@ -1442,28 +1469,6 @@ export default function FilterBar() {
                   </div>
                 </div>
               </div>
-
-              {/* Sub Location — full width below, since it only appears once a
-                  primary location is chosen and reads oddly squeezed into a column */}
-              {showSecondaryLocationField && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
-                  <div style={{
-                    height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
-                    borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
-                  }}>
-                    <SubLocationDropdown
-                      subLocations={subLocationsForPrimary}
-                      primaryName="Surat"
-                      value={filterSecondary}
-                      onChange={(sub) => handleFilterChange({ secondary: sub })}
-                      placeholder="All Sub Locations"
-                      activeColor="#f59e0b"
-                      isInModal={true}
-                    />
-                  </div>
-                </div>
-              )}
 
               {/* Unit Toggle & Landmarks */}
               <div style={{ display: 'flex', gap: 10 }}>

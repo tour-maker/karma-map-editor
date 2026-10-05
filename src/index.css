@@ -783,3 +783,11 @@ div[style*="z-index: 1000001"] { display: none !important; }
   caret-color: #ffffff;
   transition: background-color 5000s ease-in-out 0s;
 }
+
+/* Collapsed mobile filter bar: the "Reset All" button shows its label, but on very narrow
+   phones it shrinks to just the icon so it never crowds the Filters title / found counter. */
+@media (max-width: 380px) {
+  .mobile-reset-label {
+    display: none;
+  }
+}
