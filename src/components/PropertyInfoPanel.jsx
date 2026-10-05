@@ -9,6 +9,7 @@ import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
 import { getPlotShareUrl } from '../utils/shareUrl';
 import { stripShareUrl } from '../utils/shareMessage';
 import { applyAreaChange } from '../utils/areaSelection';
+import { uniqueNames, collectSubAreas } from '../utils/areaNames';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
@@ -167,7 +168,8 @@ export default function PropertyInfoPanel() {
   const customAreas = useMapStore(state => state.customAreas) || [];
   const syncedAreas = useMapStore(state => state.syncedAreas) || [];
   const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
-  const allParentLocations = Array.from(new Set([...Object.keys(dynamicLocationMap), ...customAreas])).sort((a, b) => {
+  // "p1" and "P1" are one area: listed once, the Areas sheet spelling first.
+  const allParentLocations = uniqueNames([...customAreas, ...Object.keys(dynamicLocationMap)]).sort((a, b) => {
     if (a.toLowerCase() === 'surat') return -1;
     if (b.toLowerCase() === 'surat') return 1;
     return a.localeCompare(b);
@@ -209,12 +211,7 @@ export default function PropertyInfoPanel() {
 
   // Sub-areas that belong to a given Primary Location: those seen on real plots plus those
   // listed in the Areas sheet (this is where areas moved with "Move Area" end up).
-  const secondaryOptionsFor = (parent) => Array.from(new Set([
-    ...(dynamicLocationMap[parent] || []),
-    ...syncedAreas
-      .filter(area => area.parent?.toLowerCase() === String(parent || '').toLowerCase() && area.secondary)
-      .map(area => area.secondary)
-  ]));
+  const secondaryOptionsFor = (parent) => collectSubAreas(parent, { syncedAreas, dynamicMap: dynamicLocationMap });
   const selectedParentLocation = formData.parentLocation || determineParentLocation(formData.location);
   const secondaryLocationOptions = secondaryOptionsFor(selectedParentLocation);
 

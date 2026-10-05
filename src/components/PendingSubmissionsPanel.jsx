@@ -6,6 +6,7 @@ import { useGoogleMap } from '../context/GoogleMapContext';
 import { API_BASE_URL } from '../config/api';
 import { CATEGORY_MAP, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
+import { uniqueNames, collectSubAreas } from '../utils/areaNames';
 
 export default function PendingSubmissionsPanel() {
   const [currentView, setCurrentView] = useState('summary'); // 'summary', 'pending', 'approved', 'rejected'
@@ -28,23 +29,17 @@ export default function PendingSubmissionsPanel() {
   const { parentOptions, subOptionsFor } = useMemo(() => {
     const dynamicMap = buildDynamicLocationMap(features);
     const isReal = (n) => n && String(n).trim() && String(n).trim().toLowerCase() !== 'unassigned';
-    const parents = Array.from(new Set([
-      ...Object.keys(CATEGORY_MAP), ...customAreas, ...Object.keys(dynamicMap), ...syncedAreas.map(a => a.parent)
-    ].filter(isReal))).sort((a, b) => {
+    // Same area spelled two ways (e.g. "p1" / "P1") is listed once; the Areas sheet spelling wins.
+    const parents = uniqueNames([
+      ...syncedAreas.map(a => a.parent), ...customAreas, ...Object.keys(CATEGORY_MAP), ...Object.keys(dynamicMap)
+    ].filter(isReal)).sort((a, b) => {
       if (a.toLowerCase() === 'surat') return -1;
       if (b.toLowerCase() === 'surat') return 1;
       return a.localeCompare(b);
     });
-    const subsFor = (parent) => {
-      const key = String(parent || '').trim().toLowerCase();
-      if (!key) return [];
-      const owners = (obj) => Object.keys(obj).filter(k => k.toLowerCase() === key);
-      return Array.from(new Set([
-        ...owners(CATEGORY_MAP).flatMap(k => CATEGORY_MAP[k] || []),
-        ...owners(dynamicMap).flatMap(k => dynamicMap[k] || []),
-        ...syncedAreas.filter(a => String(a.parent || '').trim().toLowerCase() === key).map(a => a.secondary)
-      ].filter(isReal))).sort((a, b) => a.localeCompare(b));
-    };
+    const subsFor = (parent) => collectSubAreas(parent, { syncedAreas, categoryMap: CATEGORY_MAP, dynamicMap })
+      .filter(isReal)
+      .sort((a, b) => a.localeCompare(b));
     return { parentOptions: parents, subOptionsFor: subsFor };
   }, [features, customAreas, syncedAreas]);
 

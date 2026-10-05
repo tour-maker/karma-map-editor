@@ -16,6 +16,8 @@ export default function SearchableSelect({ value, options, onChange, disabled, p
   }, [wrapperRef]);
   
   const filteredOptions = options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
+  // The current value is highlighted even if it is spelled with different capitals than the list entry.
+  const isSelected = (opt) => String(value ?? '').trim().toLowerCase() === String(opt).trim().toLowerCase();
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative' }}>
@@ -84,10 +86,10 @@ export default function SearchableSelect({ value, options, onChange, disabled, p
                 }}
                 style={{
                   padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#cbd5e1',
-                  background: value === opt ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                  background: isSelected(opt) ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
                 }}
                 onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                onMouseOut={(e) => e.currentTarget.style.background = value === opt ? 'rgba(245, 158, 11, 0.2)' : 'transparent'}
+                onMouseOut={(e) => e.currentTarget.style.background = isSelected(opt) ? 'rgba(245, 158, 11, 0.2)' : 'transparent'}
               >
                 {opt}
               </div>

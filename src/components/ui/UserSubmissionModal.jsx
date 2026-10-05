@@ -5,6 +5,7 @@ import { useMapStore } from '../../store/useMapStore';
 import { determineParentLocation, buildDynamicLocationMap } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
 import { API_BASE_URL } from '../../config/api';
+import { uniqueNames, collectSubAreas } from '../../utils/areaNames';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
@@ -34,7 +35,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
   const customAreas = useMapStore(state => state.customAreas) || [];
   const features = useMapStore(state => state.features);
   const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
-  const allParentLocations = Array.from(new Set([...Object.keys(dynamicLocationMap), ...customAreas])).sort((a, b) => {
+  const allParentLocations = uniqueNames([...customAreas, ...Object.keys(dynamicLocationMap)]).sort((a, b) => {
     if (a.toLowerCase() === 'surat') return -1;
     if (b.toLowerCase() === 'surat') return 1;
     return a.localeCompare(b);
@@ -149,7 +150,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Secondary Location</label>
               <SearchableSelect
                 value={formData.location}
-                options={dynamicLocationMap[formData.parentLocation || determineParentLocation(formData.location)] || []}
+                options={collectSubAreas(formData.parentLocation || determineParentLocation(formData.location), { dynamicMap: dynamicLocationMap })}
                 onChange={(val) => setFormData(prev => ({ ...prev, location: val }))}
               />
             </div>
