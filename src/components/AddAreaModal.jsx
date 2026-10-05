@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP } from '../config/categories';
 import { FiGlobe, FiX, FiCheck } from 'react-icons/fi';
@@ -17,6 +17,12 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
   const [subParent, setSubParent] = useState(existingPrimaryNames[0] || '');
   const [subName, setSubName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [parentOpen, setParentOpen] = useState(false);
+  const [parentSearch, setParentSearch] = useState('');
+  const visibleParents = useMemo(() => {
+    const q = parentSearch.trim().toLowerCase();
+    return existingPrimaryNames.filter(n => n.toLowerCase().includes(q));
+  }, [existingPrimaryNames, parentSearch]);
 
   const addCustomArea = useMapStore(state => state.addCustomArea);
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
@@ -203,19 +209,60 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
                   Inside which Primary Location? *
                 </label>
-                <select
-                  value={subParent}
-                  onChange={(e) => setSubParent(e.target.value)}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 10,
-                    background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
-                    color: '#f8fafc', fontSize: 13, outline: 'none', boxSizing: 'border-box'
-                  }}
-                >
-                  {existingPrimaryNames.map(n => (
-                    <option key={n} value={n} style={{ color: '#0f172a' }}>{n}</option>
-                  ))}
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setParentOpen(o => !o); setParentSearch(''); }}
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
+                      background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
+                      color: '#f8fafc', fontSize: 13, boxSizing: 'border-box',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }}
+                  >
+                    <span>{subParent || 'Select location'}</span>
+                    <span style={{ fontSize: 10, color: '#94a3b8' }}>{parentOpen ? '\u25B2' : '\u25BC'}</span>
+                  </button>
+                  {parentOpen && (
+                    <div style={{
+                      marginTop: 6, padding: 8, borderRadius: 10, boxSizing: 'border-box',
+                      background: 'rgba(15, 23, 42, 0.98)', border: '1px solid rgba(245, 158, 11, 0.35)'
+                    }}>
+                      <input
+                        type="text"
+                        placeholder="Search locations..."
+                        value={parentSearch}
+                        onChange={(e) => setParentSearch(e.target.value)}
+                        style={{
+                          width: '100%', boxSizing: 'border-box', padding: '7px 10px', borderRadius: 8, marginBottom: 6,
+                          background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(255, 255, 255, 0.18)',
+                          color: '#f8fafc', fontSize: 12.5, outline: 'none'
+                        }}
+                      />
+                      <div role="listbox" style={{
+                        maxHeight: 'min(180px, 28vh)', overflowY: 'auto', overscrollBehavior: 'contain',
+                        display: 'flex', flexDirection: 'column', gap: 2, scrollbarWidth: 'thin'
+                      }}>
+                        {visibleParents.map(n => (
+                          <div
+                            key={n}
+                            role="option"
+                            aria-selected={n === subParent}
+                            onClick={() => { setSubParent(n); setParentOpen(false); setParentSearch(''); }}
+                            style={{
+                              padding: '8px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                              color: n === subParent ? '#f59e0b' : '#e2e8f0',
+                              background: n === subParent ? 'rgba(245, 158, 11, 0.18)' : 'transparent'
+                            }}
+                          >{n}</div>
+                        ))}
+                        {visibleParents.length === 0 && (
+                          <div style={{ padding: '8px 10px', fontSize: 12, color: '#94a3b8' }}>No locations match</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

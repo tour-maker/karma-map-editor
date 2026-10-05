@@ -295,6 +295,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
+  const viewportPanel = useViewportFitPanel(ref, isOpen, isInModal);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -360,7 +361,10 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           ...glassPanelStyle,
           position: 'absolute',
           ...(isInModal ? {
-            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box'
+            top: '100%', left: 0, right: 0, width: '100%', marginTop: 6, zIndex: 3000, boxSizing: 'border-box',
+            // Keep the whole panel inside the visible screen (also with the keyboard open).
+            maxHeight: viewportPanel?.maxHeight ?? 260,
+            overflow: 'hidden'
           } : {
             bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: 16, minWidth: 180, zIndex: 1100
           }),
@@ -420,7 +424,7 @@ function SubLocationDropdown({ subLocations, primaryName, value, onChange, place
           </div>
 
           <div style={{
-            maxHeight: isInModal ? 180 : 240,
+            ...(isInModal ? { flex: '1 1 auto', minHeight: 0 } : { maxHeight: 240 }),
             overflowY: 'auto',
             overscrollBehavior: 'contain',
             display: 'flex',
