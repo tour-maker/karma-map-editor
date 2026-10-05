@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers, FiEdit2, FiSave, FiX } from 'react-icons/fi';
+import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers, FiEdit2, FiSave, FiX, FiChevronDown, FiChevronUp, FiPhone, FiMail, FiUser } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { API_BASE_URL } from '../config/api';
 import { getCoordinatesCenter, SUBMISSION_FOCUS_ZOOM } from '../utils/submissionLocation';
+import { getUserDisplayName, countValues } from '../utils/userSummary';
 
 const EDIT_FIELDS = [
   { key: 'tp', label: 'TP' },
@@ -23,6 +24,87 @@ const EDIT_FIELDS = [
   { key: 'remarks', label: 'Remarks' },
 ];
 
+const detailLabel = { color: '#64748b', fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' };
+const detailValue = { color: '#e2e8f0', fontSize: 13, fontWeight: 600, wordBreak: 'break-word' };
+const formatDate = (d) => d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+
+function DetailRow({ icon, label, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+      <span style={{ ...detailLabel, display: 'flex', alignItems: 'center', gap: 4 }}>{icon}{label}</span>
+      <span style={detailValue}>{children}</span>
+    </div>
+  );
+}
+
+function ChipList({ items }) {
+  if (!items.length) return <span style={{ color: '#64748b', fontWeight: 400 }}>-</span>;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 2 }}>
+      {items.map(({ name, count }) => (
+        <span key={name} style={{
+          padding: '3px 8px', borderRadius: 999, fontSize: 11.5, fontWeight: 600,
+          background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#f59e0b'
+        }}>{name} · {count}</span>
+      ))}
+    </div>
+  );
+}
+
+// Everything we know about one account: who they are (from sign-up) and what they have submitted.
+function UserDetailsCard({ user }) {
+  const name = getUserDisplayName(user);
+  const link = { color: '#38bdf8', textDecoration: 'none' };
+  return (
+    <div style={{
+      marginTop: 10, padding: 12, borderRadius: 10,
+      background: 'rgba(15, 23, 42, 0.55)', border: '1px solid rgba(255,255,255,0.1)',
+      display: 'flex', flexDirection: 'column', gap: 12
+    }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <DetailRow icon={<FiUser size={11} />} label="Name">{name || <span style={{ color: '#64748b', fontWeight: 400 }}>Not provided</span>}</DetailRow>
+        <DetailRow icon={<FiPhone size={11} />} label="Mobile"><a href={`tel:${user.username}`} style={link}>{user.username}</a></DetailRow>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <DetailRow icon={<FiMail size={11} />} label="Email">
+            {user.email ? <a href={`mailto:${user.email}`} style={link}>{user.email}</a> : <span style={{ color: '#64748b', fontWeight: 400 }}>Not provided</span>}
+          </DetailRow>
+        </div>
+        <DetailRow label="Joined">{formatDate(user.createdAt)}</DetailRow>
+        <DetailRow label="Last active">{formatDate(user.lastSubmissionAt)}</DetailRow>
+      </div>
+
+      <div>
+        <div style={detailLabel}>Submissions</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 4 }}>
+          {[
+            ['Total', user.totalProperties, '#f8fafc'],
+            ['Approved', user.approvedCount, '#22c55e'],
+            ['Pending', user.pendingCount, '#f59e0b'],
+            ['Rejected', user.rejectedCount, '#ef4444']
+          ].map(([label, value, color]) => (
+            <div key={label} style={{
+              padding: '6px 4px', borderRadius: 8, textAlign: 'center',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <div style={{ color, fontWeight: 700, fontSize: 15 }}>{value ?? 0}</div>
+              <div style={{ color: '#94a3b8', fontSize: 10 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div style={detailLabel}>Property types</div>
+        <ChipList items={countValues(user.types)} />
+      </div>
+      <div>
+        <div style={detailLabel}>Areas</div>
+        <ChipList items={countValues(user.locations)} />
+      </div>
+    </div>
+  );
+}
+
 // Admin-only panel: lists registered viewer accounts with per-user submission
 // stats, and a drill-down into that user's actual properties — with full
 // details plus inline edit/delete for each specific polygon they submitted.
@@ -39,6 +121,7 @@ export default function UsersPanel() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [confirmDeleteSubId, setConfirmDeleteSubId] = useState(null);
   const [deletingSubId, setDeletingSubId] = useState(null);
+  const [expandedUserId, setExpandedUserId] = useState(null);
 
   const setIsAdminAuthenticated = useMapStore(state => state.setIsAdminAuthenticated);
   const map = useGoogleMap();
@@ -375,12 +458,32 @@ export default function UsersPanel() {
                     {user.lastSubmissionAt && ` · last active ${new Date(user.lastSubmissionAt).toLocaleDateString()}`}
                   </div>
                 </div>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b', fontWeight: 700, fontSize: 16
-                }}>
-                  <FiLayers size={14} /> {user.totalProperties}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 4, color: '#f59e0b', fontWeight: 700, fontSize: 16
+                  }}>
+                    <FiLayers size={14} /> {user.totalProperties}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setExpandedUserId(id => id === user._id ? null : user._id); }}
+                    title={expandedUserId === user._id ? 'Hide user details' : 'Show user details'}
+                    aria-label={expandedUserId === user._id ? 'Hide user details' : 'Show user details'}
+                    aria-expanded={expandedUserId === user._id}
+                    style={{
+                      width: 26, height: 26, padding: 0, borderRadius: 8, cursor: 'pointer', flexShrink: 0,
+                      background: expandedUserId === user._id ? 'rgba(245, 158, 11, 0.18)' : 'rgba(255,255,255,0.06)',
+                      border: expandedUserId === user._id ? '1px solid rgba(245, 158, 11, 0.45)' : '1px solid rgba(255,255,255,0.15)',
+                      color: expandedUserId === user._id ? '#f59e0b' : '#94a3b8',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    {expandedUserId === user._id ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                  </button>
                 </div>
               </div>
+
+              {expandedUserId === user._id && <UserDetailsCard user={user} />}
 
               <div style={{ display: 'flex', gap: 10, marginTop: 10, fontSize: 11 }}>
                 <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: 3 }}>

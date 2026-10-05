@@ -57,6 +57,8 @@ router.post('/signup', async (req, res) => {
     const { password } = req.body;
     const username = String(req.body.mobile || req.body.username || '').replace(/\D/g, '');
     const email = String(req.body.email || '').trim().toLowerCase();
+    const firstName = String(req.body.firstName || '').trim().slice(0, 60);
+    const lastName = String(req.body.lastName || '').trim().slice(0, 60);
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
@@ -77,7 +79,7 @@ router.post('/signup', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ username: normalizedUsername, passwordHash, ...(email ? { email } : {}) });
+    const user = await User.create({ username: normalizedUsername, passwordHash, firstName, lastName, ...(email ? { email } : {}) });
 
     const token = jwt.sign({ id: user._id.toString(), username: user.username, role: 'user' }, JWT_SECRET, { expiresIn: '30d' });
     res.status(201).json({ token, username: user.username });

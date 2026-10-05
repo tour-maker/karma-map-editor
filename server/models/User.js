@@ -16,6 +16,9 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
+  // Collected on the sign-up form so admins can see who an account belongs to.
+  firstName: { type: String, trim: true, default: '' },
+  lastName: { type: String, trim: true, default: '' },
   passwordHash: {
     type: String,
     required: true

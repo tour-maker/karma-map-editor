@@ -40,7 +40,12 @@ router.get('/', requireAdmin, async (req, res) => {
       {
         $project: {
           username: 1,
+          email: 1,
+          firstName: 1,
+          lastName: 1,
           createdAt: 1,
+          locations: '$submissions.parentLocation',
+          types: '$submissions.type',
           totalProperties: 1,
           approvedCount: 1,
           pendingCount: 1,
