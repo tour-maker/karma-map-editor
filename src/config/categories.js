@@ -24,7 +24,8 @@ export const PROPERTY_TYPES = [
   'Freehold',
   'Industrial',
   'Agriculture',
-  'Ready Farmhouse'
+  'Ready Farmhouse',
+  'Rented'
 ];
 
 export const PROPERTY_TYPE_COLORS = {
@@ -34,6 +35,8 @@ export const PROPERTY_TYPE_COLORS = {
   'Industrial': '#a855f7',
   'Agriculture': '#22c55e',
   'Ready Farmhouse': '#ec4899',
+  // Rented / lease land gets its own colour, distinct from every other category.
+  'Rented': '#ef4444',
 };
 
 export const DEFAULT_PROPERTY_COLOR = '#38bdf8';
@@ -55,6 +58,10 @@ export function getCategoryOptionsForUnit(areaUnit) {
 export function normalizePropertyType(rawType) {
   if (!rawType) return '';
   const lower = String(rawType).trim().toLowerCase();
+
+  // Rented / lease land: "Rent", "Rented", "Rental", "Lease", "Leasehold", "Available for rent"...
+  // Whole-word match so words like "parent" or "current" are never mistaken for it.
+  if (/\b(rent(ed|al)?|lease(hold|d)?)\b/.test(lower)) return 'Rented';
 
   if (lower.includes('ready') || lower.includes('farmhouse')) return 'Ready Farmhouse';
   if (lower.includes('agri') || lower.includes('farm')) return 'Agriculture';
