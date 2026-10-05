@@ -334,10 +334,13 @@ export default function PendingSubmissionsPanel() {
                   );
                   return (
                     <>
-                      {textField('tp', 'TP')}
-                      {textField('op', 'OP')}
-                      {textField('fp', 'FP')}
-                      {textField('type', 'Type')}
+                      {/* TP, OP and FP share one row */}
+                      <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                        {textField('tp', 'TP')}
+                        {textField('op', 'OP')}
+                        {textField('fp', 'FP')}
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>{textField('type', 'Type')}</div>
                       <div style={{ gridColumn: '1 / -1' }}>
                         <div style={labelStyle}>Area</div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'stretch' }}>
