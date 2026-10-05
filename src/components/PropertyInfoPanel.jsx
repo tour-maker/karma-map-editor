@@ -7,6 +7,7 @@ import SearchableSelect from './ui/SearchableSelect';
 import { getFeatureAreaUnit } from '../utils/unitFilter';
 import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
 import { getPlotShareUrl } from '../utils/shareUrl';
+import { stripShareUrl } from '../utils/shareMessage';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
@@ -518,7 +519,9 @@ export default function PropertyInfoPanel() {
       if (navigator.share) {
         navigator.share({
           title: `Karma Realtors - Selected Plot Details`,
-          text: shareText,
+          // The link goes in `url` only: share targets (WhatsApp, ...) append `url` to `text`,
+          // so leaving it in the text as well made the link appear twice.
+          text: stripShareUrl(shareText, shareUrl.toString()),
           // Missing before: without a separate `url`, the OS share sheet (and
           // apps like Outlook/Teams that specifically look for a link to copy
           // or attach) had nothing to grab — the plot's link only existed

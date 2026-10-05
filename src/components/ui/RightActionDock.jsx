@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMapStore } from '../../store/useMapStore';
 import { getPublicShareUrl } from '../../utils/shareUrl';
+import { stripShareUrl } from '../../utils/shareMessage';
 import { FiShare2, FiSliders, FiX, FiHelpCircle, FiVolume2, FiVolumeX, FiCamera, FiMaximize, FiMinimize } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import HelpInstructionOverlay from './HelpInstructionOverlay';
@@ -138,7 +139,8 @@ ${generalShareUrl}`;
       try {
         await navigator.share({
           title: 'Karma Realtors - Exclusive Land Project',
-          text: generalShareText,
+          // Link only in `url` — share targets append it to `text`, so keeping it in both showed it twice.
+          text: stripShareUrl(generalShareText, generalShareUrl),
           url: generalShareUrl
         });
         toast.success('Project details & tour link shared! 🚀', {
