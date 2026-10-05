@@ -835,13 +835,11 @@ export default function FilterBar() {
 
   const showSecondaryLocationField = Boolean(filterPrimary) && subLocationsForPrimary.length > 0;
 
-  // Viewer only: if the selected location (or sub-location) no longer has any matching
-  // property — e.g. the last plot there was deleted or moved in the sheet — drop it
-  // instead of leaving a stale "0 found" selection on screen. (The admin editor can
-  // deliberately select a still-empty area from its Areas tab, so it is left alone.)
-  const appMode = useMapStore(state => state.appMode);
+  // If the selected location (or sub-location) has no matching property — e.g. the last
+  // plot there was deleted or moved in the sheet, or an empty area was picked from the
+  // admin Areas tab — drop it instead of leaving a stale "0 found" selection on screen.
+  // (Empty areas stay listed in the Areas tab itself so they can still be managed.)
   useEffect(() => {
-    if (appMode !== 'viewer') return;
     // Wait until real properties have loaded, so a slow sheet load never clears a choice.
     if (!features.some(isPropertyPolygon)) return;
     if (filterPrimary && !parentsWithProperties.has(filterPrimary)) {
@@ -849,7 +847,7 @@ export default function FilterBar() {
     } else if (filterSecondary && !hasPropertyInLocation(features, filterSecondary, globalAreaUnit, filterType)) {
       setFilterSecondary(null);
     }
-  }, [appMode, features, filterPrimary, filterSecondary, globalAreaUnit, filterType, parentsWithProperties, setFilterPrimary, setFilterSecondary]);
+  }, [features, filterPrimary, filterSecondary, globalAreaUnit, filterType, parentsWithProperties, setFilterPrimary, setFilterSecondary]);
 
   // Categories with zero properties in the active location (sub-location takes precedence
   // over the broader primary when both are set) are filtered out — also live from the matrix.
