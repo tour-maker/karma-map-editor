@@ -1237,46 +1237,8 @@ export default function FilterBar() {
           boxShadow: GLASS_SHADOW
         }}
       >
-        {/* Left: Reset All (when a filter is active, shown before the Filters title) + Filter Icon & Subtitle Summary */}
+        {/* Left: Filter Icon, Filters title (with a small reset icon after it while a filter is active) and the summary */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          {isFilterActive && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFilterPrimary(null);
-                setFilterSecondary(null);
-                setFilterType(null);
-                setGlobalAreaUnit(null);
-                setSelectedFeatureId(null);
-                setIsInfoPanelOpen(false);
-                if (map && features.length > 0) fitAllBounds(map, features);
-              }}
-              title="Reset all applied filters"
-              aria-label="Reset all applied filters"
-              style={{
-                background: 'rgba(245, 158, 11, 0.14)',
-                border: '1px solid rgba(245, 158, 11, 0.45)',
-                color: '#f59e0b',
-                borderRadius: 10,
-                height: 38,
-                padding: '0 10px',
-                gap: 5,
-                fontSize: 12,
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'all 0.2s'
-              }}
-            >
-              <FiRefreshCw size={14} /> <span className="mobile-reset-label">Reset All</span>
-            </button>
-          )}
-
           <div style={{
             width: 38,
             height: 38,
@@ -1292,9 +1254,36 @@ export default function FilterBar() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', lineHeight: 1.2 }}>
-              Filters
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', lineHeight: 1.2 }}>
+                Filters
+              </span>
+              {/* Small reset icon right after the word "Filters", only while a filter is active */}
+              {isFilterActive && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleResetAll(); }}
+                  title="Reset all applied filters"
+                  aria-label="Reset all applied filters"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    padding: 0,
+                    borderRadius: 7,
+                    background: 'rgba(245, 158, 11, 0.14)',
+                    border: '1px solid rgba(245, 158, 11, 0.45)',
+                    color: '#f59e0b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                >
+                  <FiRefreshCw size={12} />
+                </button>
+              )}
+            </div>
             <span style={{
               fontSize: 11.5,
               fontWeight: 500,
