@@ -224,6 +224,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
                 <option value="Industrial">Industrial</option>
                 <option value="Agriculture">Agriculture</option>
                 <option value="Ready Farmhouse">Ready Farmhouse</option>
+                <option value="Rented">Rented (Lease)</option>
               </select>
             </div>
           </div>
