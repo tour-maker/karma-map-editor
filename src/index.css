@@ -46,24 +46,11 @@ body {
   }
 }
 
-/* Hide ALL UI elements & overlays visually during screenshot capture without unmounting Google Map */
-body.hide-ui-for-screenshot .responsive-right-dock,
-body.hide-ui-for-screenshot .responsive-filter-bar,
-body.hide-ui-for-screenshot .projects-panel-container,
-body.hide-ui-for-screenshot .top-stats-bar,
-body.hide-ui-for-screenshot .search-box-container,
-body.hide-ui-for-screenshot .mode-toggle-container,
-body.hide-ui-for-screenshot .whatsapp-cta-button,
-body.hide-ui-for-screenshot .property-info-panel,
+/* While a map screenshot is captured the UI (top bar, search, property card, filters, dock,
+   Contact Us) stays visible so it appears in the image; only transient toast popups are hidden. */
 body.hide-ui-for-screenshot #react-hot-toast,
 body.hide-ui-for-screenshot [data-toaster-wrapper],
-body.hide-ui-for-screenshot div[role="status"],
-body.hide-ui-for-screenshot div[style*="z-index: 1000"],
-body.hide-ui-for-screenshot div[style*="z-index: 1100"],
-body.hide-ui-for-screenshot div[style*="z-index: 1200"],
-body.hide-ui-for-screenshot div[style*="z-index: 9999"],
-body.hide-ui-for-screenshot header,
-body.hide-ui-for-screenshot nav {
+body.hide-ui-for-screenshot div[role="status"] {
   visibility: hidden !important;
   opacity: 0 !important;
   display: none !important;
