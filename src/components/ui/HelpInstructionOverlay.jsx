@@ -46,6 +46,110 @@ function ToggleCallout({ selector, title, subtitle }) {
   );
 }
 
+// Every control the portrait-mobile help points at. Rects are measured from the real
+// buttons (never hard-coded), so the outlines and badges stay on the right element on any
+// phone size, and the legend below can never sit on top of a button.
+const MOBILE_OPTIONS_SELECTOR = [
+  'button[title="Open options panel"]', 'button[title="Close options panel"]',
+  'button[title="Help & Keyboard Shortcuts"]', 'button[title="Mute audio"]', 'button[title="Enable audio"]',
+  'button[title="Capture Map Screenshot"]', 'button[title="Exit Fullscreen"]', 'button[title="Fullscreen Mode"]'
+].join(', ');
+
+const MOBILE_HELP_TOP = [
+  { n: 1, selector: 'input[placeholder*="Search for a place"]', title: 'Search', text: 'Search for a place or property...', short: 'Find a place or property' },
+  { n: 2, selector: MOBILE_OPTIONS_SELECTOR, title: 'Options', text: 'Help & tools', short: 'Help & tools' },
+  { n: 3, selector: '.viewer-top-bar button:not([title])', title: 'Add Your Property', text: 'Submit a new property listing', short: 'Submit a new listing' },
+  { n: 4, selector: '.viewer-top-bar button[title]', title: 'Sign In', text: 'Track your submitted requests', short: 'Track your requests' }
+];
+const MOBILE_HELP_BOTTOM = [
+  { n: 5, selector: '.mobile-share-floating-btn', title: 'Share', text: 'Share the map via WhatsApp, copy link, etc. To share one plot, open it and tap its share icon.', short: 'Share via WhatsApp, copy link, etc.' },
+  { n: 6, selector: '.whatsapp-cta-wrapper', title: 'Contact Us', text: 'on WhatsApp', short: 'on WhatsApp' },
+  { n: 7, selector: '.mobile-filter-dock-bar', title: 'Filters', text: 'Find by location & category', short: 'By location & category' },
+  { n: 8, selector: '.mobile-toggle-chips', title: 'Landmarks & Labels', text: 'Show/hide landmark pins and map labels', short: 'Show/hide pins & labels' }
+];
+
+function MobileHelpBadge({ n, rect }) {
+  return (
+    <div style={{
+      position: 'absolute', left: Math.max(2, rect.left - 12), top: Math.max(2, rect.top - 12),
+      width: 22, height: 22, borderRadius: '50%', background: '#f59e0b', color: '#1c1406',
+      fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 0 0 2px rgba(0,0,0,0.55)', pointerEvents: 'none'
+    }}>{n}</div>
+  );
+}
+
+function MobileHelpLegend({ items, style, compact }) {
+  return (
+    <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8, pointerEvents: 'none', ...style }}>
+      {items.map(({ n, title, text, short }) => (
+        <div key={n} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+          <span style={{
+            flexShrink: 0, width: compact ? 18 : 20, height: compact ? 18 : 20, borderRadius: '50%', background: '#f59e0b', color: '#1c1406',
+            fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1
+          }}>{n}</span>
+          <span style={{ fontSize: compact ? 11 : 12, color: '#cbd5e1', lineHeight: 1.3 }}>
+            <b style={{ fontSize: compact ? 13 : 14, fontWeight: 600, color: '#ffffff' }}>{title}</b> — {compact ? short : text}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MobileHelpCallouts() {
+  const pad = 4;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  // On short screens (e.g. 360x640) the full-length text no longer fits between the
+  // controls, so use the compact legend: shorter wording, smaller type, tighter rows.
+  const compact = vh < 700;
+  const measured = [...MOBILE_HELP_TOP, ...MOBILE_HELP_BOTTOM].map((item) => ({ ...item, rect: getUnionRect(item.selector) }));
+  const rectOf = (n) => measured.find((item) => item.n === n)?.rect || null;
+
+  // Top legend: just below the add/sign-in card, left of the options column.
+  const search = rectOf(1);
+  const options = rectOf(2);
+  const topClusterBottom = Math.max(...[1, 3, 4].map((n) => rectOf(n)?.bottom ?? 0));
+  const topLegendRight = options ? options.left - 12 : vw - 16;
+
+  // Bottom legend: below the centred Close button, left of the share / contact buttons,
+  // and above the Landmarks / Filters controls.
+  const share = rectOf(5);
+  const contact = rectOf(6);
+  const bottomLegendRight = Math.min(...[share, contact].filter(Boolean).map((r) => r.left), vw) - 12;
+  const bottomLegendTop = vh / 2 + (compact ? 34 : 40);
+
+  return (
+    <>
+      {measured.filter((item) => item.rect).map(({ n, rect }) => (
+        <React.Fragment key={n}>
+          <div className="instruction-box-pulse" style={{
+            position: 'absolute',
+            left: rect.left - pad, top: rect.top - pad,
+            width: rect.right - rect.left + pad * 2,
+            // Clamped so a control that sits flush with the screen edge keeps its outline visible.
+            height: Math.min(rect.bottom + pad, vh - 2) - (rect.top - pad),
+            border: '2px dashed rgba(255, 255, 255, 0.95)', borderRadius: 14, pointerEvents: 'none'
+          }} />
+          <MobileHelpBadge n={n} rect={{ left: rect.left - pad, top: rect.top - pad }} />
+        </React.Fragment>
+      ))}
+
+      <MobileHelpLegend
+        items={MOBILE_HELP_TOP}
+        compact={compact}
+        style={{ left: 16, top: (search || options ? topClusterBottom : 90) + (compact ? 10 : 16), width: Math.max(160, topLegendRight - 16) }}
+      />
+      <MobileHelpLegend
+        items={MOBILE_HELP_BOTTOM}
+        compact={compact}
+        style={{ left: 16, top: bottomLegendTop, width: Math.max(160, bottomLegendRight - 16) }}
+      />
+    </>
+  );
+}
+
 export default function HelpInstructionOverlay({ onClose }) {
   const [, setResizeTick] = React.useState(0);
   const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -196,68 +300,7 @@ export default function HelpInstructionOverlay({ onClose }) {
           </div>
         </>
       ) : isMobile ? (
-        <>
-          {/* MOBILE: ADD PROPERTY / SIGN IN */}
-          <div style={{
-            position: 'absolute', top: 18, left: 24,
-            textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4
-          }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff' }}>Add Your Property</span>
-            <span style={{ fontSize: 11, color: '#cbd5e1' }}>Submit a new property listing</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff', marginTop: 4 }}>Sign In</span>
-            <span style={{ fontSize: 11, color: '#cbd5e1' }}>Track your submitted requests</span>
-          </div>
-
-          {/* MOBILE: SEARCH BAR */}
-          <div style={{
-            position: 'absolute', top: 70, left: 24,
-            textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4
-          }}>
-            <div style={{ fontSize: 20, color: '#ffffff' }}>↑</div>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Search</span>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Search for a place or property...</span>
-          </div>
-
-          {/* MOBILE: OPTIONS */}
-          <div style={{
-            position: 'absolute', top: 70, right: 24,
-            textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
-          }}>
-            <div style={{ fontSize: 20, color: '#ffffff' }}>↑</div>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Options</span>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Help & tools</span>
-          </div>
-
-          {/* MOBILE: SHARE */}
-          <div style={{
-            position: 'absolute', bottom: 196, right: 24,
-            textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
-          }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#ffffff' }}>Share</span>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Share this map view</span>
-            <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
-          </div>
-
-          {/* MOBILE: WHATSAPP */}
-          <div style={{
-            position: 'absolute', bottom: 140, right: 24,
-            textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4
-          }}>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Contact Us</span>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>on WhatsApp</span>
-            <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
-          </div>
-
-          {/* MOBILE: FILTERS */}
-          <div style={{
-            position: 'absolute', bottom: 116, left: '50%', transform: 'translateX(-50%)',
-            textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
-          }}>
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#ffffff' }}>Filters</span>
-            <span style={{ fontSize: 12, color: '#cbd5e1' }}>Find by category · toggle Landmarks & Labels</span>
-            <div style={{ fontSize: 20, color: '#ffffff' }}>↓</div>
-          </div>
-        </>
+        <MobileHelpCallouts />
       ) : (
         <>
           {/* TOP LEFT: ADD YOUR PROPERTY / SIGN IN */}
