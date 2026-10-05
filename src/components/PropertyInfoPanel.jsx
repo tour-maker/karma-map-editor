@@ -8,6 +8,7 @@ import { getFeatureAreaUnit } from '../utils/unitFilter';
 import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
 import { getPlotShareUrl } from '../utils/shareUrl';
 import { stripShareUrl } from '../utils/shareMessage';
+import { applyAreaChange } from '../utils/areaSelection';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
@@ -206,13 +207,16 @@ export default function PropertyInfoPanel() {
     brokerPhone: ''
   });
 
-  const selectedParentLocation = formData.parentLocation || determineParentLocation(formData.location);
-  const secondaryLocationOptions = Array.from(new Set([
-    ...(dynamicLocationMap[selectedParentLocation] || []),
+  // Sub-areas that belong to a given Primary Location: those seen on real plots plus those
+  // listed in the Areas sheet (this is where areas moved with "Move Area" end up).
+  const secondaryOptionsFor = (parent) => Array.from(new Set([
+    ...(dynamicLocationMap[parent] || []),
     ...syncedAreas
-      .filter(area => area.parent?.toLowerCase() === String(selectedParentLocation || '').toLowerCase() && area.secondary)
+      .filter(area => area.parent?.toLowerCase() === String(parent || '').toLowerCase() && area.secondary)
       .map(area => area.secondary)
   ]));
+  const selectedParentLocation = formData.parentLocation || determineParentLocation(formData.location);
+  const secondaryLocationOptions = secondaryOptionsFor(selectedParentLocation);
 
   useEffect(() => {
     if (displayFeature && displayFeature.data) {
@@ -270,20 +274,10 @@ export default function PropertyInfoPanel() {
       return;
     }
     if (!isEdit) return;
-    setFormData(prev => {
-      const next = { ...prev, [field]: value };
-      if (field === 'location') {
-        next.parentLocation = determineParentLocation(value);
-      }
-      if (field === 'parentLocation') {
-        if (value && value.toLowerCase() !== 'surat') {
-          next.location = value;
-        } else if (value && value.toLowerCase() === 'surat') {
-          next.location = '';
-        }
-      }
-      return next;
-    });
+    setFormData(prev => applyAreaChange(prev, field, value, {
+      subsFor: secondaryOptionsFor,
+      deriveParent: determineParentLocation
+    }));
   };
 
   const handleSave = async () => {
