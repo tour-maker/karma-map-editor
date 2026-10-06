@@ -10,6 +10,7 @@ import { getPlotShareUrl } from '../utils/shareUrl';
 import { stripShareUrl } from '../utils/shareMessage';
 import { applyAreaChange } from '../utils/areaSelection';
 import { uniqueNames, collectSubAreas } from '../utils/areaNames';
+import UserDetailsCard from './UserDetailsCard';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
@@ -187,6 +188,29 @@ export default function PropertyInfoPanel() {
   }, [feature]);
 
   const displayFeature = feature || cachedFeature;
+
+  // Admin only: who submitted this polygon (looked up when the private-details eye is opened).
+  // `{ id, status: 'loading' | 'none' | 'error' | 'ok', data }` — keyed by polygon so a stale answer is never shown.
+  const [submitter, setSubmitter] = useState({ id: null, status: 'loading', data: null });
+  useEffect(() => {
+    const polygonId = displayFeature?.id;
+    if (!showPartyDetails || !isAdminAuthenticated || !polygonId) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const jwt = sessionStorage.getItem('karmaAdminJWT');
+        const res = await fetch(`${API_BASE_URL}/api/submissions/by-sheet/${encodeURIComponent(polygonId)}`, {
+          headers: { Authorization: `Bearer ${jwt}` }
+        });
+        if (cancelled) return;
+        if (res.ok) setSubmitter({ id: polygonId, status: 'ok', data: await res.json() });
+        else setSubmitter({ id: polygonId, status: res.status === 404 ? 'none' : 'error', data: null });
+      } catch {
+        if (!cancelled) setSubmitter({ id: polygonId, status: 'error', data: null });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showPartyDetails, isAdminAuthenticated, displayFeature?.id]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState('');
@@ -1015,6 +1039,30 @@ export default function PropertyInfoPanel() {
                       />
                     </div>
                   </div>
+
+                  {isAdminAuthenticated && (
+                    <div style={{ borderTop: `1px solid ${GLASS_COLORS.border}`, paddingTop: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Added by</div>
+                      {submitter.id !== displayFeature?.id ? (
+                        <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>Loading...</div>
+                      ) : submitter.status === 'ok' ? (
+                        <UserDetailsCard
+                          user={submitter.data.user}
+                          property={{
+                            partyName: formData.partyName, partyPhone: formData.partyPhone,
+                            brokerName: formData.brokerName, brokerPhone: formData.brokerPhone
+                          }}
+                          style={{ marginTop: 6 }}
+                        />
+                      ) : (
+                        <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>
+                          {submitter.status === 'none'
+                            ? 'Not added by a user account (drawn by an admin or imported from the sheet).'
+                            : 'Could not load who added this polygon.'}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

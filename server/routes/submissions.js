@@ -1,4 +1,5 @@
 import express from 'express';
+import User from '../models/User.js';
 import Submission from '../models/Submission.js';
 import { appendApprovedSubmission, removeSubmissionFromSheet } from '../sheetsHelper.js';
 import { requireAdmin, requireUser } from '../middleware/auth.js';
@@ -72,6 +73,45 @@ router.get('/', requireAdmin, async (req, res) => {
     res.json(submissions);
   } catch (error) {
     console.error('Fetch submissions error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// @route   GET /api/submissions/by-sheet/:sheetId
+// @desc    Who created an approved polygon: the submitting account with its activity summary,
+//          for the admin's polygon details panel. 404 when the polygon was not submitted by a
+//          user (drawn by an admin or imported from the sheet). (Admin only)
+router.get('/by-sheet/:sheetId', requireAdmin, async (req, res) => {
+  try {
+    const submission = await Submission.findOne({ sheetId: String(req.params.sheetId) });
+    if (!submission) return res.status(404).json({ error: 'Not submitted by a user' });
+
+    const user = await User.findById(submission.userId).select('username email firstName lastName createdAt isDeleted');
+    const all = await Submission.find({ userId: submission.userId }).select('status type parentLocation createdAt');
+    const count = (status) => all.filter(item => item.status === status).length;
+    const lastSubmissionAt = all.reduce((latest, item) => (!latest || item.createdAt > latest ? item.createdAt : latest), null);
+
+    res.json({
+      submittedAt: submission.createdAt,
+      user: {
+        _id: String(submission.userId),
+        username: user?.username || submission.username,
+        email: user?.email || '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        createdAt: user?.createdAt || null,
+        isDeleted: Boolean(user?.isDeleted),
+        totalProperties: all.length,
+        approvedCount: count('approved'),
+        pendingCount: count('pending'),
+        rejectedCount: count('rejected'),
+        lastSubmissionAt,
+        types: all.map(item => item.type),
+        locations: all.map(item => item.parentLocation)
+      }
+    });
+  } catch (error) {
+    console.error('Fetch submitter error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
