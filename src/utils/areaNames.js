@@ -27,3 +27,29 @@ export function collectSubAreas(parent, { syncedAreas = [], dynamicMap = {}, cat
     ...fromMap(dynamicMap),
   ]);
 }
+
+// The spelling already in use for a name (ignoring capitals), or the name as typed when it is new.
+export function matchExistingName(name, options = []) {
+  const text = String(name ?? '').trim();
+  const found = options.find((option) => keyOf(option) === keyOf(text));
+  return found ?? text;
+}
+
+// Tells whether a request names an area the map does not know yet. A request whose location equals
+// its Primary (no sub-area chosen) has no new sub-area.
+export function getAreaNovelty(parent, location, { syncedAreas = [], dynamicMap = {}, categoryMap = {}, parents = [] } = {}) {
+  const parentName = String(parent ?? '').trim();
+  const subName = String(location ?? '').trim();
+  if (!parentName) return { newParent: false, newSub: false };
+  const knownParents = uniqueNames([
+    ...parents,
+    ...syncedAreas.map((area) => area?.parent),
+    ...Object.keys(categoryMap),
+    ...Object.keys(dynamicMap),
+  ]);
+  const newParent = !knownParents.some((name) => keyOf(name) === keyOf(parentName));
+  const hasSub = subName && keyOf(subName) !== keyOf(parentName);
+  const subs = collectSubAreas(parentName, { syncedAreas, dynamicMap, categoryMap });
+  const newSub = Boolean(hasSub) && !subs.some((name) => keyOf(name) === keyOf(subName));
+  return { newParent, newSub };
+}

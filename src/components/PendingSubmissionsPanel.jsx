@@ -6,7 +6,8 @@ import { useGoogleMap } from '../context/GoogleMapContext';
 import { API_BASE_URL } from '../config/api';
 import { CATEGORY_MAP, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
-import { uniqueNames, collectSubAreas } from '../utils/areaNames';
+import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty } from '../utils/areaNames';
+import { updateAreasSheet } from '../services/googleSheets';
 
 export default function PendingSubmissionsPanel() {
   const [currentView, setCurrentView] = useState('summary'); // 'summary', 'pending', 'approved', 'rejected'
@@ -23,10 +24,11 @@ export default function PendingSubmissionsPanel() {
   const features = useMapStore(state => state.features);
   const customAreas = useMapStore(state => state.customAreas) || [];
   const syncedAreas = useMapStore(state => state.syncedAreas) || [];
+  const spreadsheetId = useMapStore(state => state.spreadsheetId);
 
   // Full lists for the Parent Area / Sub Area dropdowns, built from every place an area can
   // live: the built-in list, areas the admin created, the Areas sheet, and the plots themselves.
-  const { parentOptions, subOptionsFor } = useMemo(() => {
+  const { parentOptions, subOptionsFor, noveltyOf } = useMemo(() => {
     const dynamicMap = buildDynamicLocationMap(features);
     const isReal = (n) => n && String(n).trim() && String(n).trim().toLowerCase() !== 'unassigned';
     // Same area spelled two ways (e.g. "p1" / "P1") is listed once; the Areas sheet spelling wins.
@@ -40,7 +42,8 @@ export default function PendingSubmissionsPanel() {
     const subsFor = (parent) => collectSubAreas(parent, { syncedAreas, categoryMap: CATEGORY_MAP, dynamicMap })
       .filter(isReal)
       .sort((a, b) => a.localeCompare(b));
-    return { parentOptions: parents, subOptionsFor: subsFor };
+    const noveltyOf = (parent, location) => getAreaNovelty(parent, location, { syncedAreas, dynamicMap, categoryMap: CATEGORY_MAP, parents });
+    return { parentOptions: parents, subOptionsFor: subsFor, noveltyOf };
   }, [features, customAreas, syncedAreas]);
 
   useEffect(() => {
@@ -91,6 +94,25 @@ export default function PendingSubmissionsPanel() {
     }
   };
 
+  // A request can name an area the map does not know yet. Once it is approved, record that
+  // area in the Areas tab (and in the app) so it shows up everywhere like any other area.
+  const registerNewArea = async (approved) => {
+    const parent = String(approved.parentLocation || '').trim();
+    const location = String(approved.location || '').trim();
+    const { newParent, newSub } = noveltyOf(parent, location);
+    if (!newParent && !newSub) return;
+    const secondary = location && location.toLowerCase() !== parent.toLowerCase() ? location : '';
+    try {
+      await updateAreasSheet(spreadsheetId, { add: [{ parent, secondary }] });
+      useMapStore.setState(state => ({
+        syncedAreas: [...(state.syncedAreas || []), { parent, secondary }]
+      }));
+    } catch (error) {
+      console.error('Could not record the new area in the Areas tab:', error);
+      toast.error('Approved, but the new area could not be added to the Areas tab. Add it from the Area tab.');
+    }
+  };
+
   const handleApprove = async (sub) => {
     setProcessingId(sub._id);
     try {
@@ -128,6 +150,7 @@ export default function PendingSubmissionsPanel() {
       };
 
       addFeatures([newFeature]);
+      await registerNewArea(approved);
 
       if (result.sheetError) {
         toast.success('Approved! (Sheet sync issue: ' + result.sheetError + ')');
@@ -350,8 +373,9 @@ export default function PendingSubmissionsPanel() {
                           <SearchableSelect
                             value={editData.parentLocation}
                             options={parentOptions}
-                            placeholder="Select parent area"
-                            onChange={(val) => setEditData(prev => {
+                            placeholder="Select or add new parent area"
+                            onChange={(typed) => setEditData(prev => {
+                              const val = matchExistingName(typed, parentOptions);
                               const subs = subOptionsFor(val);
                               const keepSub = subs.some(s => s.toLowerCase() === String(prev.location || '').toLowerCase());
                               // No sub-areas -> the plot sits directly under the parent (location = parent),
@@ -366,9 +390,8 @@ export default function PendingSubmissionsPanel() {
                           <SearchableSelect
                             value={editData.location}
                             options={subOptionsFor(editData.parentLocation)}
-                            disabled={subOptionsFor(editData.parentLocation).length === 0}
-                            placeholder={subOptionsFor(editData.parentLocation).length === 0 ? 'No sub-areas' : 'Select sub area'}
-                            onChange={(val) => setEditData(prev => ({ ...prev, location: val }))}
+                            placeholder="Select or add new sub area"
+                            onChange={(typed) => setEditData(prev => ({ ...prev, location: matchExistingName(typed, subOptionsFor(prev.parentLocation)) }))}
                           />
                         </div>
                       </div>
@@ -379,8 +402,21 @@ export default function PendingSubmissionsPanel() {
                 })()}
               </div>
             ) : <div style={{ fontSize: 13, color: '#e2e8f0', marginBottom: 12 }}>
-              <div><strong>Parent Area:</strong> {sub.parentLocation || sub.location || '-'}</div>
-              <div><strong>Sub Area:</strong> {sub.location && sub.location !== sub.parentLocation ? sub.location : '-'}</div>
+              {(() => {
+                const novelty = sub.status === 'pending' ? noveltyOf(sub.parentLocation || sub.location, sub.location) : { newParent: false, newSub: false };
+                const badge = (text) => (
+                  <span style={{
+                    marginLeft: 6, padding: '1px 7px', borderRadius: 999, fontSize: 10, fontWeight: 700, letterSpacing: '0.3px',
+                    background: 'rgba(56, 189, 248, 0.14)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8'
+                  }}>{text}</span>
+                );
+                return (
+                  <>
+                    <div><strong>Parent Area:</strong> {sub.parentLocation || sub.location || '-'}{novelty.newParent && badge('NEW AREA')}</div>
+                    <div><strong>Sub Area:</strong> {sub.location && sub.location !== sub.parentLocation ? sub.location : '-'}{novelty.newSub && badge('NEW SUB-AREA')}</div>
+                  </>
+                );
+              })()}
               <div><strong>Area:</strong> {sub.area ? `${sub.area} ${sub.areaUnit || ''}`.trim() : 'N/A'}</div>
               <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
                 <span><strong>TP:</strong> {sub.tp || '-'}</span>

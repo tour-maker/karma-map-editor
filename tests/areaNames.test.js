@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { uniqueNames, collectSubAreas } from '../src/utils/areaNames';
+import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty } from '../src/utils/areaNames';
 
 describe('uniqueNames', () => {
   it('merges names that differ only by capital letters (the "S1" / "s1" case)', () => {
@@ -52,5 +52,36 @@ describe('collectSubAreas', () => {
     expect(collectSubAreas('', { syncedAreas, dynamicMap })).toEqual([]);
     expect(collectSubAreas('Nowhere', { syncedAreas, dynamicMap })).toEqual([]);
     expect(collectSubAreas(undefined)).toEqual([]);
+  });
+});
+
+
+describe('matchExistingName', () => {
+  it('reuses the existing spelling', () => {
+    expect(matchExistingName(' surat ', ['Vapi', 'Surat'])).toBe('Surat');
+  });
+  it('keeps a new name as typed (trimmed)', () => {
+    expect(matchExistingName(' Navsari ', ['Surat'])).toBe('Navsari');
+  });
+});
+
+describe('getAreaNovelty', () => {
+  const ctx = {
+    syncedAreas: [{ parent: 'Surat', secondary: 'Adajan' }],
+    dynamicMap: { Surat: ['Vesu'] },
+    categoryMap: {}
+  };
+  it('existing area and sub is not new', () => {
+    expect(getAreaNovelty('surat', 'adajan', ctx)).toEqual({ newParent: false, newSub: false });
+  });
+  it('existing primary with a new sub-area', () => {
+    expect(getAreaNovelty('Surat', 'Pal', ctx)).toEqual({ newParent: false, newSub: true });
+  });
+  it('brand-new primary', () => {
+    expect(getAreaNovelty('Navsari', 'Navsari', ctx)).toEqual({ newParent: true, newSub: false });
+    expect(getAreaNovelty('Navsari', 'Dandi', ctx)).toEqual({ newParent: true, newSub: true });
+  });
+  it('empty input is not new', () => {
+    expect(getAreaNovelty('', '', ctx)).toEqual({ newParent: false, newSub: false });
   });
 });

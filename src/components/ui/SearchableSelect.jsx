@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function SearchableSelect({ value, options, onChange, disabled, placeholder = "Select Location" }) {
+export default function SearchableSelect({ value, options, onChange, disabled, placeholder = "Select Location", allowCreate = true }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const wrapperRef = useRef(null);
@@ -17,6 +17,15 @@ export default function SearchableSelect({ value, options, onChange, disabled, p
   
   const filteredOptions = options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
   // The current value is highlighted even if it is spelled with different capitals than the list entry.
+  const typed = searchTerm.trim();
+  // Offer to create the typed name unless it already exists (ignoring capitals).
+  const canCreate = Boolean(allowCreate && typed && !options.some(opt => String(opt).trim().toLowerCase() === typed.toLowerCase()));
+  const pickCreated = () => {
+    const existing = options.find(opt => String(opt).trim().toLowerCase() === typed.toLowerCase());
+    onChange(existing ?? typed);
+    setIsOpen(false);
+    setSearchTerm('');
+  };
   const isSelected = (opt) => String(value ?? '').trim().toLowerCase() === String(opt).trim().toLowerCase();
 
   return (
@@ -44,7 +53,7 @@ export default function SearchableSelect({ value, options, onChange, disabled, p
              <input 
                 type="text" 
                 autoFocus
-                placeholder="Search or type new..."
+                placeholder={allowCreate ? "Search or type a new name..." : "Search..."}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 style={{
@@ -52,29 +61,32 @@ export default function SearchableSelect({ value, options, onChange, disabled, p
                   color: '#e2e8f0', outline: 'none', boxSizing: 'border-box', fontSize: 13
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchTerm) {
-                    onChange(searchTerm);
-                    setIsOpen(false);
-                    setSearchTerm('');
+                  if (e.key === 'Enter' && typed && allowCreate) {
+                    pickCreated();
                     e.preventDefault();
                   }
                 }}
               />
           </div>
           
-          {filteredOptions.length === 0 ? (
-            <div 
-                style={{ padding: '10px 12px', color: '#f59e0b', fontSize: 12, cursor: 'pointer' }}
-                onClick={() => {
-                  if (searchTerm) {
-                    onChange(searchTerm);
-                    setIsOpen(false);
-                    setSearchTerm('');
-                  }
-                }}
+          {canCreate && (
+            <div
+              role="option"
+              onClick={pickCreated}
+              style={{
+                padding: '10px 12px', color: '#f59e0b', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                background: 'rgba(245, 158, 11, 0.1)', borderBottom: '1px solid rgba(255,255,255,0.08)'
+              }}
             >
-              Press Enter to add "{searchTerm}"
+              + Add new: "{typed}"
             </div>
+          )}
+          {filteredOptions.length === 0 ? (
+            !canCreate && (
+              <div style={{ padding: '10px 12px', color: '#94a3b8', fontSize: 12 }}>
+                {typed ? 'No match' : 'Type to search or add a new name'}
+              </div>
+            )
           ) : (
             filteredOptions.map(opt => (
               <div 

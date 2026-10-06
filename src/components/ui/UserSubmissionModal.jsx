@@ -2,10 +2,10 @@ import { useState, useMemo } from 'react';
 import { FiX, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
-import { determineParentLocation, buildDynamicLocationMap } from '../../config/categories';
+import { determineParentLocation, buildDynamicLocationMap, CATEGORY_MAP } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
 import { API_BASE_URL } from '../../config/api';
-import { uniqueNames, collectSubAreas } from '../../utils/areaNames';
+import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty } from '../../utils/areaNames';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
@@ -33,13 +33,18 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const customAreas = useMapStore(state => state.customAreas) || [];
+  const syncedAreas = useMapStore(state => state.syncedAreas) || [];
   const features = useMapStore(state => state.features);
   const dynamicLocationMap = useMemo(() => buildDynamicLocationMap(features), [features]);
-  const allParentLocations = uniqueNames([...customAreas, ...Object.keys(dynamicLocationMap)]).sort((a, b) => {
+  const allParentLocations = uniqueNames([...syncedAreas.map(a => a.parent), ...customAreas, ...Object.keys(dynamicLocationMap)]).sort((a, b) => {
     if (a.toLowerCase() === 'surat') return -1;
     if (b.toLowerCase() === 'surat') return 1;
     return a.localeCompare(b);
   });
+
+  const selectedParent = formData.parentLocation || determineParentLocation(formData.location);
+  const subOptions = collectSubAreas(selectedParent, { syncedAreas, categoryMap: CATEGORY_MAP, dynamicMap: dynamicLocationMap });
+  const novelty = getAreaNovelty(selectedParent, formData.location, { syncedAreas, dynamicMap: dynamicLocationMap, categoryMap: CATEGORY_MAP, parents: allParentLocations });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -134,12 +139,14 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Primary Location</label>
               <SearchableSelect
-                value={formData.parentLocation || determineParentLocation(formData.location)}
+                value={selectedParent}
                 options={allParentLocations}
-                onChange={(val) => {
+                placeholder="Select or add new"
+                onChange={(typed) => {
+                  const val = matchExistingName(typed, allParentLocations);
                   setFormData(prev => {
                     const next = { ...prev, parentLocation: val };
-                    const hasSubs = val && (dynamicLocationMap[val] || []).length > 0;
+                    const hasSubs = val && collectSubAreas(val, { syncedAreas, categoryMap: CATEGORY_MAP, dynamicMap: dynamicLocationMap }).length > 0;
                     next.location = hasSubs ? '' : (val || '');
                     return next;
                   });
@@ -150,11 +157,23 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Secondary Location</label>
               <SearchableSelect
                 value={formData.location}
-                options={collectSubAreas(formData.parentLocation || determineParentLocation(formData.location), { dynamicMap: dynamicLocationMap })}
-                onChange={(val) => setFormData(prev => ({ ...prev, location: val }))}
+                options={subOptions}
+                placeholder="Select or add new"
+                onChange={(typed) => setFormData(prev => ({ ...prev, location: matchExistingName(typed, subOptions) }))}
               />
             </div>
           </div>
+          {(novelty.newParent || novelty.newSub) && (
+            <div style={{
+              marginTop: -6, fontSize: 12, color: '#f59e0b', background: 'rgba(245, 158, 11, 0.08)',
+              border: `1px solid ${GLASS_COLORS.border}`, borderRadius: GLASS_RADIUS.control, padding: '8px 12px'
+            }}>
+              {novelty.newParent
+                ? `"${selectedParent}" is a new primary area.`
+                : `"${formData.location}" is a new sub-area of ${selectedParent}.`}
+              {' '}It is sent with this request and added once the admin approves it.
+            </div>
+          )}
 
           <div>
             <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Area</label>
