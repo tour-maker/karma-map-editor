@@ -2,19 +2,19 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { FiX, FiSave, FiMaximize, FiCrosshair, FiMapPin, FiBriefcase, FiUser, FiExternalLink, FiTrash2, FiShare2, FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
 import { useMapStore } from '../store/useMapStore';
-import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap } from '../config/categories';
+import { PROPERTY_TYPES, PROPERTY_TYPE_COLORS, normalizePropertyType, getPropertyTypeColor, determineParentLocation, buildDynamicLocationMap, CATEGORY_MAP } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
 import { getFeatureAreaUnit } from '../utils/unitFilter';
 import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
 import { getPlotShareUrl } from '../utils/shareUrl';
 import { stripShareUrl } from '../utils/shareMessage';
 import { applyAreaChange } from '../utils/areaSelection';
-import { uniqueNames, collectSubAreas, displaySubArea } from '../utils/areaNames';
+import { uniqueNames, collectSubAreas, displaySubArea, getAreaNovelty } from '../utils/areaNames';
 import UserDetailsCard from './UserDetailsCard';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
 import toast from 'react-hot-toast';
-import { requestLogin, syncFeatureToSheet, withSyncRetry } from '../services/googleSheets'
+import { requestLogin, syncFeatureToSheet, withSyncRetry, updateAreasSheet } from '../services/googleSheets'
 import { API_BASE_URL } from '../config/api';
 
 const MATCH_TIER_BADGES = {
@@ -370,6 +370,14 @@ export default function PropertyInfoPanel() {
         return;
       }
 
+      // Work out BEFORE the update whether this save introduces a new primary / sub-area,
+      // since afterwards the plot itself makes it look known.
+      const novelty = isMarker
+        ? { newParent: false, newSub: false }
+        : getAreaNovelty(updatedData.parentLocation, updatedData.location, {
+            syncedAreas, dynamicMap: dynamicLocationMap, categoryMap: CATEGORY_MAP, parents: allParentLocations
+          });
+
       // Optimistic local update, marked pending until the sync actually succeeds.
       updateFeature(displayFeature.id, {
         data: updatedData,
@@ -396,6 +404,19 @@ export default function PropertyInfoPanel() {
         updateFeature(displayFeature.id, { syncStatus: 'synced', isNew: false });
       }
       toast.dismiss('sync-sheet');
+      if (novelty.newParent || novelty.newSub) {
+        // Record the new area in the Areas tab too (a plot with no sub-area adds the Primary alone).
+        const parent = String(updatedData.parentLocation || '').trim();
+        const location = String(updatedData.location || '').trim();
+        const secondary = location && location.toLowerCase() !== parent.toLowerCase() ? location : '';
+        try {
+          await updateAreasSheet(spreadsheetId, { add: [{ parent, secondary }] });
+          useMapStore.setState(state => ({ syncedAreas: [...(state.syncedAreas || []), { parent, secondary }] }));
+        } catch (areaErr) {
+          console.error('Could not record the new area in the Areas tab:', areaErr);
+          toast.error('Saved, but the new area could not be added to the Areas tab. Add it from the Area tab.');
+        }
+      }
       setSaveSuccess('Property saved and synced to Google Sheets');
       window.setTimeout(() => setSaveSuccess(''), 2200);
       setIsOpen(false);
