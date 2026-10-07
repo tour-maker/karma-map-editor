@@ -9,7 +9,7 @@ import { isMeaningfulValue, resolveTpOpFp } from '../utils/propertyFields';
 import { getPlotShareUrl } from '../utils/shareUrl';
 import { stripShareUrl } from '../utils/shareMessage';
 import { applyAreaChange } from '../utils/areaSelection';
-import { uniqueNames, collectSubAreas } from '../utils/areaNames';
+import { uniqueNames, collectSubAreas, displaySubArea } from '../utils/areaNames';
 import UserDetailsCard from './UserDetailsCard';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GLASS_SHADOW, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../styles/glass';
 
@@ -895,7 +895,8 @@ export default function PropertyInfoPanel() {
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
             <SearchableSelect
-              value={formData.location}
+              value={displaySubArea(formData.location, selectedParentLocation)}
+              placeholder="None (optional)"
               options={secondaryLocationOptions}
               onChange={(val) => handleChange('location', val)}
               disabled={!isEdit}

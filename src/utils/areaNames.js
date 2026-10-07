@@ -53,3 +53,10 @@ export function getAreaNovelty(parent, location, { syncedAreas = [], dynamicMap 
   const newSub = Boolean(hasSub) && !subs.some((name) => keyOf(name) === keyOf(subName));
   return { newParent, newSub };
 }
+
+// A plot with no sub-area stores its Primary's name as its location. That is a storage convention,
+// not a sub-area, so forms show the sub-area box as empty in that case.
+export function displaySubArea(location, parent) {
+  const sub = String(location ?? '').trim();
+  return keyOf(sub) === keyOf(parent) ? '' : sub;
+}

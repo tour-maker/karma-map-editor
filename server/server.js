@@ -8,6 +8,7 @@ import documentRoutes from './routes/documents.js';
 import sheetsRoutes from './routes/sheets.js';
 import shareRoutes from './routes/share.js';
 import userRoutes from './routes/users.js';
+import areaEventRoutes from './routes/areaEvents.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/sheets', sheetsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/area-events', areaEventRoutes);
 app.use('/share', shareRoutes);
 
 // MongoDB Connection

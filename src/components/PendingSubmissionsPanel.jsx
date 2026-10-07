@@ -6,7 +6,7 @@ import { useGoogleMap } from '../context/GoogleMapContext';
 import { API_BASE_URL } from '../config/api';
 import { CATEGORY_MAP, buildDynamicLocationMap } from '../config/categories';
 import SearchableSelect from './ui/SearchableSelect';
-import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty } from '../utils/areaNames';
+import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty, displaySubArea } from '../utils/areaNames';
 import { updateAreasSheet } from '../services/googleSheets';
 
 export default function PendingSubmissionsPanel() {
@@ -388,9 +388,9 @@ export default function PendingSubmissionsPanel() {
                       <div style={labelStyle}>Sub Area
                         <div style={{ marginTop: 3 }}>
                           <SearchableSelect
-                            value={editData.location}
+                            value={displaySubArea(editData.location, editData.parentLocation)}
                             options={subOptionsFor(editData.parentLocation)}
-                            placeholder="Select or add new sub area"
+                            placeholder="None (optional)"
                             onChange={(typed) => setEditData(prev => ({ ...prev, location: matchExistingName(typed, subOptionsFor(prev.parentLocation)) }))}
                           />
                         </div>

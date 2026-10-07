@@ -15,6 +15,9 @@ import PendingSubmissionsPanel from './PendingSubmissionsPanel';
 import UsersPanel from './UsersPanel';
 import { getMovePanelPosition, MOVE_PANEL_WIDTH } from '../utils/movePanelPosition';
 import { API_BASE_URL } from '../config/api';
+import UnassignedPlots from './UnassignedPlots';
+import { findPlotOrigins, logAreaEvent, fetchAreaEvents } from '../utils/areaLog';
+import { collectSubAreas } from '../utils/areaNames';
 
 // Inject Custom Scrollbar for Projects Panel
 if (typeof document !== 'undefined' && !document.getElementById('projects-panel-scrollbar-styles')) {
@@ -170,12 +173,15 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
   const customAreas = useMapStore(state => state.customAreas) || [];
-  const syncedAreas = useMapStore(state => state.syncedAreas) || [];
+  const syncedAreasRaw = useMapStore(state => state.syncedAreas);
+  const syncedAreas = useMemo(() => syncedAreasRaw || [], [syncedAreasRaw]);
   const setFilterPrimary = useMapStore(state => state.setFilterPrimary);
   const setFilterSecondary = useMapStore(state => state.setFilterSecondary);
   const renameArea = useMapStore(state => state.renameArea);
   const deleteArea = useMapStore(state => state.deleteArea);
   const deleteSubLocation = useMapStore(state => state.deleteSubLocation);
+  const renameSubLocation = useMapStore(state => state.renameSubLocation);
+  const reassignFeaturesTo = useMapStore(state => state.reassignFeaturesTo);
   const mergeAreaIntoPrimary = useMapStore(state => state.mergeAreaIntoPrimary);
   const moveSubArea = useMapStore(state => state.moveSubArea);
   const promoteSubToPrimary = useMapStore(state => state.promoteSubToPrimary);
@@ -340,6 +346,130 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
 
     return list;
   }, [features, customAreas, syncedAreas, dynamicLocationMap]);
+
+  const isUnassignedName = (name) => String(name || '').trim().toLowerCase() === 'unassigned';
+
+  // Renames a Primary (parentName null) or one Sub-area, then saves it: the affected plots, and the
+  // Areas tab, so the next sheet poll cannot bring the old name back.
+  const commitRename = async (oldName, newName, parentName = null) => {
+    const to = String(newName || '').trim();
+    if (!to || to === oldName) return;
+    const norm = (v) => String(v || '').trim().toLowerCase();
+    if (isUnassignedName(oldName) || isUnassignedName(to)) {
+      toast.error('"Unassigned" is the holding area for plots - it cannot be renamed or used as a name.');
+      return;
+    }
+    const taken = parentName
+      ? collectSubAreas(parentName, { syncedAreas, dynamicMap: dynamicLocationMap }).some(n => norm(n) === norm(to) && norm(n) !== norm(oldName))
+      : parentLocationsList.some(a => norm(a.name) === norm(to) && norm(a.name) !== norm(oldName));
+    if (taken) {
+      toast.error(`"${to}" already exists${parentName ? ` in ${parentName}` : ''}. Pick a different name, or use Move Area to merge them.`);
+      return;
+    }
+
+    const before = useMapStore.getState();
+    const affectedIds = new Set(before.features.filter(f => {
+      if (!isPropertyPolygon(f)) return false;
+      const loc = norm(f.data?.location);
+      const par = norm(f.data?.parentLocation || f.data?.parent_location);
+      return parentName ? (par === norm(parentName) && loc === norm(oldName)) : par === norm(oldName);
+    }).map(f => f.id));
+    const plots = before.features.filter(f => affectedIds.has(f.id))
+      .map(f => ({ id: f.id, fromParent: f.data?.parentLocation || '', fromLocation: f.data?.location || '' }));
+    const formerPairs = (before.syncedAreas || []).filter(p => norm(p.parent) === norm(oldName));
+
+    if (parentName) renameSubLocation(parentName, oldName, to);
+    else renameArea(oldName, to);
+
+    const toastId = toast.loading('Saving the new name...');
+    try {
+      let areaChanges;
+      if (parentName) {
+        areaChanges = { remove: [{ parent: parentName, secondary: oldName }], add: [{ parent: parentName, secondary: to }] };
+      } else {
+        const pairs = formerPairs.length ? formerPairs : [{ parent: oldName, secondary: '' }];
+        areaChanges = { remove: [{ parent: oldName, secondary: '' }], add: pairs.map(p => ({ parent: to, secondary: p.secondary || '' })) };
+      }
+      if (spreadsheetId) {
+        const renamed = useMapStore.getState().features.filter(f => affectedIds.has(f.id));
+        for (const f of renamed) {
+          await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
+          useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
+        }
+        await withSyncRetry(() => updateAreasSheet(spreadsheetId, areaChanges));
+      }
+      useMapStore.setState(state => {
+        const kept = (state.syncedAreas || []).filter(pair => !areaChanges.remove.some(r =>
+          norm(pair.parent) === norm(r.parent) && (!norm(r.secondary) || norm(pair.secondary) === norm(r.secondary))));
+        areaChanges.add.forEach(pair => {
+          if (!kept.some(e => norm(e.parent) === norm(pair.parent) && norm(e.secondary) === norm(pair.secondary))) kept.push(pair);
+        });
+        return { syncedAreas: kept };
+      });
+      logAreaEvent({ action: parentName ? 'rename-sub' : 'rename-area', area: oldName, parent: parentName || '', to, plots });
+      toast.success(`Renamed to "${to}"`, { id: toastId });
+    } catch (err) {
+      console.error('Rename: sheet sync failed:', err);
+      toast.error(
+        err?.status === 401
+          ? 'Admin session expired - sign in again, then repeat the rename.'
+          : 'The new name was NOT saved to Google Sheets: ' + (err?.message || 'unknown error') + '. It may revert on refresh.',
+        { id: toastId }
+      );
+    }
+  };
+
+  // Moves plots out of "Unassigned" into a real area / sub-area and saves them.
+  const rehomePlots = async (plotIds, dest) => {
+    const idSet = new Set(plotIds);
+    const location = dest.sub || dest.parent;
+    reassignFeaturesTo(plotIds, location, dest.parent);
+    const toastId = toast.loading('Moving plots...');
+    try {
+      if (spreadsheetId) {
+        const moved = useMapStore.getState().features.filter(f => idSet.has(f.id));
+        for (const f of moved) {
+          await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, f, 'update'));
+          useMapStore.getState().updateFeature(f.id, { syncStatus: 'synced' });
+        }
+      }
+      logAreaEvent({
+        action: 'rehome', area: 'Unassigned', to: dest.sub || dest.parent, toParent: dest.parent,
+        plots: plotIds.map(id => ({ id, fromParent: 'Unassigned', fromLocation: 'Unassigned' }))
+      });
+      toast.success(`Moved ${plotIds.length} plot${plotIds.length === 1 ? '' : 's'} to ${dest.sub ? `${dest.parent} > ${dest.sub}` : dest.parent}`, { id: toastId });
+    } catch (err) {
+      console.error('Rehome: sheet sync failed:', err);
+      toast.error('The move was NOT saved to Google Sheets: ' + (err?.message || 'unknown error') + '. It may revert on refresh.', { id: toastId });
+    }
+  };
+
+  // Areas an Unassigned plot can be moved into: every real Primary, and each of its sub-areas.
+  const unassignedDestinations = useMemo(() => {
+    const list = [];
+    parentLocationsList.filter(a => !isUnassignedName(a.name)).forEach(area => {
+      list.push({ parent: area.name, sub: '' });
+      collectSubAreas(area.name, { syncedAreas, dynamicMap: dynamicLocationMap }).forEach(sub => list.push({ parent: area.name, sub }));
+    });
+    return list;
+  }, [parentLocationsList, syncedAreas, dynamicLocationMap]);
+
+  const [areaHistory, setAreaHistory] = useState([]);
+  const unassignedPlots = useMemo(
+    () => (parentLocationsList.find(a => isUnassignedName(a.name))?.features) || [],
+    [parentLocationsList]
+  );
+  const unassignedOpen = !!expandedPrimaries['Unassigned'];
+  useEffect(() => {
+    if (!unassignedOpen) return undefined;
+    let cancelled = false;
+    fetchAreaEvents().then(events => { if (!cancelled) setAreaHistory(events); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [unassignedOpen]);
+  const unassignedOrigins = useMemo(
+    () => findPlotOrigins(areaHistory, unassignedPlots.map(p => p.id)),
+    [areaHistory, unassignedPlots]
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -1219,8 +1349,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 // Area Card Rendering
                 if (row.itemType === 'area') {
                   const isSelected = filterPrimary?.toLowerCase() === row.area.name.toLowerCase();
-                  const hasSubs = row.area.subLocations && row.area.subLocations.length > 0;
-                  const subLocsText = hasSubs
+                  const isUnassignedRow = isUnassignedName(row.area.name);
+                  const hasSubs = isUnassignedRow || (row.area.subLocations && row.area.subLocations.length > 0);
+                  const subLocsText = hasSubs && !isUnassignedRow
                     ? row.area.subLocations.join(', ')
                     : `All plots in ${row.area.name}`;
                   const isExpanded = !!expandedPrimaries[row.area.name];
@@ -1319,10 +1450,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                   }}
                                   onBlur={() => {
                                     const newName = editingPrimary.value.trim();
-                                    if (newName && newName !== editingPrimary.oldName) {
-                                      renameArea(editingPrimary.oldName, newName);
-                                    }
+                                    const oldName = editingPrimary.oldName;
                                     setEditingPrimary(null);
+                                    if (newName && newName !== oldName) commitRename(oldName, newName);
                                   }}
                                   style={{
                                     flex: 1, fontSize: 13, fontWeight: 700, padding: '3px 6px', borderRadius: 6,
@@ -1335,9 +1465,10 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                 <span
                                   onDoubleClick={(e) => {
                                     e.stopPropagation();
+                                    if (isUnassignedName(row.area.name)) return;
                                     setEditingPrimary({ oldName: row.area.name, value: row.area.name });
                                   }}
-                                  title="Double-click to rename"
+                                  title={isUnassignedName(row.area.name) ? 'Holding area for plots without an area' : 'Double-click to rename'}
                                   style={{
                                     fontSize: 13, fontWeight: 700, letterSpacing: '0.2px',
                                     color: isSelected ? '#f59e0b' : (isDark ? '#f8fafc' : '#0f172a'),
@@ -1349,6 +1480,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                              {!isUnassignedName(row.area.name) && (<>
                               <button
                                 type="button"
                                 title={`Move "${row.area.name}" into another Primary Location`}
@@ -1395,6 +1527,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               >
                                 <FiTrash2 size={11} />
                               </button>
+                              </>)}
                               <span style={{
                                 fontSize: 11, fontWeight: 700,
                                 color: isSelected ? '#f59e0b' : (isDark ? '#d9a74a' : '#b45309'),
@@ -1433,9 +1566,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               whiteSpace: hasSubs ? 'nowrap' : 'normal',
                               overflow: 'hidden', textOverflow: 'ellipsis'
                             }}>
-                              {hasSubs
-                                ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}`
-                                : subLocsText}
+                              {isUnassignedRow
+                                ? `${row.area.count} plot${row.area.count === 1 ? '' : 's'} waiting to be moved - where from & move`
+                                : hasSubs
+                                  ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}`
+                                  : subLocsText}
                             </span>
                           </div>
                         </div>
@@ -1447,7 +1582,16 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                             matched its estimated one). Each row is just: pin, name,
                             Move/Delete, plot-count chip — clicking it filters + zooms the
                             map to that Sub-area, same as the old expand-to-navigate did. */}
-                        {isExpanded && hasSubs && (
+                        {isExpanded && isUnassignedRow && (
+                          <UnassignedPlots
+                            plots={row.area.features}
+                            origins={unassignedOrigins}
+                            destinations={unassignedDestinations}
+                            onMove={rehomePlots}
+                            isDark={isDark}
+                          />
+                        )}
+                        {isExpanded && hasSubs && !isUnassignedRow && (
                           <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {row.area.subLocations.map((subName, subIdx) => {
                               const subKey = row.area.name + '::' + subName;
@@ -1491,10 +1635,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                         }}
                                         onBlur={() => {
                                           const newName = editingSubarea.value.trim();
-                                          if (newName && newName !== editingSubarea.oldName) {
-                                            renameArea(editingSubarea.oldName, newName);
-                                          }
+                                          const { oldName, parentName } = editingSubarea;
                                           setEditingSubarea(null);
+                                          if (newName && newName !== oldName) commitRename(oldName, newName, parentName || row.area.name);
                                         }}
                                         style={{
                                           flex: 1, fontSize: 13, fontWeight: 600, padding: '4px 7px', borderRadius: 6,
@@ -1765,7 +1908,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               ];
               const query = String(movePanel.search || '').trim().toLowerCase();
               const targets = parentLocationsList
-                .filter(a => a.name !== movePanel.name && (!movePanel.isSub || a.name !== movePanel.parentName))
+                .filter(a => !isUnassignedName(a.name) && a.name !== movePanel.name && (!movePanel.isSub || a.name !== movePanel.parentName))
                 .filter(a => !query || a.name.toLowerCase().includes(query))
                 .map(a => ({ value: a.name, label: `Move into ${a.name}` }));
               const rowStyle = (active) => ({
@@ -1941,6 +2084,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       ? location === name.toLowerCase() && parent === parentName.toLowerCase()
                       : parent === name.toLowerCase();
                   }).map(f => f.id));
+                  // Remember where each plot came from - once it is in Unassigned the sheet no longer says.
+                  const removedPlots = useMapStore.getState().features.filter(f => affectedIds.has(f.id))
+                    .map(f => ({ id: f.id, fromParent: f.data?.parentLocation || '', fromLocation: f.data?.location || '' }));
                   if (isSub) {
                     deleteSubLocation(parentName, name);
                   } else {
@@ -1969,6 +2115,9 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                           (!isSub || pair.secondary?.toLowerCase() === name.toLowerCase()))
                       )
                     }));
+                    logAreaEvent({
+                      action: isSub ? 'delete-sub' : 'delete-area', area: name, parent: isSub ? parentName : '', plots: removedPlots
+                    });
                     toast.success(
                       `"${name}" deleted` + (rescued.length > 0 ? ' - its plots moved to Unassigned Plots' : ''),
                       { id: toastId, style: { background: '#0f172a', color: '#fca5a5', border: '1px solid rgba(248, 113, 113, 0.4)' } }

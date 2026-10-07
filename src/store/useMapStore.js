@@ -86,22 +86,42 @@ export const useMapStore = create(
              let changed = false;
              const newData = { ...f.data };
 
-             if (newData.location?.toLowerCase() === trimmedOld.toLowerCase()) {
-                newData.location = trimmedNew;
-                changed = true;
-             }
+             // Only plots that belong to this Primary change. A sub-area that merely shares
+             // the name under another Primary is a different place and stays as it is.
              if (newData.parentLocation?.toLowerCase() === trimmedOld.toLowerCase()) {
                 newData.parentLocation = trimmedNew;
                 changed = true;
+                // A plot sitting directly under the Primary stores the Primary's name as its location.
+                if (newData.location?.toLowerCase() === trimmedOld.toLowerCase()) newData.location = trimmedNew;
              }
 
              if (changed) {
-                return { ...f, data: newData };
+                // 'edited' keeps the sheet poll from reverting the rename, and tells the caller what to save.
+                return { ...f, syncStatus: 'edited', data: newData };
              }
              return f;
           });
 
           return { customAreas, features, selectedAreaName: trimmedNew };
+        }),
+
+        // Renames one Sub-area inside ONE Primary only (a same-named sub-area under another
+        // Primary is a different place and stays as it is).
+        renameSubLocation: (parentName, oldName, newName) => set((state) => {
+          const parent = parentName?.trim().toLowerCase();
+          const oldSub = oldName?.trim().toLowerCase();
+          const nextSub = newName?.trim();
+          if (!parent || !oldSub || !nextSub || oldSub === nextSub.toLowerCase()) return state;
+          const features = state.features.map(f => {
+            if (!isPropertyPolygon(f)) return f;
+            const par = String(f.data?.parentLocation || '').toLowerCase();
+            const loc = String(f.data?.location || '').toLowerCase();
+            if (par === parent && loc === oldSub) {
+              return { ...f, syncStatus: 'edited', data: { ...f.data, location: nextSub } };
+            }
+            return f;
+          });
+          return { features };
         }),
 
         // Deletes a Primary Location. Never destroys its plots: every feature that
@@ -230,7 +250,7 @@ export const useMapStore = create(
           const idSet = new Set(featureIds);
           const features = state.features.map(f => {
             if (!idSet.has(f.id)) return f;
-            return { ...f, data: { ...f.data, location: newLocation, parentLocation: newParentLocation } };
+            return { ...f, syncStatus: 'edited', data: { ...f.data, location: newLocation, parentLocation: newParentLocation } };
           });
           return { features };
         }),

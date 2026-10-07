@@ -5,7 +5,7 @@ import { useMapStore } from '../../store/useMapStore';
 import { determineParentLocation, buildDynamicLocationMap, CATEGORY_MAP } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
 import { API_BASE_URL } from '../../config/api';
-import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty } from '../../utils/areaNames';
+import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty, displaySubArea } from '../../utils/areaNames';
 import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
@@ -156,9 +156,9 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
             <div>
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Secondary Location</label>
               <SearchableSelect
-                value={formData.location}
+                value={displaySubArea(formData.location, selectedParent)}
                 options={subOptions}
-                placeholder="Select or add new"
+                placeholder="None (optional)"
                 onChange={(typed) => setFormData(prev => ({ ...prev, location: matchExistingName(typed, subOptions) }))}
               />
             </div>

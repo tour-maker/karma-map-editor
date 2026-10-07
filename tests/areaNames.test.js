@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty } from '../src/utils/areaNames';
+import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty, displaySubArea } from '../src/utils/areaNames';
 
 describe('uniqueNames', () => {
   it('merges names that differ only by capital letters (the "S1" / "s1" case)', () => {
@@ -83,5 +83,15 @@ describe('getAreaNovelty', () => {
   });
   it('empty input is not new', () => {
     expect(getAreaNovelty('', '', ctx)).toEqual({ newParent: false, newSub: false });
+  });
+});
+
+describe('displaySubArea', () => {
+  it('is empty when the location is just the primary', () => {
+    expect(displaySubArea('Navsari', 'navsari')).toBe('');
+    expect(displaySubArea('', 'Surat')).toBe('');
+  });
+  it('shows a real sub-area', () => {
+    expect(displaySubArea('Adajan', 'Surat')).toBe('Adajan');
   });
 });
