@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { temporal } from 'zundo';
-import { getCategoryOptionsForUnit, CATEGORY_MAP, isPropertyPolygon } from '../config/categories';
+import { getCategoryOptionsForUnit, CATEGORY_MAP, isPropertyPolygon, setCategories } from '../config/categories';
 
 // Plots rescued from a deleted Primary/Sub-area land here instead of disappearing —
 // it's a normal location value like any other, so it shows up in the Areas tab
@@ -19,6 +19,12 @@ export const useMapStore = create(
         isAdminAuthenticated: false,
         viewerUsername: null,
         isInfoPanelOpen: false,
+        // Bumped whenever the category list or a category colour changes, so screens that show
+        // categories (filters, pickers, map colours) re-render.
+        categoriesRevision: 0,
+        applyCategories: (list) => {
+          if (setCategories(list)) set(state => ({ categoriesRevision: state.categoriesRevision + 1 }));
+        },
         theme: 'dark',
         uiHidden: false,
         showLabels: false,
@@ -123,6 +129,20 @@ export const useMapStore = create(
           });
           return { features };
         }),
+
+        // Renames the category of every plot whose type satisfies `matches` (used after an admin renames a
+        // category). Marks them 'edited' so the sheet poll cannot revert them; returns how many changed.
+        retypeFeatures: (matches, newType) => {
+          let changed = 0;
+          set((state) => ({
+            features: state.features.map(f => {
+              if (!isPropertyPolygon(f) || !f.data?.type || !matches(f.data.type)) return f;
+              changed += 1;
+              return { ...f, syncStatus: 'edited', data: { ...f.data, type: newType } };
+            })
+          }));
+          return changed;
+        },
 
         // Deletes a Primary Location. Never destroys its plots: every feature that
         // still points at it (only its own — Sub-areas must be moved/merged out

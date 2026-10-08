@@ -109,7 +109,7 @@ export default function PendingSubmissionsPanel() {
       }));
     } catch (error) {
       console.error('Could not record the new area in the Areas tab:', error);
-      toast.error('Approved, but the new area could not be added to the Areas tab. Add it from the Area tab.');
+      toast.error('Approved, but the new city or area could not be added to the sheet. Add it from the City tab.');
     }
   };
 
@@ -368,12 +368,12 @@ export default function PendingSubmissionsPanel() {
                           {unitButton('Wingha', isWingha)}
                         </div>
                       </div>
-                      <div style={labelStyle}>Parent Area
+                      <div style={labelStyle}>City
                         <div style={{ marginTop: 3 }}>
                           <SearchableSelect
                             value={editData.parentLocation}
                             options={parentOptions}
-                            placeholder="Select or add new parent area"
+                            placeholder="Select or add new city"
                             onChange={(typed) => setEditData(prev => {
                               const val = matchExistingName(typed, parentOptions);
                               const subs = subOptionsFor(val);
@@ -385,7 +385,7 @@ export default function PendingSubmissionsPanel() {
                           />
                         </div>
                       </div>
-                      <div style={labelStyle}>Sub Area
+                      <div style={labelStyle}>Area
                         <div style={{ marginTop: 3 }}>
                           <SearchableSelect
                             value={displaySubArea(editData.location, editData.parentLocation)}
@@ -412,8 +412,8 @@ export default function PendingSubmissionsPanel() {
                 );
                 return (
                   <>
-                    <div><strong>Parent Area:</strong> {sub.parentLocation || sub.location || '-'}{novelty.newParent && badge('NEW AREA')}</div>
-                    <div><strong>Sub Area:</strong> {sub.location && sub.location !== sub.parentLocation ? sub.location : '-'}{novelty.newSub && badge('NEW SUB-AREA')}</div>
+                    <div><strong>City:</strong> {sub.parentLocation || sub.location || '-'}{novelty.newParent && badge('NEW CITY')}</div>
+                    <div><strong>Area:</strong> {sub.location && sub.location !== sub.parentLocation ? sub.location : '-'}{novelty.newSub && badge('NEW AREA')}</div>
                   </>
                 );
               })()}

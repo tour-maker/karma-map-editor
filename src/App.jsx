@@ -8,9 +8,19 @@ import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { setAccessToken } from './services/googleSheets'
 import { installAdminSessionGuard, startAdminSessionWatch } from './utils/adminSession'
+import { API_BASE_URL } from './config/api'
 
 function App() {
   const [isAdminAuthChecking, setIsAdminAuthChecking] = useState(true);
+
+  // The category list (names + colours) is managed by the admin and shared with everyone.
+  // If it cannot be loaded, the built-in list keeps working.
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/categories`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(list => { if (list) useMapStore.getState().applyCategories(list); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Any 401 on an admin request returns the login screen; also renews the admin token.

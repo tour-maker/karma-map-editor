@@ -549,6 +549,28 @@ export const withSyncRetry = async (fn, { retries = 3, delayMs = 700 } = {}) => 
   throw lastError;
 };
 
+// Rewrites the "type" column for every Polygons row whose type satisfies `matches`, in ONE read and
+// ONE write (a per-plot sync would need one read per plot and hit Google's quota on a big category).
+// Returns how many rows changed.
+export const renameTypeInSheet = async (spreadsheetId, matches, newType) => {
+  if (!spreadsheetId || spreadsheetId === 'default') throw new Error('No Google Sheet is configured.');
+  const sheetData = await fetchSheetData(spreadsheetId, 'Polygons');
+  const rows = sheetData.values || [];
+  if (rows.length < 2) return 0;
+  const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+  const typeIdx = headers.indexOf('type') >= 0 ? headers.indexOf('type') : 8;
+  let changed = 0;
+  const column = rows.slice(1).map(row => {
+    const value = row[typeIdx] ?? '';
+    if (value && matches(value)) { changed += 1; return [newType]; }
+    return [value];
+  });
+  if (changed === 0) return 0;
+  const letter = String.fromCharCode(65 + typeIdx);
+  await updateSheetRow(spreadsheetId, `Polygons!${letter}2:${letter}${rows.length}`, column);
+  return changed;
+};
+
 export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'update') => {
   if (!feature) return;
 

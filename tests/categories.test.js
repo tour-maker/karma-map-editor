@@ -42,3 +42,41 @@ describe('Rented (lease) land category', () => {
     expect(getPropertyTypeColor('Agriculture')).toBe('#22c55e');
   });
 });
+
+import { setCategories, CATEGORY_ALIASES } from '../src/config/categories';
+
+describe('categories managed by the admin', () => {
+  const defaults = PROPERTY_TYPES.map(name => ({ name, color: PROPERTY_TYPE_COLORS[name] }));
+  const restore = () => setCategories(defaults);
+
+  it('a new category gets its own colour and is recognised exactly', () => {
+    setCategories([...defaults, { name: 'Plotted Scheme', color: '#123456' }]);
+    expect(PROPERTY_TYPES).toContain('Plotted Scheme');
+    expect(normalizePropertyType('plotted scheme')).toBe('Plotted Scheme');
+    expect(getPropertyTypeColor('Plotted Scheme')).toBe('#123456');
+    restore();
+    expect(PROPERTY_TYPES).not.toContain('Plotted Scheme');
+  });
+
+  it('a renamed category keeps matching its old name, its loose spellings and its colour', () => {
+    setCategories(defaults.map(c => c.name === 'Freehold' ? { ...c, name: 'Free Zone', aliases: ['Freehold'] } : c));
+    expect(normalizePropertyType('Freehold')).toBe('Free Zone');
+    expect(normalizePropertyType('FreeHold')).toBe('Free Zone');
+    expect(normalizePropertyType('Free Zone')).toBe('Free Zone');
+    expect(getPropertyTypeColor('FreeHold')).toBe('#facc15');
+    expect(CATEGORY_ALIASES.freehold).toBe('Free Zone');
+    restore();
+    expect(normalizePropertyType('Freehold')).toBe('Freehold');
+  });
+
+  it('unit filters follow a renamed category', () => {
+    setCategories(defaults.map(c => c.name === 'Industrial' ? { ...c, name: 'Factory', aliases: ['Industrial'] } : c));
+    expect(getCategoryOptionsForUnit('yards')).not.toContain('Factory');
+    restore();
+  });
+
+  it('ignores an empty list so a failed load keeps the current categories', () => {
+    expect(setCategories([])).toBe(false);
+    expect(PROPERTY_TYPES.length).toBeGreaterThan(0);
+  });
+});

@@ -255,7 +255,8 @@ export default function FeatureInstanceManager() {
     });
   }, [features]);
 
-  // Sync styles
+  // Sync styles (also when a category colour changes)
+  const categoriesRevision = useMapStore(state => state.categoriesRevision);
   useEffect(() => {
     features.forEach(feature => {
       const colors = getPolygonColors(feature);
@@ -270,7 +271,7 @@ export default function FeatureInstanceManager() {
         }
       }
     });
-  }, [features, selectedFeatureId]);
+  }, [features, selectedFeatureId, categoriesRevision]);
 
 
   // Handle Visibility (Filters)

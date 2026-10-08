@@ -155,6 +155,8 @@ const panelStyle = {
 };
 
 export default function PropertyInfoPanel() {
+  // Re-render when the admin adds / renames / recolours a category.
+  useMapStore(state => state.categoriesRevision);
   const [showPartyDetails, setShowPartyDetails] = useState(false);
   const isOpen = useMapStore(state => state.isInfoPanelOpen);
   const setIsOpen = useMapStore(state => state.setIsInfoPanelOpen);
@@ -904,7 +906,7 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Primary Location</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>City</label>
             <SearchableSelect
               value={formData.parentLocation || determineParentLocation(formData.location)}
               options={allParentLocations}
@@ -914,7 +916,7 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Secondary Location</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Area</label>
             <SearchableSelect
               value={displaySubArea(formData.location, selectedParentLocation)}
               placeholder="None (optional)"

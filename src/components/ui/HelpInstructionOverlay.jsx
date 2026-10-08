@@ -246,7 +246,7 @@ export default function HelpInstructionOverlay({ onClose }) {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }}>Sidebar Tabs</span>
               <span style={{ fontSize: 10, color: '#cbd5e1', maxWidth: 130, lineHeight: 1.35 }}>
-                Browse <b style={{ color: '#f59e0b' }}>Projects</b>, <b style={{ color: '#f59e0b' }}>Landmarks</b>, and <b style={{ color: '#f59e0b' }}>Areas</b>
+                Browse <b style={{ color: '#f59e0b' }}>Projects</b>, <b style={{ color: '#f59e0b' }}>Landmarks</b>, and <b style={{ color: '#f59e0b' }}>Cities</b>
               </span>
             </div>
           </div>

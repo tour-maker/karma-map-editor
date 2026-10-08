@@ -89,7 +89,7 @@ function useViewportFitPanel(triggerRef, isOpen, isInModal) {
 // ---------------------------------------------------------------------------
 // 1. Primary Location Dropdown Component
 // ---------------------------------------------------------------------------
-function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, forceOpen = false, onOpenChange }) {
+function PrimaryLocationDropdown({ primaryCategories, value, onChange, placeholder = 'City', activeColor = '#f59e0b', isInModal = false, forceOpen = false, onOpenChange }) {
   // forceOpen seeds the initial open state so the parent "Filters" pill can open this
   // specific dropdown directly (e.g. clicking the "Location" label). This component is
   // freshly mounted each time the modal sheet opens, so this only needs to run once.
@@ -237,7 +237,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
                 gap: 8
               }}
             >
-              <FiRefreshCw size={14} /> All Locations
+              <FiRefreshCw size={14} /> All Cities
             </div>
           </div>
 
@@ -291,7 +291,7 @@ function PrimaryLocationDropdown({ primaryCategories, value, onChange, placehold
 // ---------------------------------------------------------------------------
 // 2. Sub-Location Dropdown Component
 // ---------------------------------------------------------------------------
-function SubLocationDropdown({ subLocations, primaryName, value, onChange, placeholder = 'Location', activeColor = '#f59e0b', isInModal = false, onOpenChange }) {
+function SubLocationDropdown({ subLocations, primaryName, value, onChange, placeholder = 'Area', activeColor = '#f59e0b', isInModal = false, onOpenChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef(null);
@@ -621,6 +621,8 @@ function CategoryDropdown({ options, value, onChange, placeholder = 'Category', 
 // Main FilterBar Component (Clean Capsule Dock Layout - No Notch)
 // ---------------------------------------------------------------------------
 export default function FilterBar() {
+  // Re-render when the admin adds / renames / recolours a category.
+  useMapStore(state => state.categoriesRevision);
   const filterPrimary = useMapStore(state => state.filterPrimary);
   const filterSecondary = useMapStore(state => state.filterSecondary);
   const filterType = useMapStore(state => state.filterType);
@@ -866,7 +868,7 @@ export default function FilterBar() {
   const [autoExpandField, setAutoExpandField] = useState(null); // 'location' | 'category' | null
 
   const activeFiltersSummaryParts = useMemo(() => ([
-    { key: 'location', label: filterPrimary || 'Location' },
+    { key: 'location', label: filterPrimary || 'City' },
     { key: 'category', label: filterType || 'Category' },
     { key: 'unit', label: globalAreaUnit ? (globalAreaUnit === 'yards' ? 'Sq.Yard' : 'Wingha') : 'Sq.Yard' }
   ]), [filterPrimary, filterType, globalAreaUnit]);
@@ -1054,7 +1056,7 @@ export default function FilterBar() {
             primaryCategories={primaryCategories}
             value={filterPrimary}
             onChange={(cat) => handleFilterChange({ primary: cat, secondary: null })}
-            placeholder="Location"
+            placeholder="City"
             activeColor="#f59e0b"
             onOpenChange={onPrimaryOpen}
           />
@@ -1080,7 +1082,7 @@ export default function FilterBar() {
                 primaryName="Surat"
                 value={filterSecondary}
                 onChange={(sub) => handleFilterChange({ secondary: sub })}
-                placeholder="Location"
+                placeholder="Area"
                 activeColor="#f59e0b"
                 onOpenChange={onSubOpen}
               />
@@ -1402,7 +1404,7 @@ export default function FilterBar() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Primary Location */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Primary Location</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>City</label>
                   <div style={{
                     height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
                     borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
@@ -1411,7 +1413,7 @@ export default function FilterBar() {
                       primaryCategories={primaryCategories}
                       value={filterPrimary}
                       onChange={(cat) => handleFilterChange({ primary: cat, secondary: null })}
-                      placeholder="All Locations"
+                      placeholder="All Cities"
                       activeColor="#f59e0b"
                       isInModal={true}
                       forceOpen={autoExpandField === 'location'}
@@ -1423,7 +1425,7 @@ export default function FilterBar() {
                     appears once a primary location with sub-locations is chosen. */}
                 {showSecondaryLocationField && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Sub Location (Surat)</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8' }}>Area (Surat)</label>
                     <div style={{
                       height: 42, border: `1px solid ${GLASS_COLORS.border}`, background: 'rgba(30, 41, 59, 0.6)',
                       borderRadius: GLASS_RADIUS.control, padding: 0, display: 'flex', alignItems: 'center'
@@ -1433,7 +1435,7 @@ export default function FilterBar() {
                         primaryName="Surat"
                         value={filterSecondary}
                         onChange={(sub) => handleFilterChange({ secondary: sub })}
-                        placeholder="All Sub Locations"
+                        placeholder="All Areas"
                         activeColor="#f59e0b"
                         isInModal={true}
                       />

@@ -74,7 +74,7 @@ export default function UnassignedPlots({ plots, origins, destinations, onMove, 
   return (
     <div style={{ paddingLeft: 32, paddingRight: 6, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 11.5, color: muted, lineHeight: 1.4 }}>
-        These plots lost their area when it was deleted. Move each one to a real area or sub-area.
+        These plots lost their city or area when it was deleted. Move each one to a real city or area.
       </div>
       <button
         type="button"

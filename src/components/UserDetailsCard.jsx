@@ -89,7 +89,7 @@ export default function UserDetailsCard({ user, property = null, style = null })
         <ChipList items={countValues(user.types)} />
       </div>
       <div>
-        <div style={detailLabel}>Areas</div>
+        <div style={detailLabel}>Cities</div>
         <ChipList items={countValues(user.locations)} />
       </div>
     </div>

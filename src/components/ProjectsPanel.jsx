@@ -16,6 +16,7 @@ import UsersPanel from './UsersPanel';
 import { getMovePanelPosition, MOVE_PANEL_WIDTH } from '../utils/movePanelPosition';
 import { API_BASE_URL } from '../config/api';
 import UnassignedPlots from './UnassignedPlots';
+import CategoryManager from './CategoryManager';
 import { findPlotOrigins, logAreaEvent, fetchAreaEvents } from '../utils/areaLog';
 import { collectSubAreas } from '../utils/areaNames';
 
@@ -187,6 +188,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
   const promoteSubToPrimary = useMapStore(state => state.promoteSubToPrimary);
   const spreadsheetId = useMapStore(state => state.spreadsheetId);
   const [isAddingArea, setIsAddingArea] = useState(false);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
 
   // Sub-area accordion (Areas tab): which Primary Areas currently have their
   // Sub-area list expanded inline, exactly like the approved design mockup —
@@ -363,7 +365,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       ? collectSubAreas(parentName, { syncedAreas, dynamicMap: dynamicLocationMap }).some(n => norm(n) === norm(to) && norm(n) !== norm(oldName))
       : parentLocationsList.some(a => norm(a.name) === norm(to) && norm(a.name) !== norm(oldName));
     if (taken) {
-      toast.error(`"${to}" already exists${parentName ? ` in ${parentName}` : ''}. Pick a different name, or use Move Area to merge them.`);
+      toast.error(`"${to}" already exists${parentName ? ` in ${parentName}` : ''}. Pick a different name, or use Move to merge them.`);
       return;
     }
 
@@ -795,7 +797,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               }}
             >
               <FiGlobe size={13} color={activeTab === 'areas' ? '#f59e0b' : '#94a3b8'} />
-              Area
+              City
               <span style={{
                 fontSize: 9.5, fontWeight: 600,
                 color: activeTab === 'areas' ? '#fde68a' : 'rgba(255, 255, 255, 0.5)',
@@ -894,6 +896,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                 </button>
               )
             ) : activeTab === 'areas' && appMode === 'edit' ? (
+              <>
               <button
                 type="button"
                 onClick={() => setIsAddingArea(true)}
@@ -905,8 +908,23 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)', transition: 'all 0.2s'
                 }}
               >
-                <FiPlus size={14} color="#000000" /> Add Area
+                <FiPlus size={14} color="#000000" /> Add City
               </button>
+              <button
+                type="button"
+                onClick={() => setIsManagingCategories(true)}
+                className="btn-hover-effect"
+                title="Add categories, rename them, change their colours"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  padding: '9px 12px', background: 'rgba(255,255,255,0.06)', color: '#e2e8f0',
+                  border: '1px solid rgba(255,255,255,0.16)', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer', whiteSpace: 'nowrap'
+                }}
+              >
+                <FiLayers size={13} /> Categories
+              </button>
+              </>
             ) : null}
           </div>
 
@@ -949,7 +967,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               {activeTab === 'areas' && (
                 <>
                   <FiGlobe size={15} color="#f59e0b" />
-                  <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Areas</span>
+                  <span style={{ fontSize: 14.5, fontWeight: 700, color: '#f8fafc', letterSpacing: '0.3px' }}>Cities</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#fde68a', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 7px', borderRadius: 10 }}>{parentLocationsList.length}</span>
                 </>
               )}
@@ -1063,7 +1081,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   }}
                 >
                   <FiGlobe size={15} color={activeTab === 'areas' ? '#f59e0b' : '#94a3b8'} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'areas' ? 700 : 500 }}>Areas</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: activeTab === 'areas' ? 700 : 500 }}>Cities</span>
                   <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === 'areas' ? '#fde68a' : '#64748b', background: activeTab === 'areas' ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 8 }}>{parentLocationsList.length}</span>
                 </button>
 
@@ -1118,7 +1136,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               <FiSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(245, 158, 11, 0.75)' }} size={14} />
               <input
                 type="text"
-                placeholder={activeTab === 'projects' ? "Search projects..." : activeTab === 'landmarks' ? "Search landmarks..." : "Search areas..."}
+                placeholder={activeTab === 'projects' ? "Search projects..." : activeTab === 'landmarks' ? "Search landmarks..." : "Search cities..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input-styled"
@@ -1169,8 +1187,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               }}
             >
               {parentLocationsList.some(a => a.subLocations?.length > 0 && expandedPrimaries[a.name])
-                ? '▴ Hide all Sub-areas'
-                : '▾ Show all Sub-areas'}
+                ? '▴ Hide all Areas'
+                : '▾ Show all Areas'}
             </button>
           )}
         </div>
@@ -1187,7 +1205,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
             <UsersPanel />
           ) : virtualRows.length === 0 ? (
             <div style={{ padding: '24px 16px', color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
-              {activeTab === 'projects' ? 'No projects found.' : activeTab === 'landmarks' ? 'No landmarks found.' : 'No areas match your search.'}
+              {activeTab === 'projects' ? 'No projects found.' : activeTab === 'landmarks' ? 'No landmarks found.' : 'No cities match your search.'}
             </div>
           ) : (
             <div
@@ -1468,7 +1486,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                     if (isUnassignedName(row.area.name)) return;
                                     setEditingPrimary({ oldName: row.area.name, value: row.area.name });
                                   }}
-                                  title={isUnassignedName(row.area.name) ? 'Holding area for plots without an area' : 'Double-click to rename'}
+                                  title={isUnassignedName(row.area.name) ? 'Holding place for plots that lost their city or area' : 'Double-click to rename'}
                                   style={{
                                     fontSize: 13, fontWeight: 700, letterSpacing: '0.2px',
                                     color: isSelected ? '#f59e0b' : (isDark ? '#f8fafc' : '#0f172a'),
@@ -1483,7 +1501,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               {!isUnassignedName(row.area.name) && (<>
                               <button
                                 type="button"
-                                title={`Move "${row.area.name}" into another Primary Location`}
+                                title={`Move "${row.area.name}" into another City`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const rect = e.currentTarget.getBoundingClientRect();
@@ -1503,11 +1521,11 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                 }}
                               >
                                 <FiMove size={11} />
-                                Move Area
+                                Move City
                               </button>
                               <button
                                 type="button"
-                                title={hasSubs ? 'Move or merge its Sub-areas out first' : `Delete "${row.area.name}"`}
+                                title={hasSubs ? 'Move or merge its areas out first' : `Delete "${row.area.name}"`}
                                 disabled={hasSubs}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1549,7 +1567,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               setEditingSubarea(null);
                               setExpandedPrimaries(prev => ({ ...prev, [row.area.name]: !prev[row.area.name] }));
                             }}
-                            title={hasSubs ? (isExpanded ? 'Hide sub-areas' : 'View & edit sub-areas') : undefined}
+                            title={hasSubs ? (isExpanded ? 'Hide areas' : 'View & edit areas') : undefined}
                             className={hasSubs ? 'btn-hover-effect' : ''}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 5,
@@ -1569,7 +1587,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                               {isUnassignedRow
                                 ? `${row.area.count} plot${row.area.count === 1 ? '' : 's'} waiting to be moved - where from & move`
                                 : hasSubs
-                                  ? `${row.area.subLocations.length} sub-area${row.area.subLocations.length === 1 ? '' : 's'}`
+                                  ? `${row.area.subLocations.length} area${row.area.subLocations.length === 1 ? '' : 's'}`
                                   : subLocsText}
                             </span>
                           </div>
@@ -1665,7 +1683,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                                       <>
                                         <button
                                           type="button"
-                                          title={`Move "${subName}" into another Primary Location`}
+                                          title={`Move "${subName}" into another City`}
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             const rect = e.currentTarget.getBoundingClientRect();
@@ -1834,6 +1852,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
           )}
         </div>
 
+        {isManagingCategories && <CategoryManager onClose={() => setIsManagingCategories(false)} />}
         {isAddingArea && (
           <AddAreaModal
             onClose={() => setIsAddingArea(false)}
@@ -1903,8 +1922,8 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
               // The first row(s) are the "stay where it is" choices; the rest are the other
               // Primary Locations, searchable because there can be dozens of them.
               const staying = [
-                { value: '', label: movePanel.isSub ? `Keep inside ${movePanel.parentName}` : 'Keep as a Primary Area' },
-                ...(movePanel.isSub ? [{ value: '__promote__', label: 'Make it a Primary Area' }] : [])
+                { value: '', label: movePanel.isSub ? `Keep inside ${movePanel.parentName}` : 'Keep as a City' },
+                ...(movePanel.isSub ? [{ value: '__promote__', label: 'Make it a City' }] : [])
               ];
               const query = String(movePanel.search || '').trim().toLowerCase();
               const targets = parentLocationsList
@@ -1922,7 +1941,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                   <input
                     type="text"
                     value={movePanel.search || ''}
-                    placeholder="Search areas..."
+                    placeholder="Search cities..."
                     onChange={(e) => setMovePanel(prev => ({ ...prev, search: e.target.value }))}
                     style={{
                       width: '100%', boxSizing: 'border-box', padding: '7px 10px', borderRadius: 8, marginBottom: 8,
@@ -1945,7 +1964,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                         style={rowStyle(movePanel.target === opt.value)}>{opt.label}</div>
                     ))}
                     {targets.length === 0 && query && (
-                      <div style={{ padding: '8px 10px', fontSize: 12, color: '#94a3b8' }}>No areas match "{movePanel.search}"</div>
+                      <div style={{ padding: '8px 10px', fontSize: 12, color: '#94a3b8' }}>No cities match "{movePanel.search}"</div>
                     )}
                   </div>
                 </>
@@ -2119,7 +2138,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       action: isSub ? 'delete-sub' : 'delete-area', area: name, parent: isSub ? parentName : '', plots: removedPlots
                     });
                     toast.success(
-                      `"${name}" deleted` + (rescued.length > 0 ? ' - its plots moved to Unassigned Plots' : ''),
+                      `"${name}" deleted` + (rescued.length > 0 ? ' - its plots moved to Unassigned' : ''),
                       { id: toastId, style: { background: '#0f172a', color: '#fca5a5', border: '1px solid rgba(248, 113, 113, 0.4)' } }
                     );
                   } catch (err) {

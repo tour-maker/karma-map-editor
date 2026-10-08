@@ -18,6 +18,8 @@ export const CATEGORY_MAP = {
   'Delvada': []
 };
 
+// The category list is shared with the server (admins can add and rename categories), so these are
+// live objects: setCategories() updates them in place and every importer sees the change.
 export const PROPERTY_TYPES = [
   'Residential',
   'Commercial',
@@ -39,19 +41,42 @@ export const PROPERTY_TYPE_COLORS = {
   'Rented': '#ef4444',
 };
 
+// Earlier names of renamed categories: lower-cased old name -> current name.
+export const CATEGORY_ALIASES = {};
+
 export const DEFAULT_PROPERTY_COLOR = '#38bdf8';
+
+// Replaces the category list with the one from the server. `list` is [{ name, color, aliases }].
+// An empty or malformed list is ignored, so a failed load never leaves the app without categories.
+export function setCategories(list) {
+  const valid = (Array.isArray(list) ? list : []).filter(c => c && String(c.name || '').trim());
+  if (valid.length === 0) return false;
+  PROPERTY_TYPES.length = 0;
+  Object.keys(PROPERTY_TYPE_COLORS).forEach(key => delete PROPERTY_TYPE_COLORS[key]);
+  Object.keys(CATEGORY_ALIASES).forEach(key => delete CATEGORY_ALIASES[key]);
+  valid.forEach(({ name, color, aliases }) => {
+    const clean = String(name).trim();
+    PROPERTY_TYPES.push(clean);
+    PROPERTY_TYPE_COLORS[clean] = /^#[0-9a-f]{6}$/i.test(color || '') ? color : DEFAULT_PROPERTY_COLOR;
+    (aliases || []).forEach(alias => { CATEGORY_ALIASES[String(alias).trim().toLowerCase()] = clean; });
+  });
+  return true;
+}
+
+// A built-in category name, followed through renames: "Freehold" -> "Free Zone" if it was renamed.
+function currentName(name) {
+  if (PROPERTY_TYPES.includes(name)) return name;
+  return CATEGORY_ALIASES[String(name).toLowerCase()] || null;
+}
 
 // Category options that don't apply to a given area unit are hidden from the filter.
 const CATEGORIES_HIDDEN_FOR_YARDS = ['Industrial', 'Agriculture', 'Ready Farmhouse'];
 const CATEGORIES_HIDDEN_FOR_WINGHA = ['Commercial', 'Industrial'];
 
 export function getCategoryOptionsForUnit(areaUnit) {
-  if (areaUnit === 'yards') {
-    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_YARDS.includes(t));
-  }
-  if (areaUnit === 'wingha') {
-    return PROPERTY_TYPES.filter(t => !CATEGORIES_HIDDEN_FOR_WINGHA.includes(t));
-  }
+  const hide = (names) => PROPERTY_TYPES.filter(t => !names.some(n => currentName(n) === t));
+  if (areaUnit === 'yards') return hide(CATEGORIES_HIDDEN_FOR_YARDS);
+  if (areaUnit === 'wingha') return hide(CATEGORIES_HIDDEN_FOR_WINGHA);
   return PROPERTY_TYPES;
 }
 
@@ -59,16 +84,27 @@ export function normalizePropertyType(rawType) {
   if (!rawType) return '';
   const lower = String(rawType).trim().toLowerCase();
 
-  // Rented / lease land: "Rent", "Rented", "Rental", "Lease", "Leasehold", "Available for rent"...
-  // Whole-word match so words like "parent" or "current" are never mistaken for it.
-  if (/\b(rent(ed|al)?|lease(hold|d)?)\b/.test(lower)) return 'Rented';
+  // An exact category name, or an earlier name of a renamed category, always wins.
+  const exact = PROPERTY_TYPES.find(t => t.toLowerCase() === lower);
+  if (exact) return exact;
+  if (CATEGORY_ALIASES[lower]) return CATEGORY_ALIASES[lower];
 
-  if (lower.includes('ready') || lower.includes('farmhouse')) return 'Ready Farmhouse';
-  if (lower.includes('agri') || lower.includes('farm')) return 'Agriculture';
-  if (lower.includes('resi') || lower === 'residence') return 'Residential';
-  if (lower.includes('commer')) return 'Commercial';
-  if (lower.includes('freehold') || lower.includes('freezone')) return 'Freehold';
-  if (lower.includes('indust')) return 'Industrial';
+  // Loose spellings ("Resi", "Farm house", "Available for rent"...) map to the built-in categories.
+  // Rented / lease land uses a whole-word match so "parent" or "current" are never mistaken for it.
+  const rules = [
+    [/\b(rent(ed|al)?|lease(hold|d)?)\b/.test(lower), 'Rented'],
+    [lower.includes('ready') || lower.includes('farmhouse'), 'Ready Farmhouse'],
+    [lower.includes('agri') || lower.includes('farm'), 'Agriculture'],
+    [lower.includes('resi') || lower === 'residence', 'Residential'],
+    [lower.includes('commer'), 'Commercial'],
+    [lower.includes('freehold') || lower.includes('freezone'), 'Freehold'],
+    [lower.includes('indust'), 'Industrial'],
+  ];
+  for (const [matches, builtIn] of rules) {
+    if (!matches) continue;
+    const name = currentName(builtIn);
+    if (name) return name;
+  }
 
   const match = PROPERTY_TYPES.find(t => lower.includes(t.toLowerCase()));
   return match || rawType;

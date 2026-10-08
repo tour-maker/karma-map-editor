@@ -33,11 +33,11 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
 
     const name = mode === 'sub' ? subParent.trim() : areaName.trim();
     if (!name) {
-      toast.error(mode === 'sub' ? 'Please choose a Primary Location' : 'Please enter a Parent Location name');
+      toast.error(mode === 'sub' ? 'Please choose a City' : 'Please enter a City name');
       return;
     }
     if (mode === 'sub' && !subName.trim()) {
-      toast.error('Please enter a Sub-location name');
+      toast.error('Please enter an Area name');
       return;
     }
 
@@ -72,8 +72,8 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
       });
       setFilterPrimary(name);
       const successMsg = mode === 'sub'
-        ? `Sub-location "${subs[0]}" added to "${name}"! 📍`
-        : `Parent Location "${name}" added successfully! 📍`;
+        ? `Area "${subs[0]}" added to "${name}"! 📍`
+        : `City "${name}" added successfully! 📍`;
       toast.success(successMsg, {
         style: { background: '#0f172a', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)' }
       });
@@ -113,8 +113,8 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
               <FiGlobe size={18} />
             </div>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>Add Parent Location</div>
-              <div style={{ fontSize: 12, color: '#94a3b8' }}>Create a new Area category for plots & map filters</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc' }}>Add City</div>
+              <div style={{ fontSize: 12, color: '#94a3b8' }}>Create a new city, or an area inside a city, for plots & map filters</div>
             </div>
           </div>
           <button
@@ -144,7 +144,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
                 color: mode === 'primary' ? '#f59e0b' : '#94a3b8'
               }}
             >
-              New Primary Location
+              New City
             </button>
             <button
               type="button"
@@ -160,7 +160,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
                 opacity: existingPrimaryNames.length === 0 ? 0.5 : 1
               }}
             >
-              New Sub-area
+              New Area
             </button>
           </div>
 
@@ -168,7 +168,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
             <>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
-                  Parent Location Name *
+                  City Name *
                 </label>
                 <input
                   type="text"
@@ -187,7 +187,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
-                  Sub-locations (Optional)
+                  Areas (Optional)
                 </label>
                 <input
                   type="text"
@@ -207,7 +207,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
             <>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
-                  Inside which Primary Location? *
+                  Inside which City? *
                 </label>
                 <div style={{ position: 'relative' }}>
                   <button
@@ -220,7 +220,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                     }}
                   >
-                    <span>{subParent || 'Select location'}</span>
+                    <span>{subParent || 'Select city'}</span>
                     <span style={{ fontSize: 10, color: '#94a3b8' }}>{parentOpen ? '\u25B2' : '\u25BC'}</span>
                   </button>
                   {parentOpen && (
@@ -267,7 +267,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#e2e8f0', marginBottom: 6 }}>
-                  Sub-location Name *
+                  Area Name *
                 </label>
                 <input
                   type="text"

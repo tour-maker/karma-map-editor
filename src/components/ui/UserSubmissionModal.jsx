@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { FiX, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../../store/useMapStore';
-import { determineParentLocation, buildDynamicLocationMap, CATEGORY_MAP } from '../../config/categories';
+import { determineParentLocation, buildDynamicLocationMap, CATEGORY_MAP, PROPERTY_TYPES, normalizePropertyType } from '../../config/categories';
 import SearchableSelect from './SearchableSelect';
 import { API_BASE_URL } from '../../config/api';
 import { uniqueNames, collectSubAreas, matchExistingName, getAreaNovelty, displaySubArea } from '../../utils/areaNames';
@@ -10,6 +10,8 @@ import { glassPanelStyle, GLASS_COLORS, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIE
 
 export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) {
   const viewerUsername = useMapStore(state => state.viewerUsername);
+  // Re-render when the admin adds / renames / recolours a category.
+  useMapStore(state => state.categoriesRevision);
   const [formData, setFormData] = useState({
     tp: '',
     op: '',
@@ -19,7 +21,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
     location: '',
     parentLocation: '',
     landmark: '',
-    type: 'Freehold',
+    type: normalizePropertyType('Freehold') || PROPERTY_TYPES[0] || 'Freehold',
     remarks: '',
     partyName: '',
     partyPhone: '',
@@ -137,7 +139,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Primary Location</label>
+              <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>City</label>
               <SearchableSelect
                 value={selectedParent}
                 options={allParentLocations}
@@ -154,7 +156,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Secondary Location</label>
+              <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Area</label>
               <SearchableSelect
                 value={displaySubArea(formData.location, selectedParent)}
                 options={subOptions}
@@ -169,8 +171,8 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               border: `1px solid ${GLASS_COLORS.border}`, borderRadius: GLASS_RADIUS.control, padding: '8px 12px'
             }}>
               {novelty.newParent
-                ? `"${selectedParent}" is a new primary area.`
-                : `"${formData.location}" is a new sub-area of ${selectedParent}.`}
+                ? `"${selectedParent}" is a new city.`
+                : `"${formData.location}" is a new area in ${selectedParent}.`}
               {' '}It is sent with this request and added once the admin approves it.
             </div>
           )}
@@ -238,13 +240,7 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
               <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Category Type</label>
               <select name="type" value={formData.type} onChange={handleChange} className="karma-glass-input"
                 style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }}>
-                <option value="Residential">Residential</option>
-                <option value="Commercial">Commercial</option>
-                <option value="Freehold">Freehold</option>
-                <option value="Industrial">Industrial</option>
-                <option value="Agriculture">Agriculture</option>
-                <option value="Ready Farmhouse">Ready Farmhouse</option>
-                <option value="Rented">Rented (Lease)</option>
+                {PROPERTY_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
               </select>
             </div>
           </div>
