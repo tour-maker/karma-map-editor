@@ -29,7 +29,6 @@ import {
 } from '../services/googleMaps';
 import { isPointInPolygon } from '../utils/matchPropertiesToPolygons';
 import { validateFeature } from '../utils/validation';
-import { featuresForInitialView } from '../utils/initialView';
 import toast from 'react-hot-toast';
 
 const defaultCenter = {
@@ -95,8 +94,7 @@ export default function MapEditor() {
       ? decodeURIComponent(pathMatch[1])
       : new URLSearchParams(window.location.search).get('feature');
     if (sharedFeatureId) return;
-    // Plots far away from the main cluster do not decide the first view (see utils/initialView.js).
-    fitAllBounds(map, featuresForInitialView(features.filter(f => f.style?.visible !== false)));
+    fitAllBounds(map, features.filter(f => f.style?.visible !== false));
   }, [map, features]);
 
   const handleAddProperty = () => {
@@ -468,7 +466,8 @@ export default function MapEditor() {
             zoomControl: false, // disable native zoom control
             mapTypeId: showLabels ? 'hybrid' : 'satellite',
             tilt: 0,
-            minZoom: 9,
+            // Low enough to see plots all over India at once (Gujarat to Chennai / Hyderabad).
+            minZoom: 4,
             restriction: {
               latLngBounds: { north: 85, south: -85, west: -180, east: 180 },
               strictBounds: true
