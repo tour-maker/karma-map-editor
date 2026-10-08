@@ -24,30 +24,24 @@ function Pin({ color }) {
   );
 }
 
+// One "Select colour" button; the pin beside the name already previews the chosen colour.
 function ColorPicker({ value, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-      {PRESET_COLORS.map(color => (
-        <button
-          key={color}
-          type="button"
-          onClick={() => onChange(color)}
-          aria-label={`Colour ${color}`}
-          style={{
-            width: 18, height: 18, borderRadius: '50%', background: color, cursor: 'pointer', padding: 0,
-            border: value.toLowerCase() === color ? '2px solid #f8fafc' : '1px solid rgba(255,255,255,0.25)'
-          }}
-        />
-      ))}
+    <label style={{
+      position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+      padding: '6px 12px', borderRadius: 10, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#e2e8f0',
+      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)'
+    }}>
+      <span style={{ width: 14, height: 14, borderRadius: '50%', background: value, border: '1px solid rgba(255,255,255,0.4)' }} />
+      Select colour
       <input
         type="color"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        aria-label="Pick any colour"
-        title="Pick any colour"
-        style={{ width: 26, height: 22, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }}
+        aria-label="Select colour"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
       />
-    </div>
+    </label>
   );
 }
 
