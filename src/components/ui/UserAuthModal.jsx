@@ -1,3 +1,4 @@
+import { showBlockedNotice } from '../../utils/userBlocked';
 import { useState, useRef, useEffect } from 'react';
 import { FiX, FiUser, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -160,6 +161,10 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.code === 'USER_BLOCKED') {
+          showBlockedNotice();
+          return;
+        }
         setErrorMessage(data.error || 'Something went wrong');
         return;
       }

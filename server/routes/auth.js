@@ -115,6 +115,11 @@ router.post('/user-login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
+    // Only after the password matches, so the block notice doesn't confirm that a username exists.
+    if (user.isBlocked) {
+      return res.status(403).json({ error: 'You have been blocked due to violations.', code: 'USER_BLOCKED' });
+    }
+
     const token = jwt.sign({ id: user._id.toString(), username: user.username, role: 'user' }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, username: user.username });
   } catch (error) {
@@ -125,12 +130,15 @@ router.post('/user-login', async (req, res) => {
 
 // POST /api/auth/user-verify
 // Verifies a viewer token (used to restore the session on page load).
-router.post('/user-verify', (req, res) => {
+router.post('/user-verify', async (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(401).json({ valid: false });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     if (decoded.role !== 'user') return res.status(401).json({ valid: false });
+    const user = await User.findById(decoded.id).select('isBlocked isDeleted').lean();
+    if (!user || user.isDeleted) return res.status(401).json({ valid: false });
+    if (user.isBlocked) return res.status(403).json({ valid: false, code: 'USER_BLOCKED', error: 'You have been blocked due to violations.' });
     res.json({ valid: true, username: decoded.username });
   } catch {
     res.status(401).json({ valid: false });

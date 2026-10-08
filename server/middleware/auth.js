@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../utils/adminJwt.js';
+import User from '../models/User.js';
 
 const ADMIN_RENEW_AFTER_SECONDS = 24 * 60 * 60;
 
@@ -29,10 +30,25 @@ export const requireAdmin = (req, res, next) => {
   next();
 };
 
-export const requireUser = (req, res, next) => {
+export const BLOCKED_MESSAGE = 'You have been blocked due to violations.';
+
+export const requireUser = async (req, res, next) => {
   const decoded = verifyBearer(req);
   if (!decoded || decoded.role !== 'user') {
     return res.status(401).json({ error: 'Unauthorized — please sign in' });
+  }
+  try {
+    // Checked on every request so an admin's block takes effect immediately, not at token expiry.
+    const user = await User.findById(decoded.id).select('isBlocked isDeleted').lean();
+    if (!user || user.isDeleted) {
+      return res.status(401).json({ error: 'Unauthorized — please sign in' });
+    }
+    if (user.isBlocked) {
+      return res.status(403).json({ error: BLOCKED_MESSAGE, code: 'USER_BLOCKED' });
+    }
+  } catch (error) {
+    console.error('requireUser lookup error:', error);
+    return res.status(500).json({ error: 'Server error' });
   }
   req.userId = decoded.id;
   req.username = decoded.username;

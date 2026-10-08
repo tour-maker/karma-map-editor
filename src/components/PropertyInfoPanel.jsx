@@ -157,7 +157,8 @@ const panelStyle = {
 export default function PropertyInfoPanel() {
   // Re-render when the admin adds / renames / recolours a category.
   useMapStore(state => state.categoriesRevision);
-  const [showPartyDetails, setShowPartyDetails] = useState(false);
+  // Open by default so Party / Broker details are visible straight away; the eye still toggles them.
+  const [showPartyDetails, setShowPartyDetails] = useState(true);
   const isOpen = useMapStore(state => state.isInfoPanelOpen);
   const setIsOpen = useMapStore(state => state.setIsInfoPanelOpen);
   const appMode = useMapStore(state => state.appMode);

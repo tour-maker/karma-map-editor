@@ -44,6 +44,7 @@ router.get('/', requireAdmin, async (req, res) => {
           firstName: 1,
           lastName: 1,
           createdAt: 1,
+          isBlocked: 1,
           locations: '$submissions.parentLocation',
           types: '$submissions.type',
           totalProperties: 1,
@@ -99,6 +100,29 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     res.json({ message: 'User deleted' });
   } catch (error) {
     console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// @route   PATCH /api/users/:id/block
+// @desc    Block or unblock a user ({ blocked: true|false }). A blocked user cannot sign in
+//          and any live session stops working on its next request. (Admin only)
+router.patch('/:id/block', requireAdmin, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user id' });
+    }
+    const blocked = req.body?.blocked !== false;
+    const user = await User.findById(req.params.id);
+    if (!user || user.isDeleted) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    user.isBlocked = blocked;
+    user.blockedAt = blocked ? new Date() : null;
+    await user.save();
+    res.json({ message: blocked ? 'User blocked' : 'User unblocked', isBlocked: blocked });
+  } catch (error) {
+    console.error('Block user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

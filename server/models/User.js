@@ -33,6 +33,16 @@ const UserSchema = new mongoose.Schema({
   deletedAt: {
     type: Date,
     default: null
+  },
+  // Admin "block user": the account still exists (and keeps its submissions) but can't
+  // sign in or use the viewer API until an admin unblocks it.
+  isBlocked: {
+    type: Boolean,
+    default: false
+  },
+  blockedAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 

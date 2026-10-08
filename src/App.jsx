@@ -8,6 +8,8 @@ import GoogleSheetsConnect from './components/GoogleSheetsConnect'
 import AdminAuthOverlay from './components/ui/AdminAuthOverlay'
 import { setAccessToken } from './services/googleSheets'
 import { installAdminSessionGuard, startAdminSessionWatch } from './utils/adminSession'
+import { installUserBlockedGuard } from './utils/userBlocked'
+import BlockedUserNotice from './components/ui/BlockedUserNotice'
 import { API_BASE_URL } from './config/api'
 
 function App() {
@@ -25,6 +27,7 @@ function App() {
   useEffect(() => {
     // Any 401 on an admin request returns the login screen; also renews the admin token.
     installAdminSessionGuard();
+    installUserBlockedGuard();
     const { googleAccessToken } = useMapStore.getState();
 
     // Admin and viewer sessions both end on a full page reload.
@@ -117,6 +120,7 @@ function App() {
           toast fired while a modal is open (e.g. the signup-conflict error) rendered behind
           the modal's backdrop-blur: visible but smeared and unreadable, not actually hidden. */}
       <Toaster position="top-center" containerStyle={{ zIndex: 2000002 }} />
+      <BlockedUserNotice />
       <GoogleSheetsConnect />
       <MapEditor />
     </GoogleMapProvider>

@@ -245,6 +245,16 @@ export default function UserSubmissionModal({ data, onClose, onSubmitSuccess }) 
             </div>
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {[['partyName', 'Party Name', 'text'], ['partyPhone', 'Party Phone', 'tel'], ['brokerName', 'Broker Name', 'text'], ['brokerPhone', 'Broker Phone', 'tel']].map(([name, label, type]) => (
+              <div key={name}>
+                <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>{label}</label>
+                <input type={type} name={name} value={formData[name]} onChange={handleChange} className="karma-glass-input"
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: GLASS_RADIUS.control, fontWeight: 400, boxSizing: 'border-box' }} />
+              </div>
+            ))}
+          </div>
+
           <div>
             <label style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4, display: 'block' }}>Remarks</label>
             <textarea name="remarks" value={formData.remarks} onChange={handleChange} rows={2} className="karma-glass-input"

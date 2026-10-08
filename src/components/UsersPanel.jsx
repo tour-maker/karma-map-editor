@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers, FiEdit2, FiSave, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiUsers, FiArrowLeft, FiTrash2, FiCheckCircle, FiClock, FiXCircle, FiLayers, FiEdit2, FiSave, FiX, FiChevronDown, FiChevronUp, FiSlash } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useMapStore } from '../store/useMapStore';
 import { useGoogleMap } from '../context/GoogleMapContext';
@@ -111,6 +111,26 @@ export default function UsersPanel() {
       toast.error('Failed to load this user\'s properties');
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleToggleBlock = async (user) => {
+    const blocked = !user.isBlocked;
+    try {
+      const res = await adminFetch(`${API_BASE_URL}/api/users/${user._id}/block`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocked })
+      });
+      if (res.ok) {
+        toast.success(blocked ? `${user.username} blocked` : `${user.username} unblocked`);
+        setUsers(prev => prev.map(u => u._id === user._id ? { ...u, isBlocked: blocked } : u));
+      } else if (res.status !== 401) {
+        toast.error('Could not change block status');
+      }
+    } catch (error) {
+      console.error('Block user error:', error);
+      toast.error('Error changing block status');
     }
   };
 
@@ -371,7 +391,11 @@ export default function UsersPanel() {
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
               >
                 <div>
-                  <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: 14 }}>{user.username}</div>
+                  <div style={{ color: '#f8fafc', fontWeight: 700, fontSize: 14 }}>{user.username}
+                    {user.isBlocked && (
+                      <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#ef4444', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 6, padding: '1px 6px' }}>BLOCKED</span>
+                    )}
+                  </div>
                   <div style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>
                     Joined {new Date(user.createdAt).toLocaleDateString()}
                     {user.lastSubmissionAt && ` · last active ${new Date(user.lastSubmissionAt).toLocaleDateString()}`}
@@ -417,6 +441,19 @@ export default function UsersPanel() {
               </div>
 
               <div style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => handleToggleBlock(user)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8,
+                    width: '100%', padding: '7px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                    background: user.isBlocked ? 'rgba(34,197,94,0.12)' : 'rgba(245,158,11,0.12)',
+                    color: user.isBlocked ? '#22c55e' : '#f59e0b',
+                    border: user.isBlocked ? '1px solid rgba(34,197,94,0.35)' : '1px solid rgba(245,158,11,0.35)'
+                  }}
+                >
+                  <FiSlash size={12} /> {user.isBlocked ? 'Unblock User' : 'Block User'}
+                </button>
                 {confirmDeleteId === user._id ? (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
