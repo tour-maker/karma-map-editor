@@ -29,6 +29,7 @@ import {
 } from '../services/googleMaps';
 import { isPointInPolygon } from '../utils/matchPropertiesToPolygons';
 import { validateFeature } from '../utils/validation';
+import { featuresForInitialView } from '../utils/initialView';
 import toast from 'react-hot-toast';
 
 const defaultCenter = {
@@ -94,7 +95,8 @@ export default function MapEditor() {
       ? decodeURIComponent(pathMatch[1])
       : new URLSearchParams(window.location.search).get('feature');
     if (sharedFeatureId) return;
-    fitAllBounds(map, features.filter(f => f.style?.visible !== false));
+    // Plots far away from the main cluster do not decide the first view (see utils/initialView.js).
+    fitAllBounds(map, featuresForInitialView(features.filter(f => f.style?.visible !== false)));
   }, [map, features]);
 
   const handleAddProperty = () => {
