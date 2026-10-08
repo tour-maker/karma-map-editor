@@ -1,4 +1,15 @@
-# Plan: move the data from Google Sheets to MongoDB (half day)
+# Plan: MongoDB as the main database + Google Sheet / Excel as a live copy (half day)
+
+## Final design (client wants BOTH)
+- MongoDB = the real database. The app reads and writes ONLY there (fast, no Google limits).
+- Google Sheet = a read-only mirror. After every save in the app (add/edit/delete/rename/approve),
+  the same rows are written to the sheet in the background, so the team can see it and download Excel.
+- One-way only: Mongo -> Sheet. Typing in the sheet by hand does NOT change the app
+  (optional later: an "Import from sheet" button).
+- If Google is slow/down, the app still works; failed copies are retried, and an admin button
+  "Sync all to sheet" rewrites the whole sheet from Mongo to fix any gap.
+- Database choice: MongoDB (already used for users/submissions). Supabase not needed.
+
 
 ## The idea (why this is safe)
 Every read/write the app does to the sheet goes through ONE backend file: `server/routes/sheets.js`
@@ -14,7 +25,7 @@ So no screen changes, no new bugs in the UI. A switch in `.env` picks the storag
 ## Before we start (you, 5 min)
 - [ ] Merge + deploy the block-user commit first (done: main = 2d8fe66) and confirm the site works.
 - [ ] Download a backup of the sheet: File > Download > Excel. Keep it. (Insurance.)
-- [ ] Tell me: should the team stop editing the sheet by hand after the move? (Recommended: yes.)
+- [ ] Tell the team: from the move on, edit in the app; the sheet is a view/download copy.
 
 ## Part A - Code (me, ~2 hours)
 1. [ ] New model `server/models/SheetTab.js`: `{ name, rows: [[cell,...],...] }`, one document per tab.
@@ -25,7 +36,9 @@ So no screen changes, no new bugs in the UI. A switch in `.env` picks the storag
 4. [ ] One-time copy script `server/scripts/sheetToMongo.js`:
        reads the 3 tabs from Google, writes them into Mongo, prints row counts, refuses to run twice
        unless `--force`. Read-only on Google (never edits the sheet).
-5. [ ] Optional "Export to Excel/Sheet" keeps working (frontend already exports from the map data).
+5. [ ] Mirror: after each successful Mongo write, queue the same change to the sheet
+       (existing sheet code reused), retry on failure, never block or fail the app's save.
+       Add admin button "Sync all to sheet" (rewrites Polygons/Areas/Landmarks from Mongo).
 6. [ ] Tests (vitest, in-memory Mongo): append / update / clear / delete-row / range reads
        give the same results as the sheet would. Plus full `npm test` + `npm run build`.
 
@@ -52,13 +65,14 @@ So no screen changes, no new bugs in the UI. A switch in `.env` picks the storag
   (Anything added AFTER going live lives only in Mongo - so do the check in step 12-13 right away.)
 
 ## After it is stable (a few days later, optional)
-- Keep the sheet as a read-only backup, or run the export once a week.
+- Optionally protect the sheet (View-only for the team) so nobody types in it by mistake.
 - Later cleanup: store polygons as proper Mongo documents instead of "rows" (not needed now).
 
 ## What can go wrong and how we avoid it
 | Risk | Prevention |
 |------|-----------|
 | Row counts differ after copy | Script prints both counts and stops if they differ |
-| Someone still edits the sheet | Step 10: tell the team; sheet is no longer used |
+| Someone edits the sheet by hand | Tell the team; make sheet view-only; "Sync all to sheet" restores it |
+| Google down/slow during a save | App saves to Mongo first; sheet copy retried in background |
 | Wrong range handling (A2:S etc.) | Unit tests for every range form the app uses |
 | Live site breaks | `STORAGE` switch + untouched sheet = 1-minute rollback |
