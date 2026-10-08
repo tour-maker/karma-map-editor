@@ -948,7 +948,9 @@ export const fetchAndMergeSheetUpdates = async (spreadsheetId) => {
       const customAreas = useMapStore.getState().customAreas || [];
       const allParentLocations = Array.from(new Set([...Object.keys(CATEGORY_MAP), ...customAreas]));
 
-      const lowerAllParentLocs = allParentLocations.map(l => l.toLowerCase());
+      // "Unassigned" is the holding place for plots that lost their city; it is never in the
+      // Areas tab, but it must stay a city of its own instead of being folded under Surat.
+      const lowerAllParentLocs = [...allParentLocations.map(l => l.toLowerCase()), 'unassigned'];
       if (pLoc && !lowerAllParentLocs.includes(pLoc.toLowerCase())) {
          if (!loc || loc.toLowerCase() === pLoc.toLowerCase()) loc = pLoc;
          else loc = `${pLoc}, ${loc}`;
