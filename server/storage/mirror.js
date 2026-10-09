@@ -66,6 +66,11 @@ export function createMirror({
     if (running) { schedule(1000); return; }
     if (!dirty.size) return;
     if (!snapshot.migratedAt) {
+      // The copy script may have finished after this server started - look again.
+      const saved = await state.load().catch(() => ({}));
+      if (saved.migratedAt) snapshot = { ...snapshot, migratedAt: saved.migratedAt };
+    }
+    if (!snapshot.migratedAt) {
       // Never overwrite the sheet before its data has been copied into MongoDB.
       logger.warn('[mirror] skipped: data has not been migrated to MongoDB yet');
       return;

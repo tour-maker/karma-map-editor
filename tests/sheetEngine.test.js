@@ -188,3 +188,21 @@ describe('mirror to Google Sheet', () => {
     expect(google.calls.filter(c => c[0] === 'update').length).toBe(1);
   });
 });
+
+describe('mirror picks up a migration finished after the server started', () => {
+  it('re-reads the saved state before refusing', async () => {
+    const { engine } = await setup();
+    let saved = {};
+    const state = { load: async () => saved, save: async () => {} };
+    const calls = [];
+    const google = { spreadsheets: { get: async () => ({ data: { sheets: [{ properties: { title: 'Polygons' } }] } }), values: { clear: async () => calls.push('clear'), update: async () => calls.push('update') } } };
+    const mirror = createMirror({ engine, getGoogle: () => google, spreadsheetId: 'x', state, debounceMs: 5, logger: { error() {}, warn() {} } });
+    await mirror.init();
+    mirror.markDirty(['Polygons']);
+    await mirror.run();
+    expect(calls).toEqual([]);
+    saved = { migratedAt: new Date() };
+    await mirror.run();
+    expect(calls).toContain('clear');
+  });
+});

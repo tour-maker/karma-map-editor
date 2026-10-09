@@ -14,11 +14,11 @@ const stateStore = {
     return d || {};
   },
   async save({ dirtyTabs, migratedAt, lastSyncAt, lastError }) {
-    await SyncState.updateOne(
-      { key: 'mirror' },
-      { $set: { dirtyTabs, migratedAt, lastSyncAt, lastError } },
-      { upsert: true },
-    );
+    // migratedAt is only ever set (by the copy script / markMigrated), never cleared here, so a
+    // running server holding an older value can't wipe it.
+    const $set = { dirtyTabs, lastSyncAt, lastError };
+    if (migratedAt) $set.migratedAt = migratedAt;
+    await SyncState.updateOne({ key: 'mirror' }, { $set }, { upsert: true });
   },
 };
 
