@@ -1,32 +1,11 @@
-import { google } from 'googleapis';
-import dotenv from 'dotenv';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { getGoogleSheets, SPREADSHEET_ID } from './googleClient.js';
+import { isMongoStorage, getStorage } from './storage/index.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+export { SPREADSHEET_ID };
 
-// This module is imported by the route modules before server.js reaches its
-// dotenv.config() call. Load the server-local env file here before resolving
-// the spreadsheet ID, otherwise deployments using server/.env silently fall
-// back to the hard-coded sheet ID and every Sheets read returns 500.
-dotenv.config({ path: join(__dirname, '.env') });
-
-export const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID || '1-9eVBefBNnBJMp4iQBlnA4wdHmEiinHERilgu-b7GQ4';
-
-// Load service account credentials
-const credentials = JSON.parse(
-  readFileSync(join(__dirname, 'service-account.json'), 'utf8')
-);
-
-// Create authenticated Google Sheets client
-export const getSheets = () => {
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return google.sheets({ version: 'v4', auth });
-};
+// The sheet client the rest of the server uses. With STORAGE=mongo it is a drop-in stand-in
+// backed by MongoDB (same methods as the Google client); otherwise it is the real Google client.
+export const getSheets = () => (isMongoStorage() ? getStorage().engine : getGoogleSheets());
 
 /**
  * Appends an approved submission as a new row in the Polygons sheet.

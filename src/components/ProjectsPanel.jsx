@@ -5,6 +5,7 @@ import { useMapStore } from '../store/useMapStore';
 import { CATEGORY_MAP, determineParentLocation, getPropertyTypeColor, buildDynamicLocationMap, isPropertyPolygon, normalizePropertyType } from '../config/categories';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import GoogleSheetsConnect from './GoogleSheetsConnect';
+import SheetSyncButton from './SheetSyncButton';
 import AddAreaModal from './AddAreaModal';
 import { useGoogleMap } from '../context/GoogleMapContext';
 import { zoomToProperty, fitAllBounds } from '../services/googleMaps';
@@ -667,6 +668,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     <FaFileExcel size={16} />
                   </a>
                 )}
+                {appMode === 'edit' && <SheetSyncButton />}
                 {appMode === 'edit' && (
                   <button
                     type="button"

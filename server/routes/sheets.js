@@ -1,6 +1,7 @@
 import express from 'express';
 import { getSheets, SPREADSHEET_ID } from '../sheetsHelper.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { isMongoStorage, getStorage } from '../storage/index.js';
 
 const router = express.Router();
 
@@ -117,6 +118,26 @@ router.post('/batchUpdate', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('[sheets] POST /batchUpdate error:', error.message);
     res.status(500).json({ error: 'Failed to run batch update' });
+  }
+});
+
+// @route   GET /api/sheets/sync-status
+// @desc    Which database is in use and how the copy to the Google Sheet is doing (Admin only)
+router.get('/sync-status', requireAdmin, (req, res) => {
+  if (!isMongoStorage()) return res.json({ storage: 'sheets' });
+  res.json({ storage: 'mongo', ...getStorage().mirror.status() });
+});
+
+// @route   POST /api/sheets/sync-all
+// @desc    Rewrite the Google Sheet from MongoDB right now (Admin only)
+router.post('/sync-all', requireAdmin, async (req, res) => {
+  if (!isMongoStorage()) return res.status(400).json({ error: 'Not using MongoDB storage' });
+  try {
+    const counts = await getStorage().mirror.syncAll();
+    res.json({ success: true, rows: counts });
+  } catch (error) {
+    console.error('[sheets] POST /sync-all error:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to sync' });
   }
 });
 

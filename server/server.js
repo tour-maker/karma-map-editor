@@ -10,6 +10,7 @@ import shareRoutes from './routes/share.js';
 import userRoutes from './routes/users.js';
 import areaEventRoutes from './routes/areaEvents.js';
 import categoryRoutes from './routes/categories.js';
+import { initStorage } from './storage/index.js';
 
 dotenv.config();
 
@@ -46,8 +47,9 @@ if (!MONGODB_URI) {
 }
 
 mongoose.connect(MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB successfully');
+    await initStorage().catch(e => console.error('[storage] init failed:', e.message));
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
