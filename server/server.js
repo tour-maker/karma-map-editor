@@ -15,6 +15,8 @@ import { initStorage } from './storage/index.js';
 dotenv.config();
 
 const app = express();
+// Behind nginx: use the real visitor address (for the OTP request limits).
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5050;
 
 // Middleware

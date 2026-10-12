@@ -7,23 +7,37 @@ import { API_BASE_URL } from '../../config/api';
 import { glassPanelStyle, GLASS_RADIUS, GOLD_GRADIENT, GOLD_GRADIENT_SHADOW, GLASS_FONT } from '../../styles/glass';
 
 const USER_TYPES = ['Broker', 'Owner', 'Buyer', 'Investor'];
-const OTP_LENGTH = 6;
+const DEFAULT_OTP_LENGTH = 4; // Karma Group OTPs are 4 digits; the server can override this
 const RESEND_SECONDS = 30;
 
-// --- OTP stubs (UI-only simulation) -----------------------------------------
-// Replace these two functions with real SMS provider calls when ready.
-// Nothing else in this component needs to change — both simply resolve
-// { success: true } after a short delay to simulate a network round trip.
-function sendOtp(mobileNumber) {
-  console.log(`[stub] sendOtp -> would text an OTP to ${mobileNumber}`);
-  return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 700));
+// OTP calls go to our own backend, which talks to the Karma Group OTP service.
+async function sendOtp(mobileNumber) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/otp/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile: mobileNumber })
+    });
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok && data.success !== false, error: data.error };
+  } catch {
+    return { success: false, error: 'Cannot reach the server. Please try again.' };
+  }
 }
 
-function verifyOtp(mobileNumber, code) {
-  console.log(`[stub] verifyOtp -> would verify code ${code} for ${mobileNumber}`);
-  return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 700));
+async function verifyOtp(mobileNumber, code) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/auth/otp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mobile: mobileNumber, otp: code })
+    });
+    const data = await res.json().catch(() => ({}));
+    return { success: res.ok && data.success !== false, error: data.error, otpToken: data.otpToken };
+  } catch {
+    return { success: false, error: 'Cannot reach the server. Please try again.' };
+  }
 }
-// -----------------------------------------------------------------------------
 
 const inputStyle = {
   width: '100%', padding: '11px 14px', borderRadius: GLASS_RADIUS.control,
@@ -77,7 +91,9 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const [errorMessage, setErrorMessage] = useState('');
 
   // OTP step
-  const [otpDigits, setOtpDigits] = useState(Array(OTP_LENGTH).fill(''));
+  const [otpLength, setOtpLength] = useState(DEFAULT_OTP_LENGTH);
+  const [otpDigits, setOtpDigits] = useState(Array(DEFAULT_OTP_LENGTH).fill(''));
+  const [otpToken, setOtpToken] = useState('');
   const [otpBusy, setOtpBusy] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const otpInputRefs = useRef([]);
@@ -87,6 +103,20 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const [fieldSuffix] = useState(() => Math.random().toString(36).slice(2, 8));
 
   const setViewerUsername = useMapStore(state => state.setViewerUsername);
+
+  // Ask the server how long the OTP is (4 digits for Karma Group's service).
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/api/auth/otp/config`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(cfg => {
+        if (cancelled || !cfg?.length) return;
+        setOtpLength(cfg.length);
+        setOtpDigits(Array(cfg.length).fill(''));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -133,7 +163,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const switchMode = (nextMode) => {
     setMode(nextMode);
     setStep('form');
-    setOtpDigits(Array(OTP_LENGTH).fill(''));
+    setOtpDigits(Array(otpLength).fill(''));
     setErrorMessage('');
   };
 
@@ -215,12 +245,12 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
 
       const result = await sendOtp(mobile.trim());
       if (result.success) {
-        setOtpDigits(Array(OTP_LENGTH).fill(''));
+        setOtpDigits(Array(otpLength).fill(''));
         setStep('otp');
         setResendSeconds(RESEND_SECONDS);
         toast.success(`OTP sent to ${mobile.trim()}`);
       } else {
-        toast.error('Failed to send OTP. Please try again.');
+        toast.error(result.error || 'Failed to send OTP. Please try again.');
       }
     } catch (error) {
       toast.error(error.message || 'Could not check registration details. Please try again.');
@@ -236,7 +266,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       next[index] = digit;
       return next;
     });
-    if (digit && index < OTP_LENGTH - 1) {
+    if (digit && index < otpLength - 1) {
       otpInputRefs.current[index + 1]?.focus();
     }
   };
@@ -256,7 +286,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
         setResendSeconds(RESEND_SECONDS);
         toast.success('OTP resent');
       } else {
-        toast.error('Failed to resend OTP. Please try again.');
+        toast.error(result.error || 'Failed to resend OTP. Please try again.');
       }
     } finally {
       setOtpBusy(false);
@@ -265,8 +295,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
 
   const handleVerifyOtp = async () => {
     const code = otpDigits.join('');
-    if (code.length !== OTP_LENGTH) {
-      toast.error(`Please enter the ${OTP_LENGTH}-digit code`);
+    if (code.length !== otpLength) {
+      toast.error(`Please enter the ${otpLength}-digit code`);
       return;
     }
 
@@ -274,9 +304,10 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
     try {
       const result = await verifyOtp(mobile.trim(), code);
       if (!result.success) {
-        toast.error('Incorrect OTP. Please try again.');
+        toast.error(result.error || 'Incorrect OTP. Please try again.');
         return;
       }
+      setOtpToken(result.otpToken || '');
 
       // OTP verified — create the account. Mobile number doubles as the account username.
       const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
@@ -289,7 +320,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           mobile: mobile.trim(),
-          email: email.trim()
+          email: email.trim(),
+          otpToken: result.otpToken || otpToken
         })
       });
       const data = await res.json();
@@ -380,7 +412,7 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
           <>
             <h2 style={{ margin: 0, fontSize: 20, color: '#f8fafc', textAlign: 'center', ...GLASS_FONT.serif }}>Verify Your Mobile Number</h2>
             <p style={{ margin: '6px 0 20px 0', fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
-              Enter the {OTP_LENGTH}-digit code sent to {mobile.trim()}
+              Enter the {otpLength}-digit code sent to {mobile.trim()}
             </p>
 
             <form onSubmit={(e) => { e.preventDefault(); handleVerifyOtp(); }}>

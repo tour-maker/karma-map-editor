@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { JWT_SECRET } from '../utils/adminJwt.js';
+import {
+  otpEnabled, otpLength, normalizeMobile, sendKarmaOtp, verifyKarmaOtp, issueOtpProof, checkOtpProof, rateLimited,
+} from '../utils/karmaOtp.js';
 
 const router = express.Router();
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
@@ -51,6 +54,51 @@ router.post('/signup/availability', async (req, res) => {
   }
 });
 
+// GET /api/auth/otp/config
+// Tells the sign up screen how many digits the code has and whether the real check is on.
+router.get('/otp/config', (req, res) => {
+  res.json({ enabled: otpEnabled(), length: otpLength() });
+});
+
+// POST /api/auth/otp/send  { mobile }
+router.post('/otp/send', async (req, res) => {
+  const mobile = normalizeMobile(req.body?.mobile);
+  if (mobile.length !== 10) return res.status(400).json({ success: false, error: 'Please enter a valid 10 digit mobile number' });
+  // Same cap for everyone behind one address, and a tighter one per mobile number.
+  if (rateLimited(`send-ip:${req.ip}`, 20, 10 * 60 * 1000) || rateLimited(`send:${mobile}`, 5, 10 * 60 * 1000)) {
+    return res.status(429).json({ success: false, error: 'Too many OTP requests. Please wait a few minutes and try again.' });
+  }
+  if (!otpEnabled()) return res.json({ success: true, simulated: true });
+  try {
+    const r = await sendKarmaOtp(mobile);
+    if (!r.ok) return res.status(502).json({ success: false, error: r.message || 'Could not send the OTP. Please try again.' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('OTP send error:', error?.message);
+    res.status(502).json({ success: false, error: 'The OTP service is not reachable right now. Please try again in a moment.' });
+  }
+});
+
+// POST /api/auth/otp/verify  { mobile, otp }  ->  { success, otpToken }
+router.post('/otp/verify', async (req, res) => {
+  const mobile = normalizeMobile(req.body?.mobile);
+  const otp = String(req.body?.otp || '').replace(/\D/g, '');
+  if (mobile.length !== 10) return res.status(400).json({ success: false, error: 'Please enter a valid 10 digit mobile number' });
+  if (otp.length !== otpLength()) return res.status(400).json({ success: false, error: `Please enter the ${otpLength()} digit code` });
+  if (rateLimited(`verify:${mobile}`, 10, 10 * 60 * 1000)) {
+    return res.status(429).json({ success: false, error: 'Too many wrong attempts. Please request a new OTP in a few minutes.' });
+  }
+  if (!otpEnabled()) return res.json({ success: true, simulated: true, otpToken: issueOtpProof(mobile) });
+  try {
+    const r = await verifyKarmaOtp(mobile, otp);
+    if (!r.ok) return res.status(400).json({ success: false, error: r.message || 'Incorrect OTP. Please try again.' });
+    res.json({ success: true, otpToken: issueOtpProof(mobile) });
+  } catch (error) {
+    console.error('OTP verify error:', error?.message);
+    res.status(502).json({ success: false, error: 'The OTP service is not reachable right now. Please try again in a moment.' });
+  }
+});
+
 // POST /api/auth/signup
 router.post('/signup', async (req, res) => {
   try {
@@ -64,6 +112,10 @@ router.post('/signup', async (req, res) => {
     }
     if (username.trim().length < 3) {
       return res.status(400).json({ error: 'Username must be at least 3 characters' });
+    }
+    // With the real OTP check on, an account can only be made for a number that passed it.
+    if (otpEnabled() && !checkOtpProof(req.body.otpToken, username)) {
+      return res.status(400).json({ error: 'Please verify your mobile number with the OTP first.', code: 'OTP_REQUIRED' });
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
