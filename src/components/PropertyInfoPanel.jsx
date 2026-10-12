@@ -388,7 +388,7 @@ export default function PropertyInfoPanel() {
         syncStatus: 'pending'
       });
 
-      toast.loading('Syncing to Google Sheets...', { id: 'sync-sheet' });
+      toast.loading('Saving to database...', { id: 'sync-sheet' });
       // 'create' (not 'update'): a brand-new polygon has no matching row in the
       // sheet yet, and syncFeatureToSheet's 'update' action silently no-ops when
       // no match is found (by design, to avoid corrupting an unrelated row) —
@@ -420,7 +420,7 @@ export default function PropertyInfoPanel() {
           toast.error('Saved, but the new area could not be added to the Areas tab. Add it from the Area tab.');
         }
       }
-      setSaveSuccess('Property saved and synced to Google Sheets');
+      setSaveSuccess('Property saved to the database');
       window.setTimeout(() => setSaveSuccess(''), 2200);
       setIsOpen(false);
     } catch (err) {
@@ -459,16 +459,16 @@ export default function PropertyInfoPanel() {
     }
 
     if (spreadsheetId) {
-      toast.loading('Deleting from Google Sheets...', { id: 'delete-sheet' });
+      toast.loading('Deleting from database...', { id: 'delete-sheet' });
       try {
         await withSyncRetry(() => syncFeatureToSheet(spreadsheetId, displayFeature, 'delete'));
-        toast.success('Polygon deleted from map and sheets!', { id: 'delete-sheet' });
+        toast.success('Polygon deleted from the map and database', { id: 'delete-sheet' });
         removeFeature(displayFeature.id);
         setIsOpen(false);
         setSelectedFeatureId(null);
       } catch (e) {
         console.error(e);
-        toast.error('Failed to delete from Google Sheets after multiple attempts. The polygon was kept on the map — try again.', { id: 'delete-sheet', duration: 6000 });
+        toast.error('Failed to delete from the database after multiple attempts. The polygon was kept on the map — try again.', { id: 'delete-sheet', duration: 6000 });
       }
     } else {
       removeFeature(displayFeature.id);
@@ -873,7 +873,7 @@ export default function PropertyInfoPanel() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Area Unit (for Google Sheet)</label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94a3b8', marginBottom: 4 }}>Area Unit</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
@@ -1082,7 +1082,7 @@ export default function PropertyInfoPanel() {
                       ) : (
                         <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>
                           {submitter.status === 'none'
-                            ? 'Not added by a user account (drawn by an admin or imported from the sheet).'
+                            ? 'Not added by a user account (drawn by an admin or imported in bulk).'
                             : 'Could not load who added this polygon.'}
                         </div>
                       )}

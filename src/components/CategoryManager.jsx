@@ -131,7 +131,7 @@ export default function CategoryManager({ onClose }) {
         const matches = (value) => value !== newType && normalizePropertyType(value) === newType;
         const changed = retypeFeatures(matches, newType);
         if (spreadsheetId && changed > 0) {
-          toast.loading(`Updating ${changed} plot${changed === 1 ? '' : 's'} in Google Sheets...`, { id: toastId });
+          toast.loading(`Updating ${changed} plot${changed === 1 ? '' : 's'} in the database...`, { id: toastId });
           try {
             await withSyncRetry(() => renameTypeInSheet(spreadsheetId, matches, newType));
             useMapStore.setState(state => ({
@@ -139,7 +139,7 @@ export default function CategoryManager({ onClose }) {
             }));
           } catch (sheetErr) {
             console.error('Category rename: sheet update failed:', sheetErr);
-            toast.error('The category was renamed, but the plots in Google Sheets were NOT updated: ' + (sheetErr?.message || 'unknown error') + '. Save the category again to retry.', { id: toastId, duration: 8000 });
+            toast.error('The category was renamed, but the plots in the database were NOT updated: ' + (sheetErr?.message || 'unknown error') + '. Save the category again to retry.', { id: toastId, duration: 8000 });
             return;
           }
         }

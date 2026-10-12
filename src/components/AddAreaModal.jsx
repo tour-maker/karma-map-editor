@@ -79,7 +79,7 @@ export default function AddAreaModal({ onClose, onSaved, existingPrimaryNames = 
       });
     } catch (err) {
       console.error('Failed to sync new area to Google Sheets:', err);
-      toast.error('Area was not saved. Google Sheets sync failed: ' + (err?.message || 'unknown error'));
+      toast.error('Area was not saved. Database update failed: ' + (err?.message || 'unknown error'));
       setIsSaving(false);
       return;
     }

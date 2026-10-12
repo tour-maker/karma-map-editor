@@ -133,7 +133,7 @@ export default function TopStatsBar() {
           }} />
 
           <div
-            title="Drawn properties not yet synced to Google Sheets — save them before leaving this page"
+            title="Drawn properties not yet saved to the database — save them before leaving this page"
             style={{
               display: 'flex',
               alignItems: 'center',

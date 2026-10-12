@@ -196,7 +196,7 @@ const backendFetch = async (path, options = {}) => {
   });
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    const error = new Error(err.error || 'Sheets backend error');
+    const error = new Error(err.error || 'Database error');
     error.status = response.status;
     throw error;
   }
@@ -272,7 +272,7 @@ export const syncLandmarkToSheet = async (landmarkFeature, spreadsheetId = null,
   if (!landmarkFeature) return;
 
   if (!spreadsheetId || spreadsheetId === 'default') {
-    throw new Error('No Google Sheet is configured.');
+    throw new Error('The database connection is not configured.');
   }
 
   try {
@@ -424,7 +424,7 @@ export const updateAreasSheet = async (spreadsheetId, { remove = [], add = [] } 
 
   if (toDelete.length > 0) {
     const areasSheetId = await getSheetIdByName(spreadsheetId, 'Areas');
-    if (areasSheetId == null) throw new Error('Could not find the Areas tab in the sheet');
+    if (areasSheetId == null) throw new Error('Could not find the Areas data');
     await backendFetch('/api/sheets/batchUpdate', {
       method: 'POST',
       body: JSON.stringify({
@@ -553,7 +553,7 @@ export const withSyncRetry = async (fn, { retries = 3, delayMs = 700 } = {}) => 
 // ONE write (a per-plot sync would need one read per plot and hit Google's quota on a big category).
 // Returns how many rows changed.
 export const renameTypeInSheet = async (spreadsheetId, matches, newType) => {
-  if (!spreadsheetId || spreadsheetId === 'default') throw new Error('No Google Sheet is configured.');
+  if (!spreadsheetId || spreadsheetId === 'default') throw new Error('The database connection is not configured.');
   const sheetData = await fetchSheetData(spreadsheetId, 'Polygons');
   const rows = sheetData.values || [];
   if (rows.length < 2) return 0;
@@ -579,7 +579,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
   }
 
   if (!spreadsheetId || spreadsheetId === 'default') {
-    throw new Error('No Google Sheet is configured.');
+    throw new Error('The database connection is not configured.');
   }
 
   try {
@@ -658,7 +658,7 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 
       const uniqueRowMatch = (matches, keyDescription) => {
         if (matches.length > 1) {
-          throw new Error(`Cannot safely ${action} polygon: ${keyDescription} matches multiple Google Sheet rows.`);
+          throw new Error(`Cannot safely ${action} polygon: ${keyDescription} matches multiple database rows.`);
         }
         return matches.length === 1 ? matches[0].index + 2 : -1;
       };
@@ -716,16 +716,16 @@ export const syncFeatureToSheet = async (spreadsheetId, feature, action = 'updat
 
       // Strictly execute action: ONLY touch the targeted row if updating
       if (action === 'delete') {
-        if (targetRowIndex <= 1) throw new Error(`Cannot safely delete polygon "${feature.id}": no unique matching sheet row was found.`);
+        if (targetRowIndex <= 1) throw new Error(`Cannot safely delete polygon "${feature.id}": no unique matching record was found.`);
         const sId = await getSheetIdByName(spreadsheetId, 'Polygons');
-        if (sId === null) throw new Error('Cannot safely delete polygon: the Polygons sheet was not found.');
+        if (sId === null) throw new Error('Cannot safely delete polygon: the Polygons data was not found.');
         await deleteSheetRowByIndex(spreadsheetId, sId, targetRowIndex - 1);
       } else if (action === 'update' || action === 'edit' || action === 'save') {
         if (targetRowIndex > 1) {
           // Update ONLY the specific matched row
           await updateSheetRow(spreadsheetId, `Polygons!A${targetRowIndex}:S${targetRowIndex}`, [cleanRow]);
         } else {
-          throw new Error(`Cannot safely update polygon "${feature.id}": no unique matching sheet row was found.`);
+          throw new Error(`Cannot safely update polygon "${feature.id}": no unique matching record was found.`);
         }
       } else if (action === 'create' || action === 'add') {
         if (targetRowIndex > 1) {

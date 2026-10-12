@@ -109,7 +109,7 @@ export default function PendingSubmissionsPanel() {
       }));
     } catch (error) {
       console.error('Could not record the new area in the Areas tab:', error);
-      toast.error('Approved, but the new city or area could not be added to the sheet. Add it from the City tab.');
+      toast.error('Approved, but the new city or area could not be added to the database. Add it from the City tab.');
     }
   };
 
@@ -153,9 +153,9 @@ export default function PendingSubmissionsPanel() {
       await registerNewArea(approved);
 
       if (result.sheetError) {
-        toast.success('Approved! (Sheet sync issue: ' + result.sheetError + ')');
+        toast.success('Approved! (Database update issue: ' + result.sheetError + ')');
       } else {
-        toast.success('Approved and added to map & Google Sheet! ✅');
+        toast.success('Approved and saved to the map & database! ✅');
       }
 
       setSubmissions(prev => prev.filter(s => s._id !== sub._id));

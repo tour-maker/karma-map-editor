@@ -156,7 +156,7 @@ router.post('/:id/approve', requireAdmin, async (req, res) => {
         }
       }
       // Still return success for the approval itself, just note sheet sync failed
-      res.json({ message: 'Submission approved (sheet sync failed)', submission, sheetError: sheetErr.message });
+      res.json({ message: 'Submission approved (database update failed)', submission, sheetError: sheetErr.message });
     }
 
   } catch (error) {

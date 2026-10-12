@@ -33,10 +33,10 @@ export default function SheetSyncButton() {
       const res = await fetch(`${API_BASE_URL}/api/sheets/sync-all`, { method: 'POST', headers: authHeaders() });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        toast.success('Google Sheet updated from the database');
+        toast.success('Google Sheet copy refreshed from the database');
         setStatus(s => ({ ...s, dirtyTabs: [], lastError: '' }));
       } else if (res.status !== 401) {
-        toast.error(data.error || 'Could not update the Google Sheet');
+        toast.error(data.error || 'Could not refresh the Google Sheet copy');
       }
     } catch {
       toast.error('Could not reach the server');
@@ -54,7 +54,7 @@ export default function SheetSyncButton() {
       title={pending
         ? `Sheet copy is behind${status.lastError ? ` (${status.lastError})` : ''} - click to update it now`
         : 'Sheet copy is up to date - click to refresh it now'}
-      aria-label="Update Google Sheet from the database"
+      aria-label="Refresh the Google Sheet copy from the database"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: busy ? 'wait' : 'pointer',
         color: pending ? '#f59e0b' : '#10b981', padding: 6, borderRadius: '50%', opacity: busy ? 0.5 : 1,

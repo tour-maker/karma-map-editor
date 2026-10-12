@@ -66,7 +66,7 @@ export default function AddLandmarkModal({ position, onClose, onSaved }) {
         }
       } catch (err) {
         console.error('Failed to sync new landmark to Google Sheets:', err);
-        toast.error('Landmark added locally, but sync to Google Sheets failed after multiple attempts.', { duration: 6000 });
+        toast.error('Landmark added locally, but saving to the database failed after multiple attempts.', { duration: 6000 });
       }
     }
   };

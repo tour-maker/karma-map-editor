@@ -416,7 +416,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       toast.error(
         err?.status === 401
           ? 'Admin session expired - sign in again, then repeat the rename.'
-          : 'The new name was NOT saved to Google Sheets: ' + (err?.message || 'unknown error') + '. It may revert on refresh.',
+          : 'The new name was NOT saved to the database: ' + (err?.message || 'unknown error') + '. It may revert on refresh.',
         { id: toastId }
       );
     }
@@ -443,7 +443,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
       toast.success(`Moved ${plotIds.length} plot${plotIds.length === 1 ? '' : 's'} to ${dest.sub ? `${dest.parent} > ${dest.sub}` : dest.parent}`, { id: toastId });
     } catch (err) {
       console.error('Rehome: sheet sync failed:', err);
-      toast.error('The move was NOT saved to Google Sheets: ' + (err?.message || 'unknown error') + '. It may revert on refresh.', { id: toastId });
+      toast.error('The move was NOT saved to the database: ' + (err?.message || 'unknown error') + '. It may revert on refresh.', { id: toastId });
     }
   };
 
@@ -2000,7 +2000,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     mergeAreaIntoPrimary(name, target);
                   }
                   setMovePanel(null);
-                  const toastId = toast.loading('Saving move to Google Sheets...');
+                  const toastId = toast.loading('Saving move to database...');
                   try {
                     // Keep the Areas tab in step, otherwise the next poll re-creates the old structure.
                     let areaChanges;
@@ -2036,7 +2036,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                       });
                       return { syncedAreas: pairs };
                     });
-                    toast.success('Move saved to Google Sheets', {
+                    toast.success('Move saved to database', {
                       id: toastId,
                       style: { background: '#0f172a', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)' }
                     });
@@ -2045,7 +2045,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     toast.error(
                       err?.status === 401
                         ? 'Admin session expired - sign in again, then repeat the move.'
-                        : 'Move was NOT saved to Google Sheets: ' + (err?.message || 'unknown error') + '. It may revert on refresh.',
+                        : 'Move was NOT saved to the database: ' + (err?.message || 'unknown error') + '. It may revert on refresh.',
                       { id: toastId }
                     );
                   }
@@ -2148,7 +2148,7 @@ export default function ProjectsPanel({ onAddProject, onAddLandmark }) {
                     toast.error(
                       err?.status === 401
                         ? 'Admin session expired - sign in again, then repeat the delete.'
-                        : `"${name}" was NOT deleted from Google Sheets: ` + (err?.message || 'unknown error') + '. It may come back on refresh.',
+                        : `"${name}" was NOT deleted from the database: ` + (err?.message || 'unknown error') + '. It may come back on refresh.',
                       { id: toastId }
                     );
                   }
