@@ -53,8 +53,17 @@ async function callKarma(path, payload) {
 // HTTP 2xx and the body does not say status/success is false.
 function interpret(result) {
   const b = result.body;
-  const flagFalse = b && (b.status === false || b.success === false || String(b.status).toLowerCase() === 'false' || String(b.status).toLowerCase() === 'fail' || String(b.status).toLowerCase() === 'error');
-  const message = b && (b.message || b.msg || b.error || (typeof b.data === 'string' ? b.data : '')) || '';
+  // Karma's replies look like:
+  //   { success: true, data: { success: true }, validationMessage: { code: 200, message: "...", key: "..." } }
+  const vm = b && b.validationMessage;
+  const vmCode = Number(vm && vm.code);
+  const flagFalse = !!b && (
+    b.status === false || b.success === false ||
+    ['false', 'fail', 'error'].includes(String(b.status).toLowerCase()) ||
+    (b.data && typeof b.data === 'object' && b.data.success === false) ||
+    (Number.isFinite(vmCode) && vmCode >= 400)
+  );
+  const message = (b && (b.message || b.msg || b.error || (vm && vm.message) || (typeof b.data === 'string' ? b.data : ''))) || '';
   return { ok: result.httpOk && !flagFalse, message: typeof message === 'string' ? message : '' };
 }
 

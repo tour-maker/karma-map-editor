@@ -13,7 +13,7 @@ const startKarma = () => new Promise(resolve => {
       seen.push({ url: req.url, headers: req.headers, body });
       res.setHeader('Content-Type', 'application/json');
       if (mode === 'down') { res.statusCode = 500; return res.end('oops'); }
-      if (req.url === '/api/v1/auth/register-property') return res.end(JSON.stringify({ status: true, message: 'OTP sent' }));
+      if (req.url === '/api/v1/auth/register-property') return res.end(JSON.stringify({ success: true, data: { success: true }, validationMessage: { code: 200, message: 'Verification code sent for file export.', key: 'PROPERTY_EXPORT_OTP_SENT' } }));
       if (req.url === '/api/v1/auth/login-otp') {
         if (body.otp === '3387') return res.end(JSON.stringify({ status: true, data: { token: 'x' } }));
         res.statusCode = 400; return res.end(JSON.stringify({ status: false, message: 'Invalid OTP' }));
@@ -37,6 +37,30 @@ afterAll(() => { karma?.close(); app?.close(); });
 beforeEach(() => { seen = []; mode = 'ok'; utils._resetRateLimits(); delete process.env.OTP_ENABLED; delete process.env.KARMA_OTP_BASE_URL; delete process.env.OTP_LENGTH; });
 
 const enable = () => { process.env.OTP_ENABLED = 'true'; process.env.KARMA_OTP_BASE_URL = karmaUrl; };
+
+describe('Karma reply formats', () => {
+  it('reads their real send reply as success', async () => {
+    enable();
+    const r = await utils.sendKarmaOtp('9602650160');
+    expect(r.ok).toBe(true);
+  });
+  it('treats validationMessage codes of 400 or more and data.success false as failure, and shows their message', async () => {
+    const { sendKarmaOtp } = utils;
+    const realFetch = globalThis.fetch;
+    const reply = (obj, status = 200) => { globalThis.fetch = async () => new Response(JSON.stringify(obj), { status }); };
+    enable();
+    try {
+      reply({ success: false, validationMessage: { code: 400, message: 'Invalid OTP', key: 'X' } });
+      expect(await sendKarmaOtp('9602650160')).toMatchObject({ ok: false, message: 'Invalid OTP' });
+      reply({ success: true, data: { success: false }, validationMessage: { code: 200, message: 'Not verified' } });
+      expect(await sendKarmaOtp('9602650160')).toMatchObject({ ok: false, message: 'Not verified' });
+      reply({ success: true, validationMessage: { code: 422, message: 'Too many tries' } }, 200);
+      expect((await sendKarmaOtp('9602650160')).ok).toBe(false);
+      reply({ success: true, data: { success: true }, validationMessage: { code: 200, message: 'ok' } });
+      expect((await sendKarmaOtp('9602650160')).ok).toBe(true);
+    } finally { globalThis.fetch = realFetch; }
+  });
+});
 
 describe('OTP switched off (default)', () => {
   it('keeps today\'s behaviour: nothing is sent, sign up needs no proof', async () => {
