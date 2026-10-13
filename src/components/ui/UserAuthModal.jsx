@@ -91,6 +91,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
   const [errorMessage, setErrorMessage] = useState('');
 
   // OTP step
+  // true until the server says the OTP check is switched off (then sign up skips the code step)
+  const [otpEnabled, setOtpEnabled] = useState(true);
   const [otpLength, setOtpLength] = useState(DEFAULT_OTP_LENGTH);
   const [otpDigits, setOtpDigits] = useState(Array(DEFAULT_OTP_LENGTH).fill(''));
   const [otpToken, setOtpToken] = useState('');
@@ -110,7 +112,9 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
     fetch(`${API_BASE_URL}/api/auth/otp/config`)
       .then(r => (r.ok ? r.json() : null))
       .then(cfg => {
-        if (cancelled || !cfg?.length) return;
+        if (cancelled || !cfg) return;
+        if (cfg.enabled === false) setOtpEnabled(false);
+        if (!cfg.length) return;
         setOtpLength(cfg.length);
         setOtpDigits(Array(cfg.length).fill(''));
       })
@@ -243,6 +247,12 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       setRegistrationConflicts(conflicts);
       if (conflicts.mobile || conflicts.email) return;
 
+      // OTP check switched off on the server: create the account straight away.
+      if (!otpEnabled) {
+        await createAccount('');
+        return;
+      }
+
       const result = await sendOtp(mobile.trim());
       if (result.success) {
         setOtpDigits(Array(otpLength).fill(''));
@@ -293,6 +303,40 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
     }
   };
 
+  // Creates the account. The mobile number doubles as the username.
+  // `proof` is the OTP proof from the server (empty when the OTP check is switched off).
+  const createAccount = async (proof) => {
+    const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: mobile.trim(),
+        password: signupPassword,
+        userType,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        mobile: mobile.trim(),
+        email: email.trim(),
+        otpToken: proof || ''
+      })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 409 && (data.field === 'mobile' || data.field === 'email')) {
+        setRegistrationConflicts(prev => ({ ...prev, [data.field]: true }));
+        setStep('form');
+      }
+      toast.error(data.error || 'Something went wrong');
+      return;
+    }
+
+    localStorage.setItem('karmaUserJWT', data.token);
+    setViewerUsername(data.username);
+    toast.success(`Welcome, ${firstName.trim()}!`);
+    onSuccess?.(data.username);
+  };
+
   const handleVerifyOtp = async () => {
     const code = otpDigits.join('');
     if (code.length !== otpLength) {
@@ -309,36 +353,8 @@ export default function UserAuthModal({ onClose, onSuccess, title = 'Sign In', s
       }
       setOtpToken(result.otpToken || '');
 
-      // OTP verified — create the account. Mobile number doubles as the account username.
-      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: mobile.trim(),
-          password: signupPassword,
-          userType,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          mobile: mobile.trim(),
-          email: email.trim(),
-          otpToken: result.otpToken || otpToken
-        })
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 409 && (data.field === 'mobile' || data.field === 'email')) {
-          setRegistrationConflicts(prev => ({ ...prev, [data.field]: true }));
-          setStep('form');
-        }
-        toast.error(data.error || 'Something went wrong');
-        return;
-      }
-
-      localStorage.setItem('karmaUserJWT', data.token);
-      setViewerUsername(data.username);
-      toast.success(`Welcome, ${firstName.trim()}!`);
-      onSuccess?.(data.username);
+      setOtpToken(result.otpToken || '');
+      await createAccount(result.otpToken || otpToken);
     } catch (err) {
       console.error('Auth error:', err);
       toast.error('Cannot reach server. Make sure the backend is running.');
